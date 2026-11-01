@@ -1,0 +1,69 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.build/
+.buildlog/
+.history
+.svn/
+.swiftpm/
+migrate_working_dir/
+
+# IntelliJ related
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# The .vscode folder contains launch configuration and tasks you configure in
+# VS Code which you may wish to be included in version control, so this line
+# is commented out by default.
+#.vscode/
+
+# Flutter/Dart/Pub related
+**/doc/api/
+**/ios/Flutter/.last_build_id
+.dart_tool/
+.flutter-plugins-dependencies
+.pub-cache/
+.pub/
+/build/
+/coverage/
+
+# Symbolication related
+app.*.symbols
+
+# Obfuscation related
+app.*.map.json
+
+# Android Studio will place build artifacts here
+/android/app/debug
+/android/app/profile
+/android/app/release
+.claude/worktrees/
+
+# Developer agent prompt packs are third-party content installed locally.
+# See CONTRIBUTING.md — they are not part of this repository.
+.claude/skills/
+
+# Local opencode session configuration (agents, commands, node_modules) is
+# machine-specific and must never be committed.
+.opencode/
+
+# APKs are distributed as release assets, not source files.
+/*.apk
+test/**/failures/
+COMMIT_MSG.txt
+
+# Native phone-engine build outputs stay off the root disk.
+/engine/phone/target/
+/engine/phone/artifacts/
+
+# Screen recordings stay out of the public tree (G25)
+docs/qa/**/*.mp4
+
+# Private build server target for tool/qa/vps_*.sh and run_tests_split.sh.
+tool/qa/build-server.env

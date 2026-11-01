@@ -1,0 +1,95 @@
+name: Android arm64 build
+
+on:
+  push:
+    branches: [main, master]
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: android-arm64-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter 3.47.1
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.1"
+          channel: stable
+          cache: true
+
+      - name: Accept Android SDK licenses
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Write the release signing key
+        env:
+          KEYSTORE_B64: ${{ secrets.RELEASE_KEYSTORE_BASE64 }}
+          STORE_PASSWORD: ${{ secrets.RELEASE_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.RELEASE_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${KEYSTORE_B64:-}" ]; then
+            echo "No RELEASE_KEYSTORE_BASE64 secret: building with the debug key."
+            exit 0
+          fi
+          echo "$KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/android/mini-release.jks"
+          cat > "$GITHUB_WORKSPACE/android/key.properties" <<EOF
+          storeFile=$GITHUB_WORKSPACE/android/mini-release.jks
+          storePassword=${STORE_PASSWORD}
+          keyAlias=${KEY_ALIAS}
+          keyPassword=${KEY_PASSWORD}
+          EOF
+
+      - name: Resolve packages
+        run: flutter pub get
+
+      - name: Analyze (non-blocking)
+        continue-on-error: true
+        run: flutter analyze
+
+      - name: Build arm64 release APK
+        run: flutter build apk --release --target-platform android-arm64
+
+      - name: Report the APK
+        run: |
+          set -euo pipefail
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          ls -l "$APK"
+          sha256sum "$APK" | tee apk-sha256.txt
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort | tail -1)
+          "$APKSIGNER" verify --print-certs "$APK" | sed -n '1,6p'
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-mini-${{ github.run_number }}-arm64
+          path: |
+            build/app/outputs/flutter-apk/app-release.apk
+            apk-sha256.txt
+
+      - name: Attach the APK to a release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/app/outputs/flutter-apk/app-release.apk
+            apk-sha256.txt
+          draft: true

@@ -1,0 +1,176 @@
+import java.io.FileInputStream
+import java.util.Properties
+import com.android.build.api.artifact.SingleArtifact
+
+plugins {
+    id("com.android.application")
+    // The Flutter Gradle Plugin must be applied after the Android Gradle plugin.
+    id("dev.flutter.flutter-gradle-plugin")
+}
+
+val ocPreview = (project.findProperty("ocPreview") as String?) == "true"
+val keystoreProperties = Properties()
+val keystorePropertiesFile = rootProject.file("key.properties")
+if (keystorePropertiesFile.isFile) {
+    FileInputStream(keystorePropertiesFile).use(keystoreProperties::load)
+}
+// A release key is required for the APK people install and update over. When
+// it is absent (a fresh clone, or CI without secrets) fall back to the debug
+// key so the build still proves the Dart and Kotlin sides compile, exactly as
+// upstream's validateSigningRelease note describes.
+val hasReleaseSigning = keystorePropertiesFile.isFile &&
+    !keystoreProperties.getProperty("storeFile").isNullOrBlank()
+
+android {
+    namespace = "com.azx8788.opencode.mini"
+    buildFeatures {
+        buildConfig = true
+    }
+    // flutter_secure_storage 11 ships AAR metadata that requires API 37;
+    // Flutter 3.47 still defaults to 36. Pin explicitly until Flutter's
+    // default catches up, then drop this back to flutter.compileSdkVersion.
+    compileSdk = 37
+    ndkVersion = flutter.ndkVersion
+
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_17
+        targetCompatibility = JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        applicationId = "com.azx8788.opencode.mini"
+        // The built-in Linux and AI Team engine use process APIs from Android 8.
+        minSdk = maxOf(flutter.minSdkVersion, 26)
+        targetSdk = flutter.targetSdkVersion
+        versionCode = flutter.versionCode
+        versionName = flutter.versionName
+        // Native acceptance checkpoint hooks are inactive in normal releases.
+        buildConfigField("boolean", "BUILTIN_RUNTIME_QA", "false")
+        // Mini ships one ABI: 64-bit ARM. The in-app Linux runs 64-bit Ubuntu
+        // and the cached proot/engine binaries exist only for arm64-v8a.
+        ndk {
+            abiFilters += listOf("arm64-v8a")
+        }
+        // A preview build installs beside the stable app instead of over it
+        // (`flutter build apk --android-project-arg=ocPreview=true`): its own
+        // package, name, data and built-in Ubuntu, so trying a new version
+        // never needs uninstalling the one that holds the person's servers.
+        // Projects in Termux are shared by both, since neither owns them.
+        if (ocPreview) applicationIdSuffix = ".preview"
+        manifestPlaceholders["appLabel"] =
+            if (ocPreview) "OpenCode Mini Preview" else "OpenCode Mini"
+        manifestPlaceholders["appShortcuts"] =
+            if (ocPreview) "@xml/shortcuts_preview" else "@xml/shortcuts"
+    }
+
+
+    signingConfigs {
+        create("release") {
+            keyAlias = keystoreProperties.getProperty("keyAlias")
+            keyPassword = keystoreProperties.getProperty("keyPassword")
+            storeFile = keystoreProperties.getProperty("storeFile")?.let(::file)
+            storePassword = keystoreProperties.getProperty("storePassword")
+        }
+    }
+
+    buildTypes {
+        release {
+            signingConfig =
+                if (hasReleaseSigning) signingConfigs.getByName("release")
+                else signingConfigs.getByName("debug")
+            proguardFiles("widget-status-release.pro")
+            proguardFiles("scheduled-prompts.pro")
+            // Preview builds keep the QA hooks that the release rules strip.
+            if (ocPreview) proguardFiles("phone-engine-instrumentation.pro")
+        }
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
+flutter {
+    source = "../.."
+}
+
+android {
+    // proot and its loader ship as native libraries and must exist as real
+    // files in the app's native library folder: the one place this app may
+    // run programs from (BuiltinLinux.kt).
+    packaging {
+        jniLibs {
+            useLegacyPackaging = true
+            // Runtime attestation hashes these exact staged executables. AGP's
+            // release strip step must not rewrite them after manifest creation.
+            keepDebugSymbols += "**/libaiteam_*.so"
+        }
+    }
+}
+
+// Check the APK, rather than only the staging directory: stripping, ABI
+// filtering, or packaging changes must fail the build before delivery.
+androidComponents.onVariants(androidComponents.selector().withBuildType("release")) { variant ->
+    val capitalizedName = variant.name.replaceFirstChar { it.uppercaseChar() }
+    val packagedApks = variant.artifacts.get(SingleArtifact.APK)
+    val checker = rootProject.file("../tool/qa/verify_phone_engine_apk.py")
+    val manifest = file("src/main/assets/aiteam-engine-manifest.json")
+    val abiFilters = android.defaultConfig.ndk.abiFilters.toList().sorted()
+    val verifyBundle = tasks.register<Exec>("verify${capitalizedName}PhoneEngineApk") {
+        group = "verification"
+        description = "Verify packaged AI Team executable hashes against the runtime manifest."
+        inputs.file(checker)
+        inputs.file(manifest)
+        inputs.dir(rootProject.file("../engine/phone/src"))
+        inputs.file(rootProject.file("../engine/phone/Cargo.toml"))
+        inputs.file(rootProject.file("../engine/phone/Cargo.lock"))
+        inputs.dir(packagedApks)
+        commandLine(
+            listOf("python3", checker.absolutePath, "--manifest", manifest.absolutePath,
+                "--source-root", rootProject.file("..").absolutePath,
+                "--apk-dir", packagedApks.get().asFile.absolutePath) +
+                abiFilters.flatMap { listOf("--abi", it) }
+        )
+    }
+    tasks.matching { it.name == "assemble$capitalizedName" }.configureEach {
+        dependsOn(verifyBundle)
+    }
+}
+
+// The widget render test reads Android resources (unitTests.isIncludeAndroidResources), so its
+// packaging reads the merged assets Flutter copies in: declare that order for Gradle.
+tasks.matching { it.name.startsWith("package") && it.name.endsWith("UnitTestForUnitTest") }.configureEach {
+    val variant = name.removePrefix("package").removeSuffix("UnitTestForUnitTest")
+    dependsOn(tasks.matching { it.name == "copyFlutterAssets$variant" })
+}
+
+dependencies {
+    implementation("androidx.work:work-runtime:2.10.5")
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.json:json:20180813")
+    // Renders the home-screen widget's real RemoteViews layouts to images on the JVM
+    // (WidgetCardRenderTest): the picker previews and the QA renders come from the card itself.
+    testImplementation("org.robolectric:robolectric:4.17")
+    // ShortcutManagerCompat for the pinned-session launcher shortcuts
+    // (PinnedSessionShortcuts.kt); same major line the Flutter embedding
+    // already pulls in transitively, pinned so the compile classpath is
+    // explicit rather than inherited.
+    implementation("androidx.core:core:1.13.1")
+    // Reads the Ubuntu Base tarball for the built-in Linux (BuiltinLinux.kt).
+    implementation("org.apache.commons:commons-compress:1.27.1")
+    // The local terminal's PTY (LocalTerminal.kt): Termux's terminal-emulator
+    // library, Apache 2.0 (NOTICE). Only this module: termux-app itself and
+    // termux-shared are GPLv3 and must not be used.
+    implementation("com.github.termux.termux-app:terminal-emulator:v0.118.3")
+}
+
+repositories {
+    // JitPack builds the Termux terminal libraries from their release tags.
+    // Limited to that group so no other dependency can resolve from it.
+    exclusiveContent {
+        forRepository { maven("https://jitpack.io") }
+        filter { includeGroup("com.github.termux.termux-app") }
+    }
+}
