@@ -70,6 +70,9 @@ android {
 
     signingConfigs {
         create("release") {
+            // Optional, so a PKCS12 key is loaded as PKCS12 instead of being
+            // guessed from a .jks filename.
+            keystoreProperties.getProperty("storeType")?.let { storeType = it }
             keyAlias = keystoreProperties.getProperty("keyAlias")
             keyPassword = keystoreProperties.getProperty("keyPassword")
             storeFile = keystoreProperties.getProperty("storeFile")?.let(::file)

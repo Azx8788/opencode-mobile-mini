@@ -50,9 +50,10 @@ jobs:
             echo "No RELEASE_KEYSTORE_BASE64 secret: building with the debug key."
             exit 0
           fi
-          echo "$KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/android/mini-release.jks"
+          echo "$KEYSTORE_B64" | base64 -d > "$GITHUB_WORKSPACE/android/mini-release.p12"
           cat > "$GITHUB_WORKSPACE/android/key.properties" <<EOF
-          storeFile=$GITHUB_WORKSPACE/android/mini-release.jks
+          storeFile=$GITHUB_WORKSPACE/android/mini-release.p12
+          storeType=PKCS12
           storePassword=${STORE_PASSWORD}
           keyAlias=${KEY_ALIAS}
           keyPassword=${KEY_PASSWORD}
