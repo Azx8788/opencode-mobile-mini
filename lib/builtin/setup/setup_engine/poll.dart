@@ -203,10 +203,23 @@ extension _SetupEnginePoll on ChannelSetupEngine {
 
   Future<void> _finish(SetupJobRecord record, SetupJobComponent step) async {
     final version = record.component(SetupComponentIds.openCode)?.version;
+    final runtime = TermuxRuntime.parse(step.data['runtime']);
+    AppLog.info('setup', 'start step begun', {
+      'job': record.jobId,
+      'host': host.name,
+      'runtime': runtime.wireName,
+      'version': version,
+      'openCodeChanged': step.data['openCodeChanged'],
+    });
     String? error;
     final finish = finisher;
     if (finish == null) {
+      // Nothing has attached the shell yet: this is the exact state where the
+      // screen sits on "starting" forever with no other clue on disk.
       error = strings().phoneSetupErrorCannotStart;
+      AppLog.warn('setup', 'start step has no finisher attached', {
+        'job': record.jobId,
+      });
     } else {
       try {
         error = await PerfTrace.span(
@@ -214,15 +227,32 @@ extension _SetupEnginePoll on ChannelSetupEngine {
           () => finish(
             SetupFinishRequest(
               host: host,
-              runtime: TermuxRuntime.parse(step.data['runtime']),
+              runtime: runtime,
               openCodeChanged: step.data['openCodeChanged'] == 'true',
               version: version,
             ),
           ),
         );
-      } catch (e) {
+      } catch (e, stack) {
         error = _isRuntimeOwnershipFailure(e) ? _runtimeOwnershipUnknown : '$e';
+        AppLog.error(
+          'setup',
+          e,
+          stack: stack,
+          message: 'start step threw',
+          fields: {'job': record.jobId, 'runtime': runtime.wireName},
+        );
       }
+    }
+    if (error == null) {
+      AppLog.info('setup', 'start step succeeded', {'job': record.jobId});
+    } else {
+      AppLog.error(
+        'setup',
+        error,
+        message: 'start step failed',
+        fields: {'job': record.jobId, 'runtime': runtime.wireName},
+      );
     }
     try {
       await _linux.completeSetupStep(
@@ -314,6 +344,7 @@ extension _SetupEnginePoll on ChannelSetupEngine {
   void _show(SetupJobRecord record) {
     final starting = _startingJobId;
     if (starting != null && record.jobId != starting) return;
+    _logTransition(record);
     final l10n = strings();
     if (_jobComponents.isEmpty ||
         _progress.value.jobId != record.jobId ||
@@ -342,6 +373,42 @@ extension _SetupEnginePoll on ChannelSetupEngine {
       now: _clock(),
       floors: _floors,
     );
+  }
+
+  /// One line per real step of a setup job, for the on-device log. Downloaded
+  /// bytes change constantly; the job state, the current component and its
+  /// stage do not, so those are what make a failed run readable afterwards.
+  void _logTransition(SetupJobRecord record) {
+    final key = [
+      record.jobId,
+      record.state,
+      record.current ?? '',
+      record.error ?? '',
+      for (final component in record.components)
+        '${component.id}=${component.state}',
+    ].join('|');
+    if (key == _loggedTransition) return;
+    _loggedTransition = key;
+    final fields = <String, Object?>{
+      'job': record.jobId,
+      'state': record.state,
+      'current': record.current,
+      'components': [
+        for (final component in record.components)
+          '${component.id}:${component.state}',
+      ].join(' '),
+    };
+    final error = record.error;
+    if (error != null && error.isNotEmpty) {
+      AppLog.error(
+        'setup',
+        error,
+        message: 'setup job ${record.state}',
+        fields: fields,
+      );
+    } else {
+      AppLog.info('setup', 'job ${record.state}', fields);
+    }
   }
 
   /// [record] with the running app-side install's own progress on its row.

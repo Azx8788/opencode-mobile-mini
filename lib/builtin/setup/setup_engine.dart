@@ -5,6 +5,7 @@ import 'dart:ui' show Locale, PlatformDispatcher;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' show AppLifecycleState, WidgetsBinding;
 
+import '../../diagnostics/app_log.dart';
 import '../../diagnostics/perf_trace.dart';
 import '../../l10n/app_localizations.dart';
 import '../../termux/bridge.dart' show TermuxRuntime;
@@ -162,6 +163,10 @@ class ChannelSetupEngine implements SetupEngine {
 
   /// Set by the app shell once it can start and connect (main.dart).
   SetupFinisher? finisher;
+
+  /// The last job transition written to the on-device log, so polling a live
+  /// job every second records each step once instead of once per read.
+  String _loggedTransition = '';
 
   /// Follows the device language, English for one the app does not ship.
   /// The app shell replaces it with its own language choice.

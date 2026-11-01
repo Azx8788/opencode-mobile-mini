@@ -24,6 +24,7 @@ import 'package:dynamic_color/dynamic_color.dart';
 import 'package:flutter/foundation.dart' show kIsWeb, visibleForTesting;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
 import 'background/live_background.dart';
 import 'builtin/app_exit_recovery.dart';
@@ -41,6 +42,7 @@ import 'builtin/thermal_guard_teams.dart';
 import 'desktop/window_icon.dart';
 import 'desktop/window_state.dart';
 import 'diagnostics/app_diagnostics.dart';
+import 'diagnostics/app_log.dart';
 import 'diagnostics/crash_diagnostics.dart';
 import 'diagnostics/perf_trace.dart';
 import 'diagnostics/report_problem_startup.dart';
@@ -135,6 +137,27 @@ Future<void> main() async {
   // as time since launch.
   PerfTrace.markOnce('app.main');
   WidgetsFlutterBinding.ensureInitialized();
+  // The on-device log opens in the background; lines logged before the folder
+  // is ready are buffered and written when it is.
+  unawaited(AppLog.start());
+  AppLog.info('app', 'launch', {
+    'platform': Platform.operatingSystem,
+    'locale': PlatformDispatcher.instance.locale.toLanguageTag(),
+    'locales': PlatformDispatcher.instance.locales
+        .map((locale) => locale.toLanguageTag())
+        .join(','),
+  });
+  // Which APK this is matters when reading a log sent from a phone.
+  unawaited(
+    PackageInfo.fromPlatform()
+        .then(
+          (info) => AppLog.info('app', 'build', {
+            'version': info.version,
+            'build': info.buildNumber,
+          }),
+        )
+        .catchError((Object _) {}),
+  );
   if (!kIsWeb && (Platform.isLinux || Platform.isWindows || Platform.isMacOS)) {
     // Restores the remembered size, position and maximized state, clamped to
     // a display that still exists, and saves it again on close. Android never
@@ -155,8 +178,10 @@ Future<void> main() async {
   final diagnostics = AppDiagnosticsController();
   installAppErrorCapture(
     diagnostics,
-    crashCapture: (error, stack, source) =>
-        CrashDiagnosticsStartup.capture(diagnostics, error, stack, source),
+    crashCapture: (error, stack, source) {
+      AppLog.error('crash', error, stack: stack, fields: {'source': source});
+      CrashDiagnosticsStartup.capture(diagnostics, error, stack, source);
+    },
   );
   runApp(AppBootstrapGate(diagnostics: diagnostics));
   WidgetsBinding.instance.addPostFrameCallback((_) {

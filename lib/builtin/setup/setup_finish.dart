@@ -1,3 +1,4 @@
+import '../../diagnostics/app_log.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/move_to_opencode2.dart';
 import '../../state/profiles.dart';
@@ -33,8 +34,17 @@ class BuiltinSetupFinisher {
 
   Future<String?> call(SetupFinishRequest request) async {
     final l10n = strings();
+    AppLog.info('setup', 'finisher begun', {
+      'host': request.host.name,
+      'runtime': request.runtime.wireName,
+      'version': request.version,
+      'openCodeChanged': request.openCodeChanged,
+    });
     // A Termux job must never create/start the in-app Ubuntu profile.
     if (request.host != SetupHostKind.builtin) {
+      AppLog.warn('setup', 'finisher refused a non-builtin host', {
+        'host': request.host.name,
+      });
       return l10n.phoneSetupErrorCannotStart;
     }
     request.runtime.requireSupported();
@@ -54,6 +64,11 @@ class BuiltinSetupFinisher {
           words.builtinServerProfileName(words.setupRuntimeTwo),
       },
     );
+    AppLog.info('setup', 'profile ready', {
+      'profile': profile.id,
+      'url': profile.baseUrl,
+      'backend': profile.backend.name,
+    });
     // Reuse the selected migration source, including its local keys and team.
     // Only a source without its own team may adopt an older alias's team.
     await teamFollowsRuntime(
@@ -66,38 +81,80 @@ class BuiltinSetupFinisher {
     var running = false;
     try {
       running = (await linux.status()).serverRunning;
-    } on BuiltinLinuxException {
+    } on BuiltinLinuxException catch (error) {
       running = false;
+      AppLog.warn('setup', 'server status read failed', {'error': '$error'});
     }
-    if (!request.openCodeChanged && running && isConnectedTo(profile)) {
+    final connected = isConnectedTo(profile);
+    AppLog.info('setup', 'server state before start', {
+      'running': running,
+      'connected': connected,
+    });
+    if (!request.openCodeChanged && running && connected) {
+      AppLog.info('setup', 'reusing the running server');
       return null;
     }
     // Running but not ours to trust (another runtime, or the app is not
     // connected to it): restarting costs seconds and removes the doubt.
     final migrating = profile.requiresOpenCode2Migration;
+    AppLog.info('setup', 'starting the server', {
+      'profile': profile.id,
+      'migrateLegacyHistory': migrating,
+    });
     final failure = await starter.start(
       profile,
       migrateLegacyHistory: migrating,
     );
     if (failure?.problem == BuiltinStartProblem.componentRecovery) {
+      AppLog.error(
+        'setup',
+        'runtime_ownership_unknown',
+        message: 'server start needs a component recovery',
+      );
       return 'runtime_ownership_unknown';
     }
     if (failure != null) {
-      return migrating ? l10n.setupSwitchFailed : failure.reason(l10n);
+      final reason = failure.reason(l10n);
+      AppLog.error(
+        'setup',
+        failure.problem.name,
+        message: 'server start failed',
+        fields: {'profile': profile.id, 'reason': reason},
+      );
+      return migrating ? l10n.setupSwitchFailed : reason;
     }
+    AppLog.info('setup', 'server started, connecting', {'profile': profile.id});
     if (migrating) {
       profile
         ..requiresOpenCode2Migration = false
         ..openCode2HistoryPending = true;
       try {
         await store.upsert(profile);
-      } catch (_) {
+      } catch (error, stack) {
         profile
           ..requiresOpenCode2Migration = true
           ..openCode2HistoryPending = false;
+        AppLog.error(
+          'setup',
+          error,
+          stack: stack,
+          message: 'saving the migrated profile failed',
+        );
         return l10n.setupSwitchFailed;
       }
     }
-    return connect(profile);
+    final connectError = await connect(profile);
+    if (connectError != null) {
+      AppLog.error(
+        'setup',
+        connectError,
+        message: 'connect after start failed',
+      );
+    } else {
+      AppLog.info('setup', 'connected to the in-app server', {
+        'profile': profile.id,
+      });
+    }
+    return connectError;
   }
 }

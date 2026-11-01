@@ -1,6 +1,7 @@
 import 'package:flutter/services.dart';
 
 import '../domain/server_probe.dart' show ServerFlavor;
+import '../diagnostics/app_log.dart';
 import '../diagnostics/perf_trace.dart';
 import '../domain/opencode_history_copy.dart';
 import '../domain/phone_agent_context.dart';
@@ -549,8 +550,7 @@ class BuiltinLinux {
   BuiltinLinux({MethodChannel? channel})
     : _channel = channel ?? const MethodChannel(channelName);
 
-  static const channelName =
-      'com.azx8788.opencode.mini/builtin_linux';
+  static const channelName = 'com.azx8788.opencode.mini/builtin_linux';
 
   /// Not Termux's 4096. [TermuxBridge.managesServerUrl] treats
   /// 127.0.0.1:4096 as the Termux server and would try Termux restarts and
@@ -739,9 +739,20 @@ class BuiltinLinux {
       'port': port,
       if (restoreRecipe != null) 'restoreRecipe': restoreRecipe.toMap(),
     };
+    AppLog.info('server', 'start requested', {
+      'port': port,
+      'restore': restoreRecipe != null,
+    });
     try {
       await _invoke<void>('startServer', arguments);
+      AppLog.info('server', 'start accepted', {'port': port});
     } on BuiltinLinuxException catch (error) {
+      AppLog.error(
+        'server',
+        error,
+        message: 'start refused by the engine',
+        fields: {'port': port, 'code': error.code, 'details': error.details},
+      );
       if (restoreRecipe == null) rethrow;
       throw BuiltinLinuxException(
         'The phone server could not start. Open setup and try again.',
