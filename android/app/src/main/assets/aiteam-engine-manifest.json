@@ -14,15 +14,6 @@
         "libaiteam_sandbox.so": "11da467df4492a45f3727c8468bc6954994b7941b3958c9acfc6c4ec061ec5f2",
         "libaiteam_boundary_probe.so": "66a6f1dbdf096f4f02a30740044441834c4a2ddbb7128992f5b76a3114588513"
       }
-    },
-    "x86_64": {
-      "target": "x86_64-linux-android",
-      "api": 26,
-      "sha256": {
-        "libaiteam_engine.so": "d1c0a053a46cf37674ce2834d87628757a363f0a955364c89a91f09bf3068d46",
-        "libaiteam_sandbox.so": "f2aba64856d1859d53761342c07673e1b1db5dd13cea07d0064236d0a559a88b",
-        "libaiteam_boundary_probe.so": "9e5d4b0763ca5a9197d6709296194410bdbd3ce8c517a9633f9a36cbc957bc75"
-      }
     }
   }
 }

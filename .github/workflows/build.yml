@@ -61,9 +61,11 @@ jobs:
       - name: Resolve packages
         run: flutter pub get
 
-      - name: Analyze (non-blocking)
-        continue-on-error: true
+      - name: Analyze
         run: flutter analyze
+
+      - name: Smoke and sanity tests
+        run: flutter test test/mini_agents_test.dart test/mini_package_test.dart test/mini_l10n_test.dart
 
       - name: Build arm64 release APK
         run: flutter build apk --release --target-platform android-arm64
