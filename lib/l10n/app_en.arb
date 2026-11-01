@@ -43824,3 +43824,57 @@
     }
   }
 }
+  "customSupplierTitle": "Custom Suppliers",
+}
+  "customSupplierAdd": "Add Custom Supplier",
+}
+  "customSupplierSaved": "Custom supplier added",
+}
+  "customSupplierUpdated": "Custom supplier updated",
+}
+  "customSupplierDeleted": "Custom supplier deleted",
+}
+  "customSupplierFetching": "Fetching models…",
+}
+  "customSupplierFetchFailed": "Could not fetch models",
+}
+  "customSupplierFetchSuccess": "Models fetched",
+}
+  "customSupplierErrorInvalidUrl": "Invalid base URL",
+}
+  "customSupplierErrorReservedId": "This ID is reserved by a built-in supplier",
+}
+  "customSupplierErrorDuplicateId": "A custom supplier with this ID already exists",
+}
+  "customSupplierErrorJsonc": "Found opencode.jsonc. Move its contents to opencode.json first.",
+}
+  "customSupplierErrorConfigConflict": "Configuration was modified externally. Please retry.",
+}
+  "customSupplierErrorKeyOrigin": "Base URL changed; confirm you want to reuse the old key.",
+}
+  "customSupplierHttpConsent": "This URL uses plain HTTP. Your key will be sent in clear text.",
+}
+  "customSupplierHttpAllow": "Allow anyway",
+}
+  "customSupplierKeyKeep": "Keep existing key",
+}
+  "customSupplierKeyReplace": "Replace key",
+}
+  "customSupplierKeyClear": "Clear key",
+}
+  "customSupplierModelSelect": "Select models",
+}
+  "customSupplierModelSearch": "Search models",
+}
+  "customSupplierModelSelectAll": "Select all",
+}
+  "customSupplierModelClearAll": "Clear all",
+}
+  "customSupplierManualModels": "Or enter model IDs (one per line):",
+}
+  "customSupplierNoModels": "No models available from this supplier.",
+}
+  "customSupplierDeleteConfirm": "Delete this custom supplier?",
+}
+  "customSupplierDeleteNote": "Models using it will need a new selection.",
+}
