@@ -51,8 +51,10 @@ void main() {
       isFalse,
     );
     final gradle = File('android/app/build.gradle.kts').readAsStringSync();
-    expect(gradle, contains('abiFilters += listOf("arm64-v8a")'));
-    expect(gradle, isNot(contains('"x86_64"')));
+    expect(gradle, contains('abiFilters.add("arm64-v8a")'));
+    // The x86_64 name may appear only as an exclusion, never as a filter.
+    expect(gradle, contains('lib/x86_64/**'));
+    expect(gradle, contains('lib/armeabi-v7a/**'));
   });
 
   test('engine manifest only carries arm64-v8a and its hashes are present', () {
