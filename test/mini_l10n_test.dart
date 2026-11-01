@@ -2,6 +2,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/l10n/app_localizations.dart';
+import 'package:opencode_mobile/l10n/app_localizations_en.dart';
+import 'package:opencode_mobile/l10n/app_localizations_zh.dart';
 
 void main() {
   test('supported locales are English and Chinese', () {
