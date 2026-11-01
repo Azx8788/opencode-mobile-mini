@@ -1,0 +1,332 @@
+/// A provider the person declares themselves, rather than one the server's
+/// own catalogue knows.
+///
+/// This is config-file work, not API work: OpenCode has no "create a
+/// provider" endpoint (its `PUT /mcp/{name}` sibling does not exist for
+/// providers), so a custom provider is an entry in `opencode.json`. The
+/// builders here are pure so the wording of a saved file can be tested
+/// without a phone, a server or a network.
+///
+/// Three protocols cover the market. Every OpenAI-compatible gateway
+/// (NewAPI, OneAPI and the sites built on them) speaks Chat Completions;
+/// newer ones also expose `/v1/responses`; Anthropic's Messages API is its
+/// own shape. OpenCode selects the wire format by npm package, so choosing a
+/// protocol chooses a package — the endpoint and the model list stay the
+/// person's business.
+library;
+
+import 'server_gateway/value_types_catalog.dart' show ProductException;
+
+/// The wire format a provider speaks, and the package that implements it.
+///
+/// `npm` is the v1 (and still supported) package name. `package` is the v2
+/// spelling: v2 distinguishes a JavaScript provider from a built-in one by
+/// the `aisdk:` prefix, and a bare `@ai-sdk/...` name is read as a native
+/// provider id — it fails only when the first message is sent (upstream
+/// #44881), which is why the prefix is not optional here.
+enum ProviderProtocol {
+  chatCompletions(
+    npm: '@ai-sdk/openai-compatible',
+    package: 'aisdk:@ai-sdk/openai-compatible',
+    endpointSuffixes: ['/chat/completions', '/completions'],
+  ),
+  responses(
+    npm: '@ai-sdk/openai',
+    package: 'aisdk:@ai-sdk/openai',
+    endpointSuffixes: ['/responses'],
+  ),
+  anthropic(
+    npm: '@ai-sdk/anthropic',
+    package: 'aisdk:@ai-sdk/anthropic',
+    endpointSuffixes: ['/messages'],
+  );
+
+  const ProviderProtocol({
+    required this.npm,
+    required this.package,
+    required this.endpointSuffixes,
+  });
+
+  final String npm;
+  final String package;
+
+  /// Paths people copy from an endpoint's docs by mistake. Base URLs are
+  /// kept otherwise intact: gateways legitimately end in `/v1`, `/v4`,
+  /// `/openai` or nothing at all, so forcing `/v1` invents endpoints that
+  /// do not answer (Venice, DeepSeek and Bailing differ on exactly this).
+  final List<String> endpointSuffixes;
+}
+
+/// Where the API key lives once the provider is saved.
+enum ProviderKeyMode {
+  /// `{file:...}` — verified to work for a custom provider's `apiKey`, while
+  /// `{env:...}` there is a known upstream failure (#19946) that answers
+  /// Unauthorized. The file lives on the server, which the app creates.
+  secretFile,
+
+  /// The key written into the config itself. Only on explicit request: the
+  /// config is readable by anything that can read the server's home.
+  plaintext,
+
+  /// No key in the config at all; the person stores it through the server's
+  /// own sign-in flow (`/connect`, or `PUT /auth/{id}` on v1).
+  external,
+}
+
+/// Which config dialect to write.
+enum ProviderConfigFormat {
+  /// `provider` / `npm` / `options` / `tool_call`.
+  v1,
+
+  /// `providers` / `package` / `settings` / `capabilities`.
+  v2;
+
+  static ProviderConfigFormat forOpenCode2(bool isOpenCode2) =>
+      isOpenCode2 ? ProviderConfigFormat.v2 : ProviderConfigFormat.v1;
+}
+
+/// One model the endpoint listed.
+class CustomProviderModel {
+  const CustomProviderModel({required this.id, this.name});
+
+  final String id;
+
+  /// The endpoint's display name, when it sent one (`display_name` on
+  /// Anthropic-shaped lists, `name` on some gateways).
+  final String? name;
+
+  String get label => (name?.trim().isNotEmpty ?? false) ? name!.trim() : id;
+
+  @override
+  bool operator ==(Object other) =>
+      other is CustomProviderModel && other.id == id;
+
+  @override
+  int get hashCode => id.hashCode;
+}
+
+/// Everything the add-provider form collects, in the form it is saved.
+class CustomProviderDraft {
+  CustomProviderDraft({
+    required this.name,
+    required String id,
+    required this.protocol,
+    required String baseUrl,
+    this.apiKey,
+    this.keyMode = ProviderKeyMode.secretFile,
+    List<CustomProviderModel> models = const [],
+    this.timeoutMs = 600000,
+  }) : id = normalizeProviderId(id),
+       baseUrl = normalizeBaseUrl(baseUrl, protocol),
+       models = normalizeModels(models);
+
+  final String name;
+  final String id;
+  final ProviderProtocol protocol;
+  final String baseUrl;
+  final String? apiKey;
+  final ProviderKeyMode keyMode;
+  final List<CustomProviderModel> models;
+  final int timeoutMs;
+
+  /// The server-side path holding the key, or null when the key is not a
+  /// file. `/root` because the in-app server runs as root; `{file:}` needs an
+  /// absolute path so no shell ever has to expand `~`.
+  String? get secretPath =>
+      keyMode == ProviderKeyMode.secretFile ? '/root/.secrets/$id.key' : null;
+
+  /// The provider id as a file name would hold it: lowercase, no spaces and
+  /// nothing a config key or a shell path would need quoted.
+  static String normalizeProviderId(String raw) {
+    final slug = raw
+        .trim()
+        .toLowerCase()
+        .replaceAll(RegExp(r'\s+'), '-')
+        .replaceAll(RegExp(r'[^a-z0-9._-]'), '')
+        .replaceAll(RegExp(r'^[-.]+'), '')
+        .replaceAll(RegExp(r'[-.]+$'), '');
+    return slug.isEmpty
+        ? 'custom'
+        : slug.length > 48
+        ? slug.substring(0, 48)
+        : slug;
+  }
+
+  /// A base URL the way a provider's `baseURL` wants it.
+  ///
+  /// Only the copy-pasted endpoint suffix is removed. A trailing slash is
+  /// dropped, a missing scheme becomes `https://`, and the path is otherwise
+  /// left alone — the point is to accept what the endpoint's docs print, not
+  /// to guess a canonical form.
+  static String normalizeBaseUrl(String raw, ProviderProtocol protocol) {
+    var value = raw.trim();
+    if (value.isEmpty) return '';
+    if (!value.contains('://')) value = 'https://$value';
+    final uri = Uri.tryParse(value);
+    if (uri == null || !uri.hasAuthority) return value;
+    var path = uri.path;
+    while (path.endsWith('/') && path.length > 1) {
+      path = path.substring(0, path.length - 1);
+    }
+    for (final suffix in protocol.endpointSuffixes) {
+      if (path.toLowerCase().endsWith(suffix)) {
+        path = path.substring(0, path.length - suffix.length);
+        break;
+      }
+    }
+    while (path.endsWith('/') && path.length > 1) {
+      path = path.substring(0, path.length - 1);
+    }
+    // Rebuilt rather than `uri.replace`: an empty query there renders as a
+    // trailing `?#`, and `baseURL` is compared against endpoint docs verbatim.
+    return Uri(
+      scheme: uri.scheme,
+      userInfo: uri.userInfo.isEmpty ? null : uri.userInfo,
+      host: uri.host,
+      port: uri.hasPort ? uri.port : null,
+      path: path,
+    ).toString();
+  }
+
+  /// Deduplicated in the order the endpoint listed them; blanks dropped.
+  static List<CustomProviderModel> normalizeModels(
+    List<CustomProviderModel> models,
+  ) {
+    final seen = <String>{};
+    return [
+      for (final model in models)
+        if (model.id.trim().isNotEmpty && seen.add(model.id.trim()))
+          CustomProviderModel(id: model.id.trim(), name: model.name),
+    ];
+  }
+
+  /// Rejects what cannot be saved, with a reason the form can show.
+  void validate() {
+    if (name.trim().isEmpty) {
+      throw const ProductException('Give the provider a name');
+    }
+    if (baseUrl.isEmpty) {
+      throw const ProductException('Enter the provider\u2019s base URL');
+    }
+    final uri = Uri.tryParse(baseUrl);
+    if (uri == null ||
+        !uri.hasScheme ||
+        !uri.hasAuthority ||
+        (uri.scheme != 'http' && uri.scheme != 'https')) {
+      throw const ProductException(
+        'The base URL must start with http:// or https://',
+      );
+    }
+    if (models.isEmpty) {
+      throw const ProductException('Select at least one model');
+    }
+    if (keyMode == ProviderKeyMode.plaintext &&
+        (apiKey?.trim().isEmpty ?? true)) {
+      throw const ProductException('Enter the API key, or choose another way');
+    }
+    if (timeoutMs <= 0) {
+      throw const ProductException('The timeout must be greater than zero');
+    }
+  }
+
+  /// The provider entry alone, ready to be merged into a config document.
+  Map<String, Object?> toProviderEntry(ProviderConfigFormat format) {
+    validate();
+    return switch (format) {
+      ProviderConfigFormat.v1 => _v1Entry(),
+      ProviderConfigFormat.v2 => _v2Entry(),
+    };
+  }
+
+  Map<String, Object?> _v1Entry() => {
+    'npm': protocol.npm,
+    'name': name.trim(),
+    'options': {
+      'baseURL': baseUrl,
+      if (keyMode == ProviderKeyMode.secretFile) 'apiKey': '{file:$secretPath}',
+      if (keyMode == ProviderKeyMode.plaintext) 'apiKey': apiKey!.trim(),
+      'timeout': timeoutMs,
+    },
+    'models': {
+      for (final model in models)
+        model.id: {
+          'name': model.label,
+          'tool_call': true,
+          'reasoning': protocol != ProviderProtocol.responses,
+          'attachment': protocol != ProviderProtocol.chatCompletions,
+          // Responses takes its sampling knobs per request, not per model.
+          'temperature': protocol != ProviderProtocol.responses,
+        },
+    },
+  };
+
+  /// v2 keeps the key in `settings` (the schema has no explicit `baseURL`
+  /// there — the extension slot carries it, which is how the official docs
+  /// write it) and names model abilities under `capabilities`.
+  Map<String, Object?> _v2Entry() => {
+    'package': protocol.package,
+    'name': name.trim(),
+    'settings': {
+      'baseURL': baseUrl,
+      if (keyMode == ProviderKeyMode.secretFile) 'apiKey': '{file:$secretPath}',
+      if (keyMode == ProviderKeyMode.plaintext) 'apiKey': apiKey!.trim(),
+      'timeout': timeoutMs,
+    },
+    'models': {
+      for (final model in models)
+        model.id: {
+          'name': model.label,
+          'capabilities': {
+            'tools': true,
+            'reasoning': protocol != ProviderProtocol.responses,
+            'input': protocol != ProviderProtocol.chatCompletions
+                ? 'media'
+                : 'text',
+          },
+        },
+    },
+  };
+
+  /// The whole document, for a person who will paste it by hand.
+  Map<String, Object?> toDocument(ProviderConfigFormat format) => {
+    _rootKey(format): {id: toProviderEntry(format)},
+  };
+
+  /// `existing` with this provider added. `null` means "no file yet".
+  ///
+  /// An existing provider of the same id is refused rather than replaced:
+  /// the person may be editing one they already rely on, and the form is not
+  /// a place to lose a configuration quietly.
+  Map<String, Object?> mergeInto(
+    Map<String, Object?>? existing,
+    ProviderConfigFormat format,
+  ) {
+    final entry = toProviderEntry(format);
+    if (existing == null) return toDocument(format);
+    final rootKey = _rootKey(format);
+    final merged = <String, Object?>{...existing};
+    final current = merged[rootKey];
+    if (current == null) {
+      merged[rootKey] = {id: entry};
+      return merged;
+    }
+    if (current is! Map) {
+      throw ProductException(
+        'The server\u2019s "$rootKey" setting is not a list of providers',
+      );
+    }
+    final providers = <String, Object?>{};
+    current.forEach((key, value) => providers['$key'] = value);
+    if (providers.containsKey(id)) {
+      throw ProductException('A provider named "$id" already exists');
+    }
+    providers[id] = entry;
+    merged[rootKey] = providers;
+    return merged;
+  }
+
+  static String _rootKey(ProviderConfigFormat format) => switch (format) {
+    ProviderConfigFormat.v1 => 'provider',
+    ProviderConfigFormat.v2 => 'providers',
+  };
+}
