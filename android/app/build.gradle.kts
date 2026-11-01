@@ -49,7 +49,11 @@ android {
         // Mini ships one ABI: 64-bit ARM. The in-app Linux runs 64-bit Ubuntu
         // and the cached proot/engine binaries exist only for arm64-v8a.
         ndk {
-            abiFilters += listOf("arm64-v8a")
+            // Replace, never append: Flutter and plugin AARs add every ABI they
+            // know, and the APK shipped armv7/x86_64 copies of onnxruntime and
+            // the barcode scanner until this cleared the set first.
+            abiFilters.clear()
+            abiFilters.add("arm64-v8a")
         }
         // A preview build installs beside the stable app instead of over it
         // (`flutter build apk --android-project-arg=ocPreview=true`): its own
@@ -103,6 +107,9 @@ android {
     packaging {
         jniLibs {
             useLegacyPackaging = true
+            // Belt and braces: even if a dependency ignores abiFilters, its
+            // 32-bit and emulator libraries never reach the APK.
+            excludes += setOf("lib/armeabi-v7a/**", "lib/x86_64/**", "lib/x86/**")
             // Runtime attestation hashes these exact staged executables. AGP's
             // release strip step must not rewrite them after manifest creation.
             keepDebugSymbols += "**/libaiteam_*.so"

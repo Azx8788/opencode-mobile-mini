@@ -78,6 +78,11 @@ jobs:
           sha256sum "$APK" | tee apk-sha256.txt
           APKSIGNER=$(find "$ANDROID_HOME/build-tools" -name apksigner | sort | tail -1)
           "$APKSIGNER" verify --print-certs "$APK" | sed -n '1,6p'
+          if unzip -l "$APK" | grep -qE "lib/(armeabi-v7a|x86|x86_64)/"; then
+            echo "::error::APK contains non-arm64 native libraries"
+            unzip -l "$APK" | grep -E "lib/(armeabi-v7a|x86|x86_64)/" | head
+            exit 1
+          fi
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
