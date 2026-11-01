@@ -263,6 +263,18 @@ class CustomProviderDraft {
   /// v2 keeps the key in `settings` (the schema has no explicit `baseURL`
   /// there — the extension slot carries it, which is how the official docs
   /// write it) and names model abilities under `capabilities`.
+  ///
+  /// The shape matters: `capabilities` is `additionalProperties: false`, with
+  /// `input`/`output` as arrays of modality strings, `reasoning` as an object
+  /// (`{supported: bool, …}`) rather than a boolean, and `temperature`/
+  /// `tools` as booleans. The v1 spellings (`tool_call`, a bare `reasoning`)
+  /// would be rejected here.
+  ///
+  /// `reasoning` is left out on purpose. A gateway serves reasoning and plain
+  /// models from one endpoint, and this form cannot tell which is which;
+  /// claiming support the endpoint lacks makes a request carry reasoning
+  /// parameters it will refuse. Tools are always on (a coding client without
+  /// them cannot work), images only where the protocol itself carries them.
   Map<String, Object?> _v2Entry() => {
     'package': protocol.package,
     'name': name.trim(),
@@ -278,13 +290,19 @@ class CustomProviderDraft {
           'name': model.label,
           'capabilities': {
             'tools': true,
-            'reasoning': protocol != ProviderProtocol.responses,
-            'input': protocol != ProviderProtocol.chatCompletions
-                ? 'media'
-                : 'text',
+            'input': _inputModalities,
+            'output': const ['text'],
+            if (protocol != ProviderProtocol.responses) 'temperature': true,
           },
         },
     },
+  };
+
+  /// Chat Completions has no agreed way to signal image input across
+  /// gateways; Responses and Messages carry it in the protocol itself.
+  List<String> get _inputModalities => switch (protocol) {
+    ProviderProtocol.chatCompletions => const ['text'],
+    _ => const ['text', 'image'],
   };
 
   /// The whole document, for a person who will paste it by hand.

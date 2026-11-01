@@ -178,8 +178,64 @@ void main() {
       final settings = provider['settings'] as Map;
       expect(settings['baseURL'], 'https://api.example.com/v1');
       expect(settings['apiKey'], '{file:/root/.secrets/my-gateway.key}');
+    });
+
+    test('capabilities use the schema shape, not the v1 spellings', () {
+      // `capabilities` is additionalProperties:false with `input`/`output` as
+      // arrays and `reasoning` as an object. A scalar `input`, a boolean
+      // `reasoning` or a v1 `tool_call` would be rejected.
+      final document = draft().toDocument(ProviderConfigFormat.v2);
+      final provider = (document['providers'] as Map)['my-gateway'] as Map;
       final model = (provider['models'] as Map)['deepseek-v3.2'] as Map;
-      expect((model['capabilities'] as Map)['tools'], true);
+      final capabilities = model['capabilities'] as Map;
+      expect(capabilities['tools'], true);
+      expect(capabilities['input'], isA<List>());
+      expect(capabilities['input'], ['text']);
+      expect(capabilities['output'], ['text']);
+      expect(capabilities.containsKey('tool_call'), false);
+      // Left out deliberately: one gateway serves reasoning and plain models
+      // from one endpoint, so claiming it would break the plain ones.
+      expect(capabilities.containsKey('reasoning'), false);
+    });
+
+    test('promises image input only where the protocol carries it', () {
+      Map modelOf(ProviderProtocol protocol, String url) {
+        final document = draft(
+          protocol: protocol,
+          baseUrl: url,
+        ).toDocument(ProviderConfigFormat.v2);
+        final provider = (document['providers'] as Map)['my-gateway'] as Map;
+        return (provider['models'] as Map)['deepseek-v3.2'] as Map;
+      }
+
+      expect(
+        (modelOf(
+              ProviderProtocol.anthropic,
+              'https://api.anthropic.com/v1',
+            )['capabilities']
+            as Map)['input'],
+        ['text', 'image'],
+      );
+      expect(
+        (modelOf(
+              ProviderProtocol.responses,
+              'https://api.openai.com/v1',
+            )['capabilities']
+            as Map)['input'],
+        ['text', 'image'],
+      );
+    });
+
+    test('keeps temperature out of the responses protocol', () {
+      final document = draft(
+        protocol: ProviderProtocol.responses,
+        baseUrl: 'https://api.openai.com/v1',
+      ).toDocument(ProviderConfigFormat.v2);
+      final provider = (document['providers'] as Map)['my-gateway'] as Map;
+      final capabilities =
+          ((provider['models'] as Map)['deepseek-v3.2'] as Map)['capabilities']
+              as Map;
+      expect(capabilities.containsKey('temperature'), false);
     });
   });
 
