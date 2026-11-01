@@ -118,6 +118,7 @@ flutter:
   generate: true
   assets:
     - PRIVACY.md
+    - tool/builtin_linux/custom_provider_store.py
     - THIRD_PARTY_NOTICES.md
     - LICENSES/
     # The Linux window/taskbar icon, set at startup via window_manager, which

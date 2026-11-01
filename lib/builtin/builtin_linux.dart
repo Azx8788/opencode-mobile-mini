@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter/services.dart';
 
 import '../domain/server_probe.dart' show ServerFlavor;
@@ -707,6 +709,24 @@ class BuiltinLinux {
     final exitCode = raw?['exitCode'];
     return BuiltinLinuxRunResult(
       exitCode: exitCode is num ? exitCode.toInt() : -1,
+      output: (raw?['output'] ?? '').toString(),
+    );
+  }
+
+  /// App-authored helper only. Input never enters argv or perf/log output.
+  /// Native bounds stdin/stdout and kills the process on timeout.
+  Future<BuiltinLinuxRunResult> runPrivate(
+    String script,
+    Uint8List input, {
+    Duration timeout = const Duration(seconds: 20),
+  }) async {
+    final raw = await _invoke<Map<Object?, Object?>>('runPrivate', {
+      'script': script,
+      'input': input,
+      'timeoutSeconds': timeout.inSeconds,
+    });
+    return BuiltinLinuxRunResult(
+      exitCode: raw?['exitCode'] is num ? (raw!['exitCode'] as num).toInt() : -1,
       output: (raw?['output'] ?? '').toString(),
     );
   }

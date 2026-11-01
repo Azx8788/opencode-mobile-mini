@@ -205,26 +205,35 @@ class BuiltinLinux(private val context: Context) {
     }
 
     /** Runs [script] with /bin/sh inside Ubuntu as root (faked by proot). */
-    fun run(script: String, timeoutSeconds: Long = 600, agentUser: Boolean = false): Result {
+    fun run(script: String, timeoutSeconds: Long = 600, agentUser: Boolean = false,
+            privateInput: ByteArray? = null, privateOutput: Boolean = false): Result {
+        require(privateInput == null || (privateOutput && privateInput.size <= 1024 * 1024))
+        val cap = if (privateOutput) 2 * 1024 * 1024 else OUTPUT_CAP
         val began = SystemClock.elapsedRealtime()
         val timeoutMillis = TimeUnit.SECONDS.toMillis(timeoutSeconds).coerceAtLeast(0L)
         val process = admitCheckProcess(script, timeoutMillis, began, agentUser)
         val output = StringBuilder()
         val readerFailed = java.util.concurrent.atomic.AtomicBoolean()
         var reader: Thread? = null
+        var writer: Thread? = null
         try {
-            process.outputStream.close()
+            if (privateInput == null) process.outputStream.close()
             reader = Thread({
                 try {
                     process.inputStream.bufferedReader().use { input ->
                         input.forEachLine { line ->
                             val projected = if (agentUser) PhoneAgentCheckOutput.accept(line) else line
                             if (projected != null) {
-                                if (!agentUser) Log.i(TAG, projected)
+                                if (!agentUser && !privateOutput) Log.i(TAG, projected)
                                 synchronized(output) {
                                     output.appendLine(projected)
-                                    if (output.length > OUTPUT_CAP * 2) {
-                                        output.delete(0, output.length - OUTPUT_CAP)
+                                    if (privateOutput && output.length > cap) {
+                                        readerFailed.set(true)
+                                        output.setLength(0)
+                                        return@Thread
+                                    }
+                                    if (!privateOutput && output.length > cap * 2) {
+                                        output.delete(0, output.length - cap)
                                     }
                                 }
                             }
@@ -234,12 +243,20 @@ class BuiltinLinux(private val context: Context) {
                     readerFailed.set(true)
                 }
             }, "phone-setup-check").apply { isDaemon = true; start() }
+            if (privateInput != null) {
+                writer = Thread({
+                    try {
+                        process.outputStream.use { stream -> stream.write(privateInput); stream.flush() }
+                    } catch (_: Throwable) { readerFailed.set(true) }
+                }, "phone-private-input").apply { isDaemon = true; start() }
+            }
             val remainingMillis = (timeoutMillis - (SystemClock.elapsedRealtime() - began)).coerceAtLeast(0L)
             val finished = process.waitFor(remainingMillis, TimeUnit.MILLISECONDS)
             if (!finished) stopInstaller(process)
             reader.join(2000)
-            val complete = finished && !reader.isAlive && !readerFailed.get()
-            val text = if (complete) synchronized(output) { output.takeLast(OUTPUT_CAP).toString() } else ""
+            writer?.join(2000)
+            val complete = finished && !reader.isAlive && writer?.isAlive != true && !readerFailed.get()
+            val text = if (complete) synchronized(output) { output.takeLast(cap).toString() } else ""
             return Result(if (complete) process.exitValue() else -1, text)
         } finally {
             // IO/security failure or Thread.start refusal must not leak a child
@@ -250,6 +267,7 @@ class BuiltinLinux(private val context: Context) {
             try { reader?.join(2000) }
             catch (_: InterruptedException) { Thread.currentThread().interrupt() }
             catch (_: Throwable) { }
+            try { writer?.join(2000) } catch (_: Throwable) { }
             synchronized(output) { output.setLength(0) }
             finishInstaller(process)
         }

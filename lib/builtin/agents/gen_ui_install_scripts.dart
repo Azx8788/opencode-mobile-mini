@@ -304,6 +304,16 @@ def main():
     if not claude and os.path.lexists(config_path + 'c'):
         # Do not overwrite a user-managed config overlay.
         fail(21)
+    # Share the config transaction lock with custom-provider writes. Keep the
+    # original helper lock too; lock order is helper -> config, never reverse.
+    if not claude:
+        config_lock_path = config_parent + '/.mini-config.lock'
+        root_owned(config_lock_path)
+        safe(config_lock_path)
+        config_lock = os.open(config_lock_path, os.O_CREAT | os.O_RDWR | os.O_NOFOLLOW, 0o600)
+        os.fchmod(config_lock, 0o600)
+        try: fcntl.flock(config_lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError: fail(23)
     current = read_json(config_path)
     settings_path = config_parent + '/settings.json'
     show_allowed = claude and d['enable'] and SHOW_PERMISSION in show_permissions(read_json(settings_path))

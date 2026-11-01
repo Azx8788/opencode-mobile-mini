@@ -323,6 +323,19 @@ class MainActivity : FlutterFragmentActivity() {
                     mapOf("exitCode" to run.exitCode, "output" to run.output)
                 }
             }
+            "runPrivate" -> {
+                val script = call.argument<String>("script")
+                val input = call.argument<ByteArray>("input")
+                if (script == null || input == null || input.size > 1024 * 1024) {
+                    result.error("private_unavailable", "The private operation could not finish.", null)
+                    return
+                }
+                val timeout = (call.argument<Int>("timeoutSeconds") ?: 20).coerceIn(1, 30).toLong()
+                inBackground {
+                    val run = linux.run(script, timeout, privateInput = input, privateOutput = true)
+                    mapOf("exitCode" to run.exitCode, "output" to run.output)
+                }
+            }
             "startServer" -> {
                 val script = call.argument<String>("script")
                 val port = call.argument<Int>("port")
