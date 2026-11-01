@@ -10,14 +10,19 @@ class AppLocaleStore {
 
   static const preferenceKey = 'oc.appLocale';
 
-  /// Every language the app ships, by the code the choice is saved under.
-  /// Brazilian Portuguese is `pt` and Simplified Chinese is `zh`: one ARB
-  /// per language, matched by language code only (docs/l10n/fg5-key-set.md).
-  static const supportedLanguages = {'en', 'ar', 'es', 'ja', 'pt', 'ru', 'zh'};
+  /// Every language this build ships a catalogue for, by the code the choice
+  /// is saved under. Simplified Chinese is `zh`: one ARB per language, matched
+  /// by language code only (docs/l10n/fg5-key-set.md).
+  ///
+  /// This must stay equal to [`AppLocalizations.supportedLocales`]: a code
+  /// listed here but missing a catalogue is accepted by [save] and then throws
+  /// in `lookupAppLocalizations` on every start, which leaves the whole app
+  /// without localizations.
+  static const supportedLanguages = {'en', 'zh'};
 
   /// The order of the language choices (after "Use system language"):
   /// English first, then by code. Each shows its own name.
-  static const pickerLanguages = ['en', 'ar', 'es', 'ja', 'pt', 'ru', 'zh'];
+  static const pickerLanguages = ['en', 'zh'];
 
   final SharedPreferences _preferences;
   Future<void>? _pending;

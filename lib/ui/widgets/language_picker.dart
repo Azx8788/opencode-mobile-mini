@@ -24,28 +24,12 @@ import '../kit/kit_sheet.dart';
 import '../kit/kit_text.dart';
 import '../kit/kit_tokens.dart';
 
-/// How much of the app reads in Arabic, in whole per cent: the Arabic
-/// catalogue's entries over every string a person can see (the English
-/// catalogue plus the literals `test/l10n_coverage_test.dart` still counts
-/// in the code). `test/revamp/shared_settings_1_test.dart` recomputes it
-/// from the files and fails when this drifts by more than 3 points; update
-/// the number it prints then.
-const int arabicTranslatedPercent = 100;
-
-/// The same share for every language the picker offers, in whole per cent.
-/// English is the catalogue itself and is not listed. Spanish, Japanese,
-/// Brazilian Portuguese and Russian carry the first-run screens and the chat
-/// core (docs/l10n/fg5-key-set.md), Spanish a second tier too, and
-/// Simplified Chinese almost every message; the rest reads in English there. `test/revamp/shared_settings_1_test.dart` fails
-/// when one of these drifts by more than 3 points.
-const Map<String, int> languageTranslatedPercent = {
-  'ar': arabicTranslatedPercent,
-  'es': 30,
-  'ja': 9,
-  'pt': 9,
-  'ru': 9,
-  'zh': 92,
-};
+/// The same share for every other language the picker offers, in whole per
+/// cent. English is the catalogue itself and is not listed. Simplified Chinese
+/// is the only other catalogue this build ships. `test/revamp/
+/// shared_settings_1_test.dart` fails when one of these drifts by more than
+/// 3 points.
+const Map<String, int> languageTranslatedPercent = {'zh': 92};
 
 /// Opens the Language sheet.
 Future<void> showLanguageSheet(
