@@ -1,5 +1,3 @@
-import 'dart:ui' show Locale;
-
 import '../../l10n/app_localizations.dart';
 import '../../state/move_to_opencode2.dart';
 import '../../state/profiles.dart';
@@ -45,14 +43,15 @@ class BuiltinSetupFinisher {
       flavor: ServerFlavor.v2,
       name: l10n.phoneSetupProfileName,
       version: request.version,
-      // The older setup screen's names, in either language.
+      // The older setup screen's names, in every language this build ships.
+      // Deriving them from `supportedLocales` keeps the list honest when the
+      // catalogue set changes: this build has no Arabic catalogue, and asking
+      // `lookupAppLocalizations` for one throws before the server is started.
       replaceNames: {
-        for (final words in [
-          lookupAppLocalizations(const Locale('en')),
-          lookupAppLocalizations(const Locale('ar')),
-        ])
-          for (final runtime in [words.setupRuntimeTwo])
-            words.builtinServerProfileName(runtime),
+        for (final words in AppLocalizations.supportedLocales.map(
+          lookupAppLocalizations,
+        ))
+          words.builtinServerProfileName(words.setupRuntimeTwo),
       },
     );
     // Reuse the selected migration source, including its local keys and team.
