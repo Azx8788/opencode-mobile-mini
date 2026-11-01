@@ -7514,8 +7514,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get handoffUiPhoneTitle => '在另一部手机上打开';
 
   @override
-  String get handoffUiPhoneIntro =>
-      '在另一部手机上用 OpenCode Mini 扫描。该码只包含服务器和对话 ID。';
+  String get handoffUiPhoneIntro => '在另一部手机上用 OpenCode Mini 扫描。该码只包含服务器和对话 ID。';
 
   @override
   String get handoffUiPhoneQrLabel => '可在另一部手机上打开此对话的二维码';
@@ -12243,8 +12242,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get keepRunningLockTitle => '在最近任务中锁定';
 
   @override
-  String get keepRunningLockNubia =>
-      '打开“最近任务”，将 OpenCode Mini 的卡片向下拉，直到出现锁图标。';
+  String get keepRunningLockNubia => '打开“最近任务”，将 OpenCode Mini 的卡片向下拉，直到出现锁图标。';
 
   @override
   String get keepRunningLockSamsung =>
@@ -33952,4 +33950,131 @@ class AppLocalizationsZh extends AppLocalizations {
   String stopRowSemantics(String agent) {
     return 'Stop $agent';
   }
+
+  @override
+  String get providerAddOpen => '自定义供应商';
+
+  @override
+  String get providerAddTitle => '添加供应商';
+
+  @override
+  String get providerAddIntro =>
+      '连接任何支持 OpenAI Chat Completions、OpenAI Responses 或 Anthropic Messages 的端点。模型列表直接从端点读取。';
+
+  @override
+  String get providerAddConnection => '连接';
+
+  @override
+  String get providerAddName => '名称';
+
+  @override
+  String get providerAddNameHint => '我的中转';
+
+  @override
+  String get providerAddId => '供应商 ID';
+
+  @override
+  String get providerAddIdHelper => '用作配置中的键和模型标识：小写字母、数字、点、连字符、下划线。';
+
+  @override
+  String get providerAddProtocol => '协议';
+
+  @override
+  String get providerAddProtocolChat => 'Chat Completions';
+
+  @override
+  String get providerAddProtocolResponses => 'Responses';
+
+  @override
+  String get providerAddProtocolAnthropic => 'Anthropic';
+
+  @override
+  String get providerAddBaseUrl => '基础地址';
+
+  @override
+  String get providerAddBaseUrlHelper =>
+      '按端点文档原样填写。粘在末尾的 /chat/completions、/responses 或 /messages 会被去掉，其余路径保留。';
+
+  @override
+  String get providerAddModels => '模型';
+
+  @override
+  String get providerAddApiKey => 'API 密钥';
+
+  @override
+  String get providerAddApiKeyHelper => '保存在服务器上一个只有 OpenCode 读取的文件里，不写进配置。';
+
+  @override
+  String get providerAddFetch => '获取模型';
+
+  @override
+  String get providerAddFetching => '正在请求端点…';
+
+  @override
+  String get providerAddFetchFailed => '无法读取模型列表';
+
+  @override
+  String providerAddModelsFound(int count) {
+    return '$count 个模型';
+  }
+
+  @override
+  String get providerAddModelsEmpty => '获取端点列表，或手动输入模型 ID。';
+
+  @override
+  String get providerAddModelHint => '模型 ID';
+
+  @override
+  String get providerAddSearch => '搜索模型';
+
+  @override
+  String get providerAddSelectAll => '全选';
+
+  @override
+  String get providerAddClearAll => '清空';
+
+  @override
+  String get providerAddPreview => '配置预览';
+
+  @override
+  String get providerAddSave => '添加到服务器';
+
+  @override
+  String get providerAddSaving => '正在写入配置…';
+
+  @override
+  String providerAddSaved(String name, String path) {
+    return '$name 已写入 $path。重启服务器后它会出现在模型列表里。';
+  }
+
+  @override
+  String get providerAddCopyOnly =>
+      '无法从应用写入这台服务器的文件。请复制配置，粘贴到服务器上的 opencode.json。';
+
+  @override
+  String get providerAddCopy => '复制配置';
+
+  @override
+  String get providerAddNeedModels => '至少选择一个模型。';
+
+  @override
+  String get providerAddRestart => '重启服务器';
+
+  @override
+  String get providerAddRestarted => '服务器已重启，供应商现在可用。';
+
+  @override
+  String get providerAddRestartFailed => '配置已保存，但服务器没有重启。请到服务器页面手动重启。';
+
+  @override
+  String get providerAddExists => '服务器上已存在相同 ID 的供应商。';
+
+  @override
+  String get providerAddWithComments => '服务器配置里含有注释，无法自动合并。请复制配置后手动合并。';
+
+  @override
+  String get providerAddDone => '完成';
+
+  @override
+  String get providerAddRestartHint => '重启服务器后，新供应商会出现在模型列表里。';
 }

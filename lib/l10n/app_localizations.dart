@@ -56323,6 +56323,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Stop {agent}'**
   String stopRowSemantics(String agent);
+
+  /// A provider the person declares themselves, on the Providers page.
+  ///
+  /// In en, this message translates to:
+  /// **'Custom provider'**
+  String get providerAddOpen;
+
+  /// Title of the custom provider form.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a provider'**
+  String get providerAddTitle;
+
+  /// No description provided for @providerAddIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect any endpoint that speaks OpenAI Chat Completions, OpenAI Responses or Anthropic Messages. The model list is read from the endpoint itself.'**
+  String get providerAddIntro;
+
+  /// Section label: name, protocol and address.
+  ///
+  /// In en, this message translates to:
+  /// **'Connection'**
+  String get providerAddConnection;
+
+  /// No description provided for @providerAddName.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get providerAddName;
+
+  /// No description provided for @providerAddNameHint.
+  ///
+  /// In en, this message translates to:
+  /// **'My gateway'**
+  String get providerAddNameHint;
+
+  /// Identifier used as the config key.
+  ///
+  /// In en, this message translates to:
+  /// **'Provider ID'**
+  String get providerAddId;
+
+  /// No description provided for @providerAddIdHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Used as the key in the configuration and in model ids: lowercase letters, digits, dot, dash, underscore.'**
+  String get providerAddIdHelper;
+
+  /// No description provided for @providerAddProtocol.
+  ///
+  /// In en, this message translates to:
+  /// **'Protocol'**
+  String get providerAddProtocol;
+
+  /// No description provided for @providerAddProtocolChat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat Completions'**
+  String get providerAddProtocolChat;
+
+  /// No description provided for @providerAddProtocolResponses.
+  ///
+  /// In en, this message translates to:
+  /// **'Responses'**
+  String get providerAddProtocolResponses;
+
+  /// No description provided for @providerAddProtocolAnthropic.
+  ///
+  /// In en, this message translates to:
+  /// **'Anthropic'**
+  String get providerAddProtocolAnthropic;
+
+  /// No description provided for @providerAddBaseUrl.
+  ///
+  /// In en, this message translates to:
+  /// **'Base URL'**
+  String get providerAddBaseUrl;
+
+  /// No description provided for @providerAddBaseUrlHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'As the endpoint\'s documentation prints it. A pasted /chat/completions, /responses or /messages is removed; the rest of the path stays.'**
+  String get providerAddBaseUrlHelper;
+
+  /// No description provided for @providerAddModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
+  String get providerAddModels;
+
+  /// No description provided for @providerAddApiKey.
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get providerAddApiKey;
+
+  /// No description provided for @providerAddApiKeyHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved in a file on the server that only OpenCode reads, not in the configuration.'**
+  String get providerAddApiKeyHelper;
+
+  /// No description provided for @providerAddFetch.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch models'**
+  String get providerAddFetch;
+
+  /// No description provided for @providerAddFetching.
+  ///
+  /// In en, this message translates to:
+  /// **'Asking the endpoint…'**
+  String get providerAddFetching;
+
+  /// No description provided for @providerAddFetchFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the model list'**
+  String get providerAddFetchFailed;
+
+  /// How many models the endpoint listed.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} models'**
+  String providerAddModelsFound(int count);
+
+  /// No description provided for @providerAddModelsEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'Fetch the endpoint\'s list, or type a model id.'**
+  String get providerAddModelsEmpty;
+
+  /// No description provided for @providerAddModelHint.
+  ///
+  /// In en, this message translates to:
+  /// **'model id'**
+  String get providerAddModelHint;
+
+  /// No description provided for @providerAddSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search models'**
+  String get providerAddSearch;
+
+  /// No description provided for @providerAddSelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get providerAddSelectAll;
+
+  /// No description provided for @providerAddClearAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Clear all'**
+  String get providerAddClearAll;
+
+  /// Label above the generated config snippet.
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration'**
+  String get providerAddPreview;
+
+  /// No description provided for @providerAddSave.
+  ///
+  /// In en, this message translates to:
+  /// **'Add to server'**
+  String get providerAddSave;
+
+  /// No description provided for @providerAddSaving.
+  ///
+  /// In en, this message translates to:
+  /// **'Writing the configuration…'**
+  String get providerAddSaving;
+
+  /// No description provided for @providerAddSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'{name} was written to {path}. Restart the server so it appears in the model list.'**
+  String providerAddSaved(String name, String path);
+
+  /// No description provided for @providerAddCopyOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'This server\'s files cannot be written from the app. Copy the configuration and paste it into opencode.json on the server.'**
+  String get providerAddCopyOnly;
+
+  /// No description provided for @providerAddCopy.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy configuration'**
+  String get providerAddCopy;
+
+  /// No description provided for @providerAddNeedModels.
+  ///
+  /// In en, this message translates to:
+  /// **'Select at least one model.'**
+  String get providerAddNeedModels;
+
+  /// No description provided for @providerAddRestart.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart the server'**
+  String get providerAddRestart;
+
+  /// No description provided for @providerAddRestarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Server restarted. The provider is available now.'**
+  String get providerAddRestarted;
+
+  /// No description provided for @providerAddRestartFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The configuration was saved, but the server did not restart. Restart it from the server screen.'**
+  String get providerAddRestartFailed;
+
+  /// No description provided for @providerAddExists.
+  ///
+  /// In en, this message translates to:
+  /// **'A provider with this ID already exists on the server.'**
+  String get providerAddExists;
+
+  /// No description provided for @providerAddWithComments.
+  ///
+  /// In en, this message translates to:
+  /// **'The server\'s configuration has comments, so it cannot be merged automatically. Copy the configuration and merge it by hand.'**
+  String get providerAddWithComments;
+
+  /// No description provided for @providerAddDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Done'**
+  String get providerAddDone;
+
+  /// No description provided for @providerAddRestartHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Restart the server so the new provider appears in the model list.'**
+  String get providerAddRestartHint;
 }
 
 class _AppLocalizationsDelegate
@@ -56335,10 +56575,8 @@ class _AppLocalizationsDelegate
   }
 
   @override
-  bool isSupported(Locale locale) => <String>[
-    'en',
-    'zh',
-  ].contains(locale.languageCode);
+  bool isSupported(Locale locale) =>
+      <String>['en', 'zh'].contains(locale.languageCode);
 
   @override
   bool shouldReload(_AppLocalizationsDelegate old) => false;

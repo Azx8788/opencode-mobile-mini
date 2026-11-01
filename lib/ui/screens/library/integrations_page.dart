@@ -175,6 +175,20 @@ extension _IntegrationsPage on _IntegrationsScreenState {
             ? KitTokens.of(context).space2
             : KitTokens.of(context).space3,
       ),
+      // Above the list, not only in its empty state: a server that already
+      // has providers is exactly the one a person wants to add another to.
+      _railed(
+        Align(
+          alignment: AlignmentDirectional.centerStart,
+          child: KitButton.secondary(
+            key: const ValueKey('add-custom-provider'),
+            label: l10n.providerAddOpen,
+            icon: AppIconography.add,
+            expand: false,
+            onPressed: _openCustomProvider,
+          ),
+        ),
+      ),
       if (widget.controller.pendingAuthPersistenceUncertain)
         _railed(
           KitNotice(
@@ -499,6 +513,20 @@ extension _IntegrationsPage on _IntegrationsScreenState {
             !known.contains(provider.integrationID))
           configuredProviderIntegration(provider, _l10n),
     ];
+  }
+
+  /// Opens the custom provider form.
+  ///
+  /// A provider written into the server's config only shows up here after
+  /// the catalogue is read again, so the page reloads when the form reports
+  /// a save.
+  Future<void> _openCustomProvider() async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => CustomProviderScreen(controller: widget.controller),
+      ),
+    );
+    if (saved == true && mounted) await _load();
   }
 
   /// Models the catalog lists for this provider, or null until the catalog

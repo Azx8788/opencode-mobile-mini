@@ -43822,5 +43822,78 @@
         "type": "String"
       }
     }
-  }
+  },
+  "providerAddOpen": "Custom provider",
+  "@providerAddOpen": {
+    "description": "A provider the person declares themselves, on the Providers page."
+  },
+  "providerAddTitle": "Add a provider",
+  "@providerAddTitle": {
+    "description": "Title of the custom provider form."
+  },
+  "providerAddIntro": "Connect any endpoint that speaks OpenAI Chat Completions, OpenAI Responses or Anthropic Messages. The model list is read from the endpoint itself.",
+  "providerAddConnection": "Connection",
+  "@providerAddConnection": {
+    "description": "Section label: name, protocol and address."
+  },
+  "providerAddName": "Name",
+  "providerAddNameHint": "My gateway",
+  "providerAddId": "Provider ID",
+  "@providerAddId": {
+    "description": "Identifier used as the config key."
+  },
+  "providerAddIdHelper": "Used as the key in the configuration and in model ids: lowercase letters, digits, dot, dash, underscore.",
+  "providerAddProtocol": "Protocol",
+  "providerAddProtocolChat": "Chat Completions",
+  "providerAddProtocolResponses": "Responses",
+  "providerAddProtocolAnthropic": "Anthropic",
+  "providerAddBaseUrl": "Base URL",
+  "providerAddBaseUrlHelper": "As the endpoint's documentation prints it. A pasted /chat/completions, /responses or /messages is removed; the rest of the path stays.",
+  "providerAddModels": "Models",
+  "providerAddApiKey": "API key",
+  "providerAddApiKeyHelper": "Saved in a file on the server that only OpenCode reads, not in the configuration.",
+  "providerAddFetch": "Fetch models",
+  "providerAddFetching": "Asking the endpoint…",
+  "providerAddFetchFailed": "Could not read the model list",
+  "providerAddModelsFound": "{count} models",
+  "@providerAddModelsFound": {
+    "description": "How many models the endpoint listed.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "providerAddModelsEmpty": "Fetch the endpoint's list, or type a model id.",
+  "providerAddModelHint": "model id",
+  "providerAddSearch": "Search models",
+  "providerAddSelectAll": "Select all",
+  "providerAddClearAll": "Clear all",
+  "providerAddPreview": "Configuration",
+  "@providerAddPreview": {
+    "description": "Label above the generated config snippet."
+  },
+  "providerAddSave": "Add to server",
+  "providerAddSaving": "Writing the configuration…",
+  "providerAddSaved": "{name} was written to {path}. Restart the server so it appears in the model list.",
+  "@providerAddSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "providerAddCopyOnly": "This server's files cannot be written from the app. Copy the configuration and paste it into opencode.json on the server.",
+  "providerAddCopy": "Copy configuration",
+  "providerAddNeedModels": "Select at least one model.",
+  "providerAddRestart": "Restart the server",
+  "providerAddRestarted": "Server restarted. The provider is available now.",
+  "providerAddRestartFailed": "The configuration was saved, but the server did not restart. Restart it from the server screen.",
+  "providerAddExists": "A provider with this ID already exists on the server.",
+  "providerAddWithComments": "The server's configuration has comments, so it cannot be merged automatically. Copy the configuration and merge it by hand.",
+  "providerAddDone": "Done",
+  "providerAddRestartHint": "Restart the server so the new provider appears in the model list."
 }

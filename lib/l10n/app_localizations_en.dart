@@ -35840,4 +35840,139 @@ class AppLocalizationsEn extends AppLocalizations {
   String stopRowSemantics(String agent) {
     return 'Stop $agent';
   }
+
+  @override
+  String get providerAddOpen => 'Custom provider';
+
+  @override
+  String get providerAddTitle => 'Add a provider';
+
+  @override
+  String get providerAddIntro =>
+      'Connect any endpoint that speaks OpenAI Chat Completions, OpenAI Responses or Anthropic Messages. The model list is read from the endpoint itself.';
+
+  @override
+  String get providerAddConnection => 'Connection';
+
+  @override
+  String get providerAddName => 'Name';
+
+  @override
+  String get providerAddNameHint => 'My gateway';
+
+  @override
+  String get providerAddId => 'Provider ID';
+
+  @override
+  String get providerAddIdHelper =>
+      'Used as the key in the configuration and in model ids: lowercase letters, digits, dot, dash, underscore.';
+
+  @override
+  String get providerAddProtocol => 'Protocol';
+
+  @override
+  String get providerAddProtocolChat => 'Chat Completions';
+
+  @override
+  String get providerAddProtocolResponses => 'Responses';
+
+  @override
+  String get providerAddProtocolAnthropic => 'Anthropic';
+
+  @override
+  String get providerAddBaseUrl => 'Base URL';
+
+  @override
+  String get providerAddBaseUrlHelper =>
+      'As the endpoint\'s documentation prints it. A pasted /chat/completions, /responses or /messages is removed; the rest of the path stays.';
+
+  @override
+  String get providerAddModels => 'Models';
+
+  @override
+  String get providerAddApiKey => 'API key';
+
+  @override
+  String get providerAddApiKeyHelper =>
+      'Saved in a file on the server that only OpenCode reads, not in the configuration.';
+
+  @override
+  String get providerAddFetch => 'Fetch models';
+
+  @override
+  String get providerAddFetching => 'Asking the endpoint…';
+
+  @override
+  String get providerAddFetchFailed => 'Could not read the model list';
+
+  @override
+  String providerAddModelsFound(int count) {
+    return '$count models';
+  }
+
+  @override
+  String get providerAddModelsEmpty =>
+      'Fetch the endpoint\'s list, or type a model id.';
+
+  @override
+  String get providerAddModelHint => 'model id';
+
+  @override
+  String get providerAddSearch => 'Search models';
+
+  @override
+  String get providerAddSelectAll => 'Select all';
+
+  @override
+  String get providerAddClearAll => 'Clear all';
+
+  @override
+  String get providerAddPreview => 'Configuration';
+
+  @override
+  String get providerAddSave => 'Add to server';
+
+  @override
+  String get providerAddSaving => 'Writing the configuration…';
+
+  @override
+  String providerAddSaved(String name, String path) {
+    return '$name was written to $path. Restart the server so it appears in the model list.';
+  }
+
+  @override
+  String get providerAddCopyOnly =>
+      'This server\'s files cannot be written from the app. Copy the configuration and paste it into opencode.json on the server.';
+
+  @override
+  String get providerAddCopy => 'Copy configuration';
+
+  @override
+  String get providerAddNeedModels => 'Select at least one model.';
+
+  @override
+  String get providerAddRestart => 'Restart the server';
+
+  @override
+  String get providerAddRestarted =>
+      'Server restarted. The provider is available now.';
+
+  @override
+  String get providerAddRestartFailed =>
+      'The configuration was saved, but the server did not restart. Restart it from the server screen.';
+
+  @override
+  String get providerAddExists =>
+      'A provider with this ID already exists on the server.';
+
+  @override
+  String get providerAddWithComments =>
+      'The server\'s configuration has comments, so it cannot be merged automatically. Copy the configuration and merge it by hand.';
+
+  @override
+  String get providerAddDone => 'Done';
+
+  @override
+  String get providerAddRestartHint =>
+      'Restart the server so the new provider appears in the model list.';
 }
