@@ -18034,6 +18034,17 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'Context pending'**
+  /// Chip above the composer: this conversation's token use so far, in input,
+  /// output and cache reads (hits). Values are already abbreviated, e.g. 12k.
+  ///
+  /// In en, this message translates to:
+  /// **'In {input} · Out {output} · Cache {cached}'**
+  String chatStripTokens(String input, String output, String cached);
+
+  /// Short chip label above the composer: the server will hand the agent new context at its next step
+  ///
+  /// In en, this message translates to:
+  /// **'Context pending'**
   String get chatStripContextPending;
 
   /// Short chip label above the composer while permission requests are approved automatically
@@ -56563,6 +56574,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restart the server so the new provider appears in the model list.'**
   String get providerAddRestartHint;
+
+  /// Title of the provider self-check screen; the model name follows Test
+  ///
+  /// In en, this message translates to:
+  /// **'Test {model}'**
+  /// Action on the custom provider's saved screen that opens the self-check for a selected model
+  ///
+  /// In en, this message translates to:
+  /// **'Test a model'**
+  /// Title of the page that lists every provider and its models
+  ///
+  /// In en, this message translates to:
+  /// **'Models and checks'**
+  String get providerModelsTitle;
+
+  /// Explains that the list comes from the server catalogue and each model can be tested
+  ///
+  /// In en, this message translates to:
+  /// **'Every provider the server knows, and the models it serves. Tap Test to run the five checks against one model.'**
+  String get providerModelsHint;
+
+  /// Shown when the server catalogue has no providers
+  ///
+  /// In en, this message translates to:
+  /// **'The server has not reported any providers yet.'**
+  String get providerModelsEmpty;
+
+  /// Button that opens the five checks for one model
+  ///
+  /// In en, this message translates to:
+  /// **'Test'**
+  String get providerModelsTest;
+
+  String get providerProbeOpen;
+
+  String providerProbeTitle(String model);
+
+  /// Field label: the provider endpoint the checks send to
+  ///
+  /// In en, this message translates to:
+  /// **'Base URL'**
+  String get providerProbeBaseUrl;
+
+  /// Field label: key used for the self-check requests
+  ///
+  /// In en, this message translates to:
+  /// **'API key'**
+  String get providerProbeApiKey;
+
+  /// Helper under the key field: the probe never stores the key
+  ///
+  /// In en, this message translates to:
+  /// **'Used for these checks only; not saved.'**
+  String get providerProbeKeyNote;
+
+  /// Field label: which wire format the provider speaks
+  ///
+  /// In en, this message translates to:
+  /// **'Protocol'**
+  String get providerProbeProtocol;
+
+  /// Button that starts the provider self-check
+  ///
+  /// In en, this message translates to:
+  /// **'Run the five checks'**
+  String get providerProbeRun;
+
+  /// Button label while the self-check is in flight
+  ///
+  /// In en, this message translates to:
+  /// **'Running…'**
+  String get providerProbeRunning;
+
+  /// Explains what the five probes are
+  ///
+  /// In en, this message translates to:
+  /// **'One short request per check: reply, stream, tool call, system prompt, finish reason.'**
+  String get providerProbeNote;
+
+  /// Shown when Run is tapped with an empty base URL
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the provider\'s base URL first.'**
+  String get providerProbeNeedBaseUrl;
+
+  /// Probe name: a plain completion returns text
+  ///
+  /// In en, this message translates to:
+  /// **'Non-streaming reply'**
+  String get providerProbeNonStreaming;
+
+  /// Probe name: stream true returns incremental text
+  ///
+  /// In en, this message translates to:
+  /// **'Streaming deltas'**
+  String get providerProbeStreaming;
+
+  /// Probe name: the model calls a declared function
+  ///
+  /// In en, this message translates to:
+  /// **'Tool calling'**
+  String get providerProbeToolCall;
+
+  /// Probe name: the model obeys a system instruction
+  ///
+  /// In en, this message translates to:
+  /// **'System prompt'**
+  String get providerProbeInstruction;
+
+  /// Probe name: a token ceiling ends the turn with the provider's limit signal
+  ///
+  /// In en, this message translates to:
+  /// **'Finish condition'**
+  String get providerProbeFinish;
 }
 
 class _AppLocalizationsDelegate
@@ -56595,6 +56720,5 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
-    'that was used.',
   );
 }

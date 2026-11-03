@@ -10147,6 +10147,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatUiCompactionFailedHint => '对话对模型来说仍然太长，所以下一轮会再次尝试。';
 
   @override
+  String chatStripTokens(String input, String output, String cached) {
+    return '输入 $input · 输出 $output · 缓存 $cached';
+  }
+
+  @override
   String get chatStripContextPending => '上下文待处理';
 
   @override
@@ -33975,4 +33980,63 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerAddRestartHint => '重启服务器后，新供应商会出现在模型列表里。';
+
+  @override
+  String get providerModelsTitle => '模型与检查';
+
+  @override
+  String get providerModelsHint => '服务器已知的全部供应商，以及它们提供的模型。点“测试”对某个模型运行五项检查。';
+
+  @override
+  String get providerModelsEmpty => '服务器还没有报告任何供应商。';
+
+  @override
+  String get providerModelsTest => '测试';
+
+  @override
+  String get providerProbeOpen => '测试模型';
+
+  @override
+  String providerProbeTitle(String model) {
+    return '测试 $model';
+  }
+
+  @override
+  String get providerProbeBaseUrl => '基础地址';
+
+  @override
+  String get providerProbeApiKey => 'API 密钥';
+
+  @override
+  String get providerProbeKeyNote => '仅用于本次检查，不会保存。';
+
+  @override
+  String get providerProbeProtocol => '协议';
+
+  @override
+  String get providerProbeRun => '运行五项检查';
+
+  @override
+  String get providerProbeRunning => '正在运行…';
+
+  @override
+  String get providerProbeNote => '每项只发一个短请求：回复、流式、工具调用、系统提示词、完成原因。';
+
+  @override
+  String get providerProbeNeedBaseUrl => '请先填写供应商的基础地址。';
+
+  @override
+  String get providerProbeNonStreaming => '非流式回复';
+
+  @override
+  String get providerProbeStreaming => '流式增量';
+
+  @override
+  String get providerProbeToolCall => '工具调用';
+
+  @override
+  String get providerProbeInstruction => '系统提示词';
+
+  @override
+  String get providerProbeFinish => '完成条件';
 }

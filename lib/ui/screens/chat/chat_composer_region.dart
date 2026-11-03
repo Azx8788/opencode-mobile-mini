@@ -217,6 +217,11 @@ extension _ChatComposerRegion on _ChatScreenState {
               .where((item) => item.type != 'user')
               .length;
     final strings = _chatL10n(context);
+    // This conversation's own spend, at a glance: the server keeps the
+    // session's counters, so the line survives a reopen and agrees with the
+    // usage screen. Cache is the read side — the tokens a provider served
+    // from its prompt cache, i.e. the hits.
+    final tokens = _conn.sessionsById[widget.sessionID]?.tokens;
     // The agent's own switches (fast mode and the like), where it has any:
     // a chip that opens "<Agent> settings".
     final features = _conn.api;
@@ -225,6 +230,16 @@ extension _ChatComposerRegion on _ChatScreenState {
         features is AgentFeatureGateway &&
         (features as AgentFeatureGateway).agentFeaturesSupported;
     return [
+      if (tokens != null &&
+          (tokens.input > 0 || tokens.output > 0 || tokens.cacheRead > 0))
+        KitChip(
+          key: const Key('composer-token-chip'),
+          label: strings.chatStripTokens(
+            formatTokenCount(tokens.input),
+            formatTokenCount(tokens.output),
+            formatTokenCount(tokens.cacheRead),
+          ),
+        ),
       if (showFeatures)
         AgentFeaturesChip(
           key: const ValueKey('agent-features-slot'),

@@ -10879,6 +10879,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'The conversation is still too long for the model, so the next turn will try again.';
 
   @override
+  String chatStripTokens(String input, String output, String cached) {
+    return 'In $input · Out $output · Cache $cached';
+  }
+
+  @override
   String get chatStripContextPending => 'Context pending';
 
   @override
@@ -35975,4 +35980,63 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get providerAddRestartHint =>
       'Restart the server so the new provider appears in the model list.';
+
+  @override
+  String get providerModelsTitle => 'Models and checks';
+
+  @override
+  String get providerModelsHint => 'Every provider the server knows, and the models it serves. Tap Test to run the five checks against one model.';
+
+  @override
+  String get providerModelsEmpty => 'The server has not reported any providers yet.';
+
+  @override
+  String get providerModelsTest => 'Test';
+
+  @override
+  String get providerProbeOpen => 'Test a model';
+
+  @override
+  String providerProbeTitle(String model) {
+    return 'Test $model';
+  }
+
+  @override
+  String get providerProbeBaseUrl => 'Base URL';
+
+  @override
+  String get providerProbeApiKey => 'API key';
+
+  @override
+  String get providerProbeKeyNote => 'Used for these checks only; not saved.';
+
+  @override
+  String get providerProbeProtocol => 'Protocol';
+
+  @override
+  String get providerProbeRun => 'Run the five checks';
+
+  @override
+  String get providerProbeRunning => 'Running…';
+
+  @override
+  String get providerProbeNote => 'One short request per check: reply, stream, tool call, system prompt, finish reason.';
+
+  @override
+  String get providerProbeNeedBaseUrl => "Enter the provider's base URL first.";
+
+  @override
+  String get providerProbeNonStreaming => 'Non-streaming reply';
+
+  @override
+  String get providerProbeStreaming => 'Streaming deltas';
+
+  @override
+  String get providerProbeToolCall => 'Tool calling';
+
+  @override
+  String get providerProbeInstruction => 'System prompt';
+
+  @override
+  String get providerProbeFinish => 'Finish condition';
 }

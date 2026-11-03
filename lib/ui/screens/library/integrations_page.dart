@@ -180,12 +180,25 @@ extension _IntegrationsPage on _IntegrationsScreenState {
       _railed(
         Align(
           alignment: AlignmentDirectional.centerStart,
-          child: KitButton.secondary(
-            key: const ValueKey('add-custom-provider'),
-            label: l10n.providerAddOpen,
-            icon: AppIconography.add,
-            expand: false,
-            onPressed: _openCustomProvider,
+          child: Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+              KitButton.secondary(
+                key: const ValueKey('add-custom-provider'),
+                label: l10n.providerAddOpen,
+                icon: AppIconography.add,
+                expand: false,
+                onPressed: _openCustomProvider,
+              ),
+              KitButton.secondary(
+                key: const ValueKey('open-provider-models'),
+                label: l10n.providerModelsTitle,
+                icon: AppIconography.checklist,
+                expand: false,
+                onPressed: _openProviderModels,
+              ),
+            ],
           ),
         ),
       ),
@@ -528,6 +541,13 @@ extension _IntegrationsPage on _IntegrationsScreenState {
     );
     if (saved == true && mounted) await _load();
   }
+
+  /// Opens the catalogue: every provider, every model, and the five checks.
+  Future<void> _openProviderModels() => Navigator.of(context).push(
+    MaterialPageRoute(
+      builder: (_) => ProviderModelsScreen(controller: widget.controller),
+    ),
+  );
 
   /// Models the catalog lists for this provider, or null until the catalog
   /// has loaded.

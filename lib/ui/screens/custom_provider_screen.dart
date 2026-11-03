@@ -11,6 +11,7 @@ import '../../domain/custom_provider.dart';
 import '../../domain/provider_model_source.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
+import 'provider_probe_screen.dart';
 import '../app_iconography.dart';
 import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit.dart';
@@ -591,6 +592,23 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
                 ? l10n.providerAddRestarted
                 : l10n.providerAddRestartHint,
             tertiary: [
+              if (_selected.isNotEmpty)
+                KitAction(
+                  label: l10n.providerProbeOpen,
+                  icon: AppIconography.play,
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => ProviderProbeScreen(
+                        providerName: _name.text.trim().isEmpty
+                            ? _id.text.trim()
+                            : _name.text.trim(),
+                        model: _selected.first,
+                        baseUrl: _baseUrl.text.trim(),
+                        protocol: _protocol,
+                      ),
+                    ),
+                  ),
+                ),
               KitAction(
                 label: l10n.providerAddDone,
                 onPressed: () => Navigator.of(context).maybePop(true),

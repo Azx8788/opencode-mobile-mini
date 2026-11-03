@@ -15,6 +15,7 @@ import '../../state/pending_auth.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
 import '../widgets/external_link.dart';
+import 'provider_models_screen.dart';
 import '../widgets/connect_methods.dart';
 import '../widgets/provider_logo.dart';
 import '../widgets/safety_confirms.dart';

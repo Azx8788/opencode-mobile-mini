@@ -11609,6 +11609,21 @@
   "@chatUiCompactionFailedHint": {
     "description": "What a failed compaction means for the reader, shown before the server's reason"
   },
+  "chatStripTokens": "In {input} · Out {output} · Cache {cached}",
+  "@chatStripTokens": {
+    "description": "Chip above the composer: this conversation's token use so far, in input, output and cache reads (hits). Values are already abbreviated, e.g. 12k.",
+    "placeholders": {
+      "input": {
+        "type": "String"
+      },
+      "output": {
+        "type": "String"
+      },
+      "cached": {
+        "type": "String"
+      }
+    }
+  },
   "chatStripContextPending": "Context pending",
   "@chatStripContextPending": {
     "description": "Short chip label above the composer: the server will hand the agent new context at its next step"
@@ -43895,5 +43910,86 @@
   "providerAddExists": "A provider with this ID already exists on the server.",
   "providerAddWithComments": "The server's configuration has comments, so it cannot be merged automatically. Copy the configuration and merge it by hand.",
   "providerAddDone": "Done",
-  "providerAddRestartHint": "Restart the server so the new provider appears in the model list."
+  "providerAddRestartHint": "Restart the server so the new provider appears in the model list.",
+  "providerModelsTitle": "Models and checks",
+  "@providerModelsTitle": {
+    "description": "Title of the page that lists every provider and its models"
+  },
+  "providerModelsHint": "Every provider the server knows, and the models it serves. Tap Test to run the five checks against one model.",
+  "@providerModelsHint": {
+    "description": "Explains that the list comes from the server catalogue and each model can be tested"
+  },
+  "providerModelsEmpty": "The server has not reported any providers yet.",
+  "@providerModelsEmpty": {
+    "description": "Shown when the server catalogue has no providers"
+  },
+  "providerModelsTest": "Test",
+  "@providerModelsTest": {
+    "description": "Button that opens the five checks for one model"
+  },
+  "providerProbeOpen": "Test a model",
+  "@providerProbeOpen": {
+    "description": "Action on the custom provider's saved screen that opens the self-check for a selected model"
+  },
+  "providerProbeTitle": "Test {model}",
+  "@providerProbeTitle": {
+    "description": "Title of the provider self-check screen; the model name follows Test",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "providerProbeBaseUrl": "Base URL",
+  "@providerProbeBaseUrl": {
+    "description": "Field label: the provider endpoint the checks send to"
+  },
+  "providerProbeApiKey": "API key",
+  "@providerProbeApiKey": {
+    "description": "Field label: key used for the self-check requests"
+  },
+  "providerProbeKeyNote": "Used for these checks only; not saved.",
+  "@providerProbeKeyNote": {
+    "description": "Helper under the key field: the probe never stores the key"
+  },
+  "providerProbeProtocol": "Protocol",
+  "@providerProbeProtocol": {
+    "description": "Field label: which wire format the provider speaks"
+  },
+  "providerProbeRun": "Run the five checks",
+  "@providerProbeRun": {
+    "description": "Button that starts the provider self-check"
+  },
+  "providerProbeRunning": "Running…",
+  "@providerProbeRunning": {
+    "description": "Button label while the self-check is in flight"
+  },
+  "providerProbeNote": "One short request per check: reply, stream, tool call, system prompt, finish reason.",
+  "@providerProbeNote": {
+    "description": "Explains what the five probes are"
+  },
+  "providerProbeNeedBaseUrl": "Enter the provider's base URL first.",
+  "@providerProbeNeedBaseUrl": {
+    "description": "Shown when Run is tapped with an empty base URL"
+  },
+  "providerProbeNonStreaming": "Non-streaming reply",
+  "@providerProbeNonStreaming": {
+    "description": "Probe name: a plain completion returns text"
+  },
+  "providerProbeStreaming": "Streaming deltas",
+  "@providerProbeStreaming": {
+    "description": "Probe name: stream true returns incremental text"
+  },
+  "providerProbeToolCall": "Tool calling",
+  "@providerProbeToolCall": {
+    "description": "Probe name: the model calls a declared function"
+  },
+  "providerProbeInstruction": "System prompt",
+  "@providerProbeInstruction": {
+    "description": "Probe name: the model obeys a system instruction"
+  },
+  "providerProbeFinish": "Finish condition",
+  "@providerProbeFinish": {
+    "description": "Probe name: a token ceiling ends the turn with the provider's limit signal"
+  }
 }
