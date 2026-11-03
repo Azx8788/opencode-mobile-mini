@@ -81,6 +81,22 @@ mixin _ConnectionControllerModels on ChangeNotifier {
   ModelLibrary get modelLibrary => _modelLibrary;
   Future<void> _modelLibraryWrite = Future.value();
 
+  /// Whether the picker shows this model on this phone. A local preference:
+  /// the server still serves every model, and another client sees them all.
+  bool isModelEnabled(ModelRef model) => _modelLibrary.isEnabled(model);
+
+  /// Turns one model on or off for the picker, and remembers it per server.
+  Future<void> setModelEnabled(ModelRef model, bool enabled) {
+    final next = _modelLibrary.withEnabled(model.normalized, enabled);
+    if (next.disabled.length == _modelLibrary.disabled.length &&
+        next.isEnabled(model) == _modelLibrary.isEnabled(model)) {
+      return Future<void>.value();
+    }
+    _modelLibrary = next;
+    _notifyListeners();
+    return _persistModelLibrary();
+  }
+
   bool get serverOwnsSessionSelection =>
       _self.api is SessionSelectionGateway ||
       (_self.api == null && (_self.profile != null));

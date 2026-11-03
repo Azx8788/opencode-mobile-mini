@@ -23,6 +23,7 @@ import 'dart:convert';
 
 import '../diagnostics/app_log.dart';
 import '../domain/custom_provider.dart';
+import '../domain/custom_provider_record.dart';
 import 'builtin_linux.dart';
 
 /// What the server already has on disk.
@@ -267,9 +268,14 @@ fi
   }
 
   /// Writes the provider, keeping a backup of the previous file.
+  ///
+  /// [replace] is the edit path: an entry with the same id is overwritten
+  /// instead of refused. A draft whose key box was left empty keeps the key
+  /// file the config already points at.
   Future<ProviderWriteReceipt> save(
     CustomProviderDraft draft, {
     ResolvedProviderConfig? resolved,
+    bool replace = false,
   }) async {
     final target = resolved ?? await resolve();
     final snapshot = await read(target);
@@ -282,43 +288,22 @@ fi
     }
     final Map<String, Object?> merged;
     try {
-      merged = draft.mergeInto(snapshot.document, target.format);
+      merged = draft.mergeInto(
+        snapshot.document,
+        target.format,
+        replace: replace,
+      );
     } on Exception catch (error) {
       throw ProviderWriteRefused('$error', reason: 'merge');
     }
-    if (!await _underLimit(merged)) {
-      throw const ProviderWriteRefused(
-        'The configuration would grow beyond the size this app writes',
-        reason: 'too-large',
-      );
-    }
-    final encoded = base64Encode(utf8.encode(jsonEncode(merged)));
-    final path = snapshot.path;
-    final stamp = DateTime.now().millisecondsSinceEpoch;
-    final backup = snapshot.exists ? '$path.bak.$stamp' : null;
-
-    final writeScript =
-        '''
-set -eu
-f='$path'
-mkdir -p "\$(dirname "\$f")"
-${backup != null ? "cp \"\$f\" '$backup'" : ''}
-printf '%s' '$encoded' | base64 -d > "\$f.tmp.$stamp"
-mv "\$f.tmp.$stamp" "\$f"
-echo DONE
-''';
-    final written = await _run(writeScript, const Duration(seconds: 45));
-    if (written.exitCode != 0 || !written.output.contains('DONE')) {
-      throw ProviderWriteRefused(
-        'The configuration could not be written',
-        reason: written.output.trim().isEmpty
-            ? 'exit ${written.exitCode}'
-            : written.output.trim(),
-      );
-    }
+    final backup = await _writeDocument(
+      merged,
+      path: snapshot.path,
+      exists: snapshot.exists,
+    );
 
     var keyWritten = false;
-    if (draft.keyMode == ProviderKeyMode.secretFile) {
+    if (draft.keyMode == ProviderKeyMode.secretFile && draft.hasKey) {
       final secret = draft.secretPath!;
       final encodedKey = base64Encode(utf8.encode(draft.apiKey!.trim()));
       // 600: the key is the person's, and anything else on the server has no
@@ -350,12 +335,156 @@ echo DONE
       'keyFile': keyWritten,
     });
     return ProviderWriteReceipt(
-      configPath: path,
+      configPath: snapshot.path,
       backupPath: backup,
       keyFileWritten: keyWritten,
       providerID: draft.id,
       format: target.format,
     );
+  }
+
+  /// Every provider entry the config holds, in the form the editor reads.
+  ///
+  /// A comment-bearing or unparsable file throws the same refusal a write
+  /// would: the list can then say why it is read-only instead of showing
+  /// "no providers" for a file that has plenty.
+  Future<CustomProviderCatalogue> readRecords({
+    ResolvedProviderConfig? resolved,
+  }) async {
+    final target = resolved ?? await resolve();
+    final snapshot = await read(target);
+    if (snapshot.hasComments) {
+      throw const ProviderWriteRefused(
+        'The server\u2019s configuration has comments, so it cannot be '
+        'listed here',
+        reason: 'jsonc',
+      );
+    }
+    return readCustomProviders(snapshot.document, target.format);
+  }
+
+  /// Removes one provider entry, keeping a backup of the previous file.
+  ///
+  /// The key file is left alone: another entry may point at it, and deleting
+  /// a secret the app did not write is not this method's call.
+  Future<ProviderWriteReceipt> remove(
+    String providerID, {
+    ResolvedProviderConfig? resolved,
+  }) async {
+    final target = resolved ?? await resolve();
+    final snapshot = await read(target);
+    if (snapshot.hasComments) {
+      throw const ProviderWriteRefused(
+        'The server\u2019s configuration has comments, so it cannot be '
+        'changed automatically',
+        reason: 'jsonc',
+      );
+    }
+    final document = snapshot.document;
+    if (document == null) {
+      throw const ProviderWriteRefused(
+        'There is no provider configuration to remove from',
+        reason: 'missing',
+      );
+    }
+    final root = target.format == ProviderConfigFormat.v1
+        ? 'provider'
+        : 'providers';
+    final current = document[root];
+    if (current is! Map || !current.containsKey(providerID)) {
+      throw ProviderWriteRefused(
+        'No provider named "$providerID" is in the configuration',
+        reason: 'missing',
+      );
+    }
+    final providers = <String, Object?>{};
+    current.forEach((key, value) => providers['$key'] = value);
+    providers.remove(providerID);
+    final next = <String, Object?>{...document};
+    next[root] = providers;
+    final backup = await _writeDocument(
+      next,
+      path: snapshot.path,
+      exists: snapshot.exists,
+    );
+    AppLog.info('provider', 'custom provider removed', {
+      'provider': providerID,
+      'format': target.format.name,
+      'backup': backup != null,
+    });
+    return ProviderWriteReceipt(
+      configPath: snapshot.path,
+      backupPath: backup,
+      keyFileWritten: false,
+      providerID: providerID,
+      format: target.format,
+    );
+  }
+
+  /// Reads the key file an entry points at, or null when it is not there.
+  ///
+  /// Only the list's explicit "test" action asks for this: a key that cannot
+  /// be read means the test cannot run, not that the provider is broken.
+  Future<String?> readSecret(String path) async {
+    final script =
+        '''
+set -u
+f='$path'
+if [ -f "\$f" ]; then
+  printf 'KEY:'
+  base64 "\$f" | tr -d '\\n'
+else
+  printf 'MISSING:'
+fi
+''';
+    final result = await _run(script, const Duration(seconds: 20));
+    if (result.exitCode != 0) return null;
+    final output = result.output.trim();
+    if (!output.startsWith('KEY:')) return null;
+    try {
+      return utf8.decode(base64Decode(output.substring(4))).trim();
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Replaces the file with [document], writing a sibling first. Returns the
+  /// backup path when there was a previous file.
+  Future<String?> _writeDocument(
+    Map<String, Object?> document, {
+    required String path,
+    required bool exists,
+  }) async {
+    if (!await _underLimit(document)) {
+      throw const ProviderWriteRefused(
+        'The configuration would grow beyond the size this app writes',
+        reason: 'too-large',
+      );
+    }
+    final encoded = base64Encode(utf8.encode(jsonEncode(document)));
+    final stamp = DateTime.now().millisecondsSinceEpoch;
+    final backup = exists ? '$path.bak.$stamp' : null;
+
+    final writeScript =
+        '''
+set -eu
+f='$path'
+mkdir -p "\$(dirname "\$f")"
+${backup != null ? "cp \"\$f\" '$backup'" : ''}
+printf '%s' '$encoded' | base64 -d > "\$f.tmp.$stamp"
+mv "\$f.tmp.$stamp" "\$f"
+echo DONE
+''';
+    final written = await _run(writeScript, const Duration(seconds: 45));
+    if (written.exitCode != 0 || !written.output.contains('DONE')) {
+      throw ProviderWriteRefused(
+        'The configuration could not be written',
+        reason: written.output.trim().isEmpty
+            ? 'exit ${written.exitCode}'
+            : written.output.trim(),
+      );
+    }
+    return backup;
   }
 
   /// The config is one JSON file the server reads on every start; a document

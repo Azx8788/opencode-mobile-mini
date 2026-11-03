@@ -7,11 +7,12 @@ import '../../l10n/app_localizations.dart';
 AppLocalizations _l10nOf(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
 
-/// Runs the five checks against one provider and one model.
+/// Runs the three checks against one provider and one model.
 ///
-/// The key is typed here, used for these requests and never stored: a probe
-/// answers "does this endpoint work from this phone", not "is this provider
-/// configured". Nothing about it touches the server's config.
+/// The key is typed here or handed over by the provider list, used for these
+/// requests and never stored: a probe answers "does this endpoint work from
+/// this phone", not "is this provider configured". Nothing about it touches
+/// the server's config.
 class ProviderProbeScreen extends StatefulWidget {
   const ProviderProbeScreen({
     super.key,
@@ -19,12 +20,22 @@ class ProviderProbeScreen extends StatefulWidget {
     required this.model,
     this.baseUrl = '',
     this.protocol = ProviderProtocol.chatCompletions,
+    this.apiKey = '',
+    this.autoRun = false,
   });
 
   final String providerName;
   final String model;
   final String baseUrl;
   final ProviderProtocol protocol;
+
+  /// A key already known (an edited entry's, or the one the list read from
+  /// the server). Empty means the person types one.
+  final String apiKey;
+
+  /// Starts the checks as the screen opens, for the "test this provider"
+  /// path where pressing Run is a second, pointless confirmation.
+  final bool autoRun;
 
   @override
   State<ProviderProbeScreen> createState() => _ProviderProbeScreenState();
@@ -41,6 +52,12 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
   void initState() {
     super.initState();
     _baseUrl.text = widget.baseUrl;
+    _apiKey.text = widget.apiKey;
+    if (widget.autoRun && widget.baseUrl.trim().isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) _run();
+      });
+    }
   }
 
   @override
@@ -81,8 +98,6 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
         ProviderProbeKind.nonStreaming => l10n.providerProbeNonStreaming,
         ProviderProbeKind.streaming => l10n.providerProbeStreaming,
         ProviderProbeKind.toolCall => l10n.providerProbeToolCall,
-        ProviderProbeKind.instruction => l10n.providerProbeInstruction,
-        ProviderProbeKind.finishReason => l10n.providerProbeFinish,
       };
 
   @override
@@ -120,7 +135,6 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
           TextField(
             key: const ValueKey('probe-api-key'),
             controller: _apiKey,
-            obscureText: true,
             autocorrect: false,
             decoration: InputDecoration(
               labelText: l10n.providerProbeApiKey,

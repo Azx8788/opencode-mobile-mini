@@ -6,6 +6,118 @@ import 'app_localizations.dart';
 
 /// The translations for Chinese (`zh`).
 class AppLocalizationsZh extends AppLocalizations {
+  @override
+  String toolsDisableNamed(String name) {
+    return '禁用 $name';
+  }
+
+  @override
+  String toolsEnableNamed(String name) {
+    return '启用 $name';
+  }
+
+  @override
+  String toolsDisabledNamed(String name) {
+    return '已禁用 $name，从新会话开始生效。';
+  }
+
+  @override
+  String toolsEnabledNamed(String name) {
+    return '已启用 $name，从新会话开始生效。';
+  }
+
+  @override
+  String get toolsConfigureUnavailable => '这个服务器不支持单独配置工具。';
+
+  @override
+  String toolsConfigureFailed(String message) {
+    return '配置没有写入：$message';
+  }
+  @override
+  String get providerManageTitle => '供应商';
+
+  @override
+  String get providerManageIntro => '服务器配置里的自定义供应商。点一行编辑，长按可以测试或删除。';
+
+  @override
+  String get providerManageRefresh => '重新读取';
+
+  @override
+  String get providerManageWorking => '正在写入配置…';
+
+  @override
+  String get providerManageEmpty => '还没有自定义供应商';
+
+  @override
+  String get providerManageEmptyBody => '添加一个 OpenAI 兼容或 Anthropic 兼容的端点，模型从端点自己拉取。';
+
+  @override
+  String get providerManageLoadFailed => '读取供应商配置失败';
+
+  @override
+  String providerManageModels(int count) {
+    return '$count 个模型';
+  }
+
+  @override
+  String providerManageDeleteTitle(String name) {
+    return '删除供应商“$name”？';
+  }
+
+  @override
+  String get providerManageDeleteBody => '会从服务器配置里移除这一项，并保留一份备份。正在使用该供应商的会话需要换成别的模型。';
+
+  @override
+  String providerManageDeleted(String name) {
+    return '已删除“$name”';
+  }
+
+  @override
+  String get providerManageEdit => '编辑';
+
+  @override
+  String get providerManageTest => '测试连接';
+
+  @override
+  String get providerManageDelete => '删除';
+
+  @override
+  String providerManageMenu(String name) {
+    return '“$name”的操作';
+  }
+
+  @override
+  String get providerManageNoModel => '这个供应商没有已保存的模型，先编辑并勾选一个。';
+
+  @override
+  String get providerManageNoKey => '找不到这个供应商的密钥，先编辑并填入密钥再测试。';
+
+  @override
+  String providerManageUnreadable(int count) {
+    return '$count 个条目无法在这里编辑';
+  }
+
+  @override
+  String get providerManageUnreadableBody => '这些条目的结构不是这个表单能安全重写的（例如内置供应商的覆盖配置）。请在服务器上直接编辑。';
+
+  @override
+  String get providerEditTitle => '编辑供应商';
+
+  @override
+  String get providerEditIdLocked => '编辑时不能改 ID：改名等于删旧建新，正在使用它的会话会失去模型。';
+
+  @override
+  String providerEditSaved(String name) {
+    return '已保存“$name”';
+  }
+
+  @override
+  String get providerEditTest => '测试连接';
+
+  @override
+  String providerModelsCount(int on, int total) {
+    return '已启用 $on / $total';
+  }
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
@@ -34028,7 +34140,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerModelsTitle => '模型与检查';
 
   @override
-  String get providerModelsHint => '服务器已知的全部供应商，以及它们提供的模型。点“测试”对某个模型运行五项检查。';
+  String get providerModelsHint => '服务器已知的全部供应商，以及它们提供的模型。点“测试”对某个模型运行三项检查。';
 
   @override
   String get providerModelsEmpty => '服务器还没有报告任何供应商。';
@@ -34057,13 +34169,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerProbeProtocol => '协议';
 
   @override
-  String get providerProbeRun => '运行五项检查';
+  String get providerProbeRun => '运行三项检查';
 
   @override
   String get providerProbeRunning => '正在运行…';
 
   @override
-  String get providerProbeNote => '每项只发一个短请求：回复、流式、工具调用、系统提示词、完成原因。';
+  String get providerProbeNote => '每项只发一个短请求：非流式回复、流式增量、工具调用。';
 
   @override
   String get providerProbeNeedBaseUrl => '请先填写供应商的基础地址。';

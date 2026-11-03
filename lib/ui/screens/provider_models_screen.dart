@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../domain/custom_provider.dart';
+import '../../domain/models.dart' show ModelRef;
 import '../../domain/server_gateway/value_types_core.dart'
     show CatalogModel, CatalogProvider;
 import '../../l10n/app_localizations.dart';
@@ -58,6 +61,7 @@ class ProviderModelsScreen extends StatelessWidget {
               for (final provider in providers)
                 _ProviderSection(
                   key: ValueKey('provider-models-${provider.id}'),
+                  controller: controller,
                   provider: provider,
                   models: [
                     for (final model in catalog.models)
@@ -75,10 +79,12 @@ class ProviderModelsScreen extends StatelessWidget {
 class _ProviderSection extends StatelessWidget {
   const _ProviderSection({
     super.key,
+    required this.controller,
     required this.provider,
     required this.models,
   });
 
+  final ConnectionController controller;
   final CatalogProvider provider;
   final List<CatalogModel> models;
 
@@ -86,35 +92,64 @@ class _ProviderSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final l10n = _l10nOf(context);
     if (models.isEmpty) return const SizedBox.shrink();
+    final shown = models
+        .where(
+          (model) => controller.isModelEnabled(
+            ModelRef(providerID: model.providerID, modelID: model.id),
+          ),
+        )
+        .length;
     return ExpansionTile(
       key: PageStorageKey('provider-section-${provider.id}'),
       title: Text(provider.name.isEmpty ? provider.id : provider.name),
-      subtitle: Text('${models.length}'),
+      subtitle: Text(l10n.providerModelsCount(shown, models.length)),
       children: [
         for (final model in models)
-          ListTile(
-            key: ValueKey('provider-model-${provider.id}-${model.id}'),
-            dense: true,
-            title: Text(model.name.isEmpty ? model.id : model.name),
-            subtitle: Text(model.id),
-            trailing: TextButton(
-              onPressed: () => openProviderProbe(
-                context,
-                providerName: provider.name.isEmpty
-                    ? provider.id
-                    : provider.name,
-                model: model.id,
-                providerID: provider.id,
-              ),
-              child: Text(l10n.providerModelsTest),
+          _modelRow(context, l10n, model),
+      ],
+    );
+  }
+
+  Widget _modelRow(
+    BuildContext context,
+    AppLocalizations l10n,
+    CatalogModel model,
+  ) {
+    final ref = ModelRef(providerID: model.providerID, modelID: model.id);
+    final enabled = controller.isModelEnabled(ref);
+    return ListTile(
+      key: ValueKey('provider-model-${provider.id}-${model.id}'),
+      dense: true,
+      title: Text(model.name.isEmpty ? model.id : model.name),
+      subtitle: Text(model.id),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextButton(
+            onPressed: () => openProviderProbe(
+              context,
+              providerName: provider.name.isEmpty
+                  ? provider.id
+                  : provider.name,
+              model: model.id,
+              providerID: provider.id,
+            ),
+            child: Text(l10n.providerModelsTest),
+          ),
+          Switch(
+            key: ValueKey('provider-model-switch-${provider.id}-${model.id}'),
+            value: enabled,
+            onChanged: (value) => unawaited(
+              controller.setModelEnabled(ref, value),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }
 
-/// Opens the five checks, pre-filling what can be known from the provider id.
+/// Opens the three checks, pre-filling what can be known from the provider id.
 ///
 /// The base URL is a convenience, not a claim: providers the server owns do
 /// not expose their endpoint through the catalogue, so the well-known ones

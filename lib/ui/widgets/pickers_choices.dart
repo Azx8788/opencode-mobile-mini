@@ -39,7 +39,18 @@ List<ModelRecommendation>? modelChoicesFor(
   final current = sessionID == null
       ? controller.selectedModel
       : controller.modelForSession(sessionID);
-  final models = presentModels(catalog.models, selected: current);
+  // A model turned off in the catalog page is not recommended either: the
+  // first view would otherwise offer exactly what the person hid.
+  final models = [
+    for (final model in presentModels(catalog.models, selected: current))
+      if (controller.isModelEnabled(
+            ModelRef(providerID: model.providerID, modelID: model.id),
+          ) ||
+          (current != null &&
+              current.providerID == model.providerID &&
+              current.modelID == model.id))
+        model,
+  ];
   final library = controller.modelLibrary;
   final choices = recommendModels(
     models,

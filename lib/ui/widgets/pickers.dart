@@ -512,8 +512,33 @@ class _ModelCatalogViewState extends State<ModelCatalogView>
       ? widget.sessionID
       : null;
 
-  CatalogSnapshot? get _catalog =>
-      widget.controller.catalogForSession(_scopedSessionID);
+  /// The catalog the picker shows: the server's, minus the models this
+  /// phone's owner turned off.
+  ///
+  /// The model in use stays visible even when it was turned off, so opening
+  /// the picker does not look like the conversation lost its model. Turning
+  /// it off hides it from the list; it does not unload it here.
+  CatalogSnapshot? get _catalog {
+    final catalog = widget.controller.catalogForSession(_scopedSessionID);
+    if (catalog == null) return null;
+    final current = _currentModel;
+    final models = [
+      for (final model in catalog.models)
+        if (widget.controller.isModelEnabled(
+              ModelRef(providerID: model.providerID, modelID: model.id),
+            ) ||
+            (current != null &&
+                current.providerID == model.providerID &&
+                current.modelID == model.id))
+          model,
+    ];
+    if (models.length == catalog.models.length) return catalog;
+    return CatalogSnapshot(
+      providers: catalog.providers,
+      models: models,
+      agents: catalog.agents,
+    );
+  }
 
   ModelRef? get _currentModel => _scopedSessionID == null
       ? widget.controller.selectedModel

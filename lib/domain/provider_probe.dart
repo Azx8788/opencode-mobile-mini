@@ -1,7 +1,7 @@
-/// Asks a provider five small questions, the way the app will ask them.
+/// Asks a provider three small questions, the way the app will ask them.
 ///
 /// A model list proves the endpoint answers; it does not prove the endpoint
-/// can hold a conversation. The five probes here are the shape of a real
+/// can hold a conversation. The three probes here are the shape of a real
 /// turn, each one thing the chat path depends on:
 ///
 /// 1. **Non-streaming** — a plain completion comes back with text.
@@ -9,10 +9,6 @@
 ///    blob at the end (the chat view draws tokens as they arrive).
 /// 3. **Tool calling** — a declared function is actually called by name,
 ///    which is how the agent runs commands and edits files.
-/// 4. **Instruction** — a system prompt is obeyed, not merely accepted.
-/// 5. **Finish condition** — a token ceiling ends the turn with the
-///    provider's own "hit the limit" signal, so the app can tell a cut-off
-///    reply from a finished one.
 ///
 /// Every probe is a single request and a small, explicit assertion. Failures
 /// carry the provider's status and a short body excerpt — never the key.
@@ -25,13 +21,7 @@ import 'dart:io';
 import 'custom_provider.dart';
 
 /// What a probe checks. The order is the order they run in.
-enum ProviderProbeKind {
-  nonStreaming,
-  streaming,
-  toolCall,
-  instruction,
-  finishReason,
-}
+enum ProviderProbeKind { nonStreaming, streaming, toolCall }
 
 /// One probe's verdict, in words a settings screen can show.
 class ProviderProbeResult {
@@ -262,24 +252,6 @@ class ProviderProbe {
         ];
         body['tools'] = [_chatTool];
         body['tool_choice'] = 'auto';
-      case ProviderProbeKind.instruction:
-        body['max_tokens'] = 16;
-        body['messages'] = [
-          {
-            'role': 'system',
-            'content':
-                'You are a calculator. Reply with the single digit answer and nothing else.',
-          },
-          {'role': 'user', 'content': 'What is 2+2?'},
-        ];
-      case ProviderProbeKind.finishReason:
-        body['max_tokens'] = 8;
-        body['messages'] = [
-          {
-            'role': 'user',
-            'content': 'Write a long paragraph about the history of Berlin.',
-          },
-        ];
     }
     return body;
   }
@@ -339,16 +311,6 @@ class ProviderProbe {
             },
           },
         ];
-      case ProviderProbeKind.instruction:
-        body['max_output_tokens'] = 16;
-        body['instructions'] =
-            'You are a calculator. Reply with the single digit answer and nothing else.';
-        body['input'] = [text('user', 'What is 2+2?')];
-      case ProviderProbeKind.finishReason:
-        body['max_output_tokens'] = 8;
-        body['input'] = [
-          text('user', 'Write a long paragraph about the history of Berlin.'),
-        ];
     }
     return body;
   }
@@ -394,21 +356,6 @@ class ProviderProbe {
             },
           },
         ];
-      case ProviderProbeKind.instruction:
-        body['max_tokens'] = 16;
-        body['system'] =
-            'You are a calculator. Reply with the single digit answer and nothing else.';
-        body['messages'] = [
-          {'role': 'user', 'content': 'What is 2+2?'},
-        ];
-      case ProviderProbeKind.finishReason:
-        body['max_tokens'] = 8;
-        body['messages'] = [
-          {
-            'role': 'user',
-            'content': 'Write a long paragraph about the history of Berlin.',
-          },
-        ];
     }
     return body;
   }
@@ -437,8 +384,6 @@ class ProviderProbe {
       ProviderProbeKind.streaming => const _Verdict(false, 'Unreachable'),
       ProviderProbeKind.nonStreaming => _judgeText(protocol, body),
       ProviderProbeKind.toolCall => _judgeTool(protocol, body),
-      ProviderProbeKind.instruction => _judgeInstruction(protocol, body),
-      ProviderProbeKind.finishReason => _judgeFinish(protocol, body),
     };
   }
 
@@ -537,42 +482,6 @@ class ProviderProbe {
     final content = body['content'];
     if (content is! List) return false;
     return content.any((item) => item is Map && item['type'] == 'tool_use');
-  }
-
-  static _Verdict _judgeInstruction(ProviderProtocol protocol, Map body) {
-    final text = _textOf(protocol, body).trim();
-    if (text.isEmpty) {
-      return const _Verdict(false, 'No text in the reply');
-    }
-    return text.contains('4')
-        ? _Verdict(true, 'Obeyed the system prompt: ${_short(text)}')
-        : _Verdict(false, 'Ignored the system prompt: ${_short(text)}');
-  }
-
-  static _Verdict _judgeFinish(ProviderProtocol protocol, Map body) {
-    switch (protocol) {
-      case ProviderProtocol.chatCompletions:
-        final choices = body['choices'];
-        final first = choices is List && choices.isNotEmpty
-            ? choices.first
-            : null;
-        final reason = first is Map ? first['finish_reason'] : null;
-        return reason == 'length'
-            ? const _Verdict(true, 'Stopped at the token ceiling')
-            : _Verdict(false, 'finish_reason was $reason, not length');
-      case ProviderProtocol.responses:
-        final status = body['status'];
-        final details = body['incomplete_details'];
-        final reason = details is Map ? details['reason'] : null;
-        return status == 'incomplete' && reason == 'max_output_tokens'
-            ? const _Verdict(true, 'Stopped at the token ceiling')
-            : _Verdict(false, 'status was $status, reason $reason');
-      case ProviderProtocol.anthropic:
-        final reason = body['stop_reason'];
-        return reason == 'max_tokens'
-            ? const _Verdict(true, 'Stopped at the token ceiling')
-            : _Verdict(false, 'stop_reason was $reason, not max_tokens');
-    }
   }
 
   /// The assistant text, wherever the protocol keeps it.

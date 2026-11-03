@@ -62,6 +62,94 @@ import 'app_localizations_zh.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
+  /// No description provided for @toolsDisableNamed.
+  String toolsDisableNamed(String name);
+
+  /// No description provided for @toolsEnableNamed.
+  String toolsEnableNamed(String name);
+
+  /// No description provided for @toolsDisabledNamed.
+  String toolsDisabledNamed(String name);
+
+  /// No description provided for @toolsEnabledNamed.
+  String toolsEnabledNamed(String name);
+
+  /// No description provided for @toolsConfigureUnavailable.
+  String get toolsConfigureUnavailable;
+
+  /// No description provided for @toolsConfigureFailed.
+  String toolsConfigureFailed(String message);
+  /// No description provided for @providerManageTitle.
+  String get providerManageTitle;
+
+  /// No description provided for @providerManageIntro.
+  String get providerManageIntro;
+
+  /// No description provided for @providerManageRefresh.
+  String get providerManageRefresh;
+
+  /// No description provided for @providerManageWorking.
+  String get providerManageWorking;
+
+  /// No description provided for @providerManageEmpty.
+  String get providerManageEmpty;
+
+  /// No description provided for @providerManageEmptyBody.
+  String get providerManageEmptyBody;
+
+  /// No description provided for @providerManageLoadFailed.
+  String get providerManageLoadFailed;
+
+  /// No description provided for @providerManageModels.
+  String providerManageModels(int count);
+
+  /// No description provided for @providerManageDeleteTitle.
+  String providerManageDeleteTitle(String name);
+
+  /// No description provided for @providerManageDeleteBody.
+  String get providerManageDeleteBody;
+
+  /// No description provided for @providerManageDeleted.
+  String providerManageDeleted(String name);
+
+  /// No description provided for @providerManageEdit.
+  String get providerManageEdit;
+
+  /// No description provided for @providerManageTest.
+  String get providerManageTest;
+
+  /// No description provided for @providerManageDelete.
+  String get providerManageDelete;
+
+  /// No description provided for @providerManageMenu.
+  String providerManageMenu(String name);
+
+  /// No description provided for @providerManageNoModel.
+  String get providerManageNoModel;
+
+  /// No description provided for @providerManageNoKey.
+  String get providerManageNoKey;
+
+  /// No description provided for @providerManageUnreadable.
+  String providerManageUnreadable(int count);
+
+  /// No description provided for @providerManageUnreadableBody.
+  String get providerManageUnreadableBody;
+
+  /// No description provided for @providerEditTitle.
+  String get providerEditTitle;
+
+  /// No description provided for @providerEditIdLocked.
+  String get providerEditIdLocked;
+
+  /// No description provided for @providerEditSaved.
+  String providerEditSaved(String name);
+
+  /// No description provided for @providerEditTest.
+  String get providerEditTest;
+
+  /// No description provided for @providerModelsCount.
+  String providerModelsCount(int on, int total);
   AppLocalizations(String locale)
     : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 

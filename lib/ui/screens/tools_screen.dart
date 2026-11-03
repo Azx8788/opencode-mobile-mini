@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 
 import '../../domain/models.dart';
 import '../../domain/product_repository.dart';
+import '../../domain/sv3_tool_configuration.dart'
+    show CodingToolConfigScope, ToolConfigurationGateway;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../../state/server_presentation.dart';
@@ -312,6 +314,11 @@ class _ToolsScreenState extends State<ToolsScreen> {
   /// sentence (emulator QA B11: the whole prompt text the server wrote for
   /// the model read as the row's title). The full description is on the
   /// tool's sheet the row opens.
+  ///
+  /// The menu writes a persistent enable/disable, the one configuration this
+  /// server accepts per tool. Neither state is reported back by the tool
+  /// catalog, so both actions are offered by name instead of pretending a
+  /// switch knows which one is in effect.
   Widget _callableToolRow(AppLocalizations l10n, CodingToolInfo tool) {
     final summary = toolSummary(tool.description);
     return KitRow(
@@ -325,7 +332,56 @@ class _ToolsScreenState extends State<ToolsScreen> {
       supportingMaxLines: 2,
       trailing: const KitChevron(),
       onTap: () => _showTool(tool),
+      menuLabel: l10n.toolsDetailMenu(tool.id),
+      menu: [
+        KitMenuItem(
+          key: Key('coding-tool-disable-${tool.id}'),
+          label: l10n.toolsDisableNamed(tool.id),
+          icon: AppIconography.close,
+          destructive: true,
+          onSelected: () => _setToolEnabled(tool.id, false),
+        ),
+        KitMenuItem(
+          key: Key('coding-tool-enable-${tool.id}'),
+          label: l10n.toolsEnableNamed(tool.id),
+          icon: AppIconography.check,
+          onSelected: () => _setToolEnabled(tool.id, true),
+        ),
+      ],
     );
+  }
+
+  /// Writes the tool's persistent state, then re-reads the inventory.
+  ///
+  /// A failure can follow a committed write, so the list is refreshed either
+  /// way and no automatic retry is attempted.
+  Future<void> _setToolEnabled(String id, bool enabled) async {
+    final l10n = _copy(context);
+    final repository = await widget.controller.prepareActionRepository();
+    if (!mounted) return;
+    if (repository is! ToolConfigurationGateway) {
+      _say(l10n.toolsConfigureUnavailable);
+      return;
+    }
+    try {
+      await repository.setCodingToolEnabled(
+        id,
+        enabled,
+        scope: CodingToolConfigScope.global,
+      );
+      if (!mounted) return;
+      _say(enabled ? l10n.toolsEnabledNamed(id) : l10n.toolsDisabledNamed(id));
+    } catch (error) {
+      if (!mounted) return;
+      _say(l10n.toolsConfigureFailed('$error'));
+    }
+    await _load();
+  }
+
+  void _say(String message) {
+    ScaffoldMessenger.maybeOf(
+      context,
+    )?.showSnackBar(SnackBar(content: Text(message)));
   }
 
   Widget _registeredToolRow(AppLocalizations l10n, String id) => KitRow(

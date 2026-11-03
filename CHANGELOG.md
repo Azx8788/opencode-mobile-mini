@@ -2,6 +2,19 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.2.0+3 — 2026-11-04
+
+Providers are now managed, not just added. Integrations lists the custom
+providers written into the server's config, opens one in the same form filled
+in (key included, id locked), tests it with the key it already has, and removes
+it with a backup left on disk. An existing entry can change protocol without
+retyping anything. Model catalogs gained a switch per model: a gateway serving
+hundreds of models shows only the ones this phone keeps, and turning one off
+never touches the server or another client. The provider check is three
+requests now — plain reply, streaming, tool call — opens pre-filled and runs at
+once from the list. Tool rows gained a long-press menu that writes one tool's
+persistent enable/disable on the server. Builds are `0.2.0+3`.
+
 ## 0.1.1+2 — 2026-11-03
 
 Token usage now sits under the composer (input, output and cache reads for the

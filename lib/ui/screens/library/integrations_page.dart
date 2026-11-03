@@ -185,11 +185,11 @@ extension _IntegrationsPage on _IntegrationsScreenState {
             runSpacing: 8,
             children: [
               KitButton.secondary(
-                key: const ValueKey('add-custom-provider'),
-                label: l10n.providerAddOpen,
-                icon: AppIconography.add,
+                key: const ValueKey('open-custom-providers'),
+                label: l10n.providerManageTitle,
+                icon: AppIconography.model,
                 expand: false,
-                onPressed: _openCustomProvider,
+                onPressed: _openCustomProviders,
               ),
               KitButton.secondary(
                 key: const ValueKey('open-provider-models'),
@@ -533,13 +533,14 @@ extension _IntegrationsPage on _IntegrationsScreenState {
   /// A provider written into the server's config only shows up here after
   /// the catalogue is read again, so the page reloads when the form reports
   /// a save.
-  Future<void> _openCustomProvider() async {
-    final saved = await Navigator.of(context).push<bool>(
+  /// Opens the provider list, where adding, editing and removing all live.
+  Future<void> _openCustomProviders() async {
+    await Navigator.of(context).push<bool>(
       MaterialPageRoute(
-        builder: (_) => CustomProviderScreen(controller: widget.controller),
+        builder: (_) => CustomProvidersScreen(controller: widget.controller),
       ),
     );
-    if (saved == true && mounted) await _load();
+    if (mounted) await _load();
   }
 
   /// Opens the catalogue: every provider, every model, and the five checks.

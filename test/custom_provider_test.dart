@@ -299,6 +299,26 @@ void main() {
         throwsA(isA<Exception>()),
       );
     });
+
+    test('replaces the same id when the edit path asks it to', () {
+      final existing = <String, Object?>{
+        'provider': {
+          'my-gateway': {
+            'npm': '@ai-sdk/openai',
+            'options': {'baseURL': 'https://old.test/v1'},
+          },
+        },
+      };
+      final document = draft().mergeInto(
+        existing,
+        ProviderConfigFormat.v1,
+        replace: true,
+      );
+      final entry =
+          (document['provider'] as Map)['my-gateway'] as Map;
+      expect(entry['npm'], '@ai-sdk/openai-compatible');
+      expect((entry['options'] as Map)['baseURL'], 'https://api.example.com/v1');
+    });
   });
 
   group('validation', () {

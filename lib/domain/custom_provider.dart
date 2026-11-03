@@ -116,9 +116,12 @@ class CustomProviderDraft {
     this.keyMode = ProviderKeyMode.secretFile,
     List<CustomProviderModel> models = const [],
     this.timeoutMs = 600000,
+    String? keyFile,
+    this.keyPlaceholder,
   }) : id = normalizeProviderId(id),
        baseUrl = normalizeBaseUrl(baseUrl, protocol),
-       models = normalizeModels(models);
+       models = normalizeModels(models),
+       _keyFile = keyFile;
 
   final String name;
   final String id;
@@ -129,11 +132,25 @@ class CustomProviderDraft {
   final List<CustomProviderModel> models;
   final int timeoutMs;
 
+  /// Where an existing entry keeps its key. Null for a new provider, which
+  /// uses the standard location. An entry read back from the config may
+  /// point anywhere, and moving it on edit would leave the key behind.
+  final String? _keyFile;
+
+  /// The original `{env:…}`-style reference an entry used instead of a key
+  /// of its own. Kept so editing an entry does not silently drop it.
+  final String? keyPlaceholder;
+
   /// The server-side path holding the key, or null when the key is not a
   /// file. `/root` because the in-app server runs as root; `{file:}` needs an
   /// absolute path so no shell ever has to expand `~`.
-  String? get secretPath =>
-      keyMode == ProviderKeyMode.secretFile ? '/root/.secrets/$id.key' : null;
+  String? get secretPath => keyMode == ProviderKeyMode.secretFile
+      ? (_keyFile ?? '/root/.secrets/$id.key')
+      : null;
+
+  /// True when this draft carries a key to write. An edit that leaves the
+  /// key box empty keeps the file the config already points at.
+  bool get hasKey => apiKey?.trim().isNotEmpty ?? false;
 
   /// The provider id as a file name would hold it: lowercase, no spaces and
   /// nothing a config key or a shell path would need quoted.
@@ -245,6 +262,8 @@ class CustomProviderDraft {
       'baseURL': baseUrl,
       if (keyMode == ProviderKeyMode.secretFile) 'apiKey': '{file:$secretPath}',
       if (keyMode == ProviderKeyMode.plaintext) 'apiKey': apiKey!.trim(),
+      if (keyMode == ProviderKeyMode.external && keyPlaceholder != null)
+        'apiKey': keyPlaceholder!,
       'timeout': timeoutMs,
     },
     'models': {
@@ -282,6 +301,8 @@ class CustomProviderDraft {
       'baseURL': baseUrl,
       if (keyMode == ProviderKeyMode.secretFile) 'apiKey': '{file:$secretPath}',
       if (keyMode == ProviderKeyMode.plaintext) 'apiKey': apiKey!.trim(),
+      if (keyMode == ProviderKeyMode.external && keyPlaceholder != null)
+        'apiKey': keyPlaceholder!,
       'timeout': timeoutMs,
     },
     'models': {
@@ -310,15 +331,18 @@ class CustomProviderDraft {
     _rootKey(format): {id: toProviderEntry(format)},
   };
 
-  /// `existing` with this provider added. `null` means "no file yet".
+  /// `existing` with this provider added, or with an entry of the same id
+  /// replaced when [replace] is set (the edit path).
   ///
-  /// An existing provider of the same id is refused rather than replaced:
-  /// the person may be editing one they already rely on, and the form is not
-  /// a place to lose a configuration quietly.
+  /// Adding refuses a duplicate id rather than replacing it: the person may
+  /// be creating one they already rely on, and the form is not a place to
+  /// lose a configuration quietly. Editing passes [replace], because there
+  /// the duplicate is the point.
   Map<String, Object?> mergeInto(
     Map<String, Object?>? existing,
-    ProviderConfigFormat format,
-  ) {
+    ProviderConfigFormat format, {
+    bool replace = false,
+  }) {
     final entry = toProviderEntry(format);
     if (existing == null) return toDocument(format);
     final rootKey = _rootKey(format);
@@ -335,7 +359,7 @@ class CustomProviderDraft {
     }
     final providers = <String, Object?>{};
     current.forEach((key, value) => providers['$key'] = value);
-    if (providers.containsKey(id)) {
+    if (providers.containsKey(id) && !replace) {
       throw ProductException('A provider named "$id" already exists');
     }
     providers[id] = entry;

@@ -2,13 +2,23 @@ import '../domain/models.dart' show ModelRef;
 
 /// Personal model shortcuts for one server. These never choose a model for
 /// another session; selection remains the connection controller's job.
+///
+/// [disabled] is the local "only these models" subset: a provider may serve
+/// four hundred models, and the picker is not a catalog to scroll. It is a
+/// list of what the person turned off, so an empty list keeps the old
+/// behaviour — everything the server reports is shown.
 class ModelLibrary {
   static const recentLimit = 8;
 
   final List<ModelRef> favorites;
   final List<ModelRef> recent;
+  final List<ModelRef> disabled;
 
-  const ModelLibrary({this.favorites = const [], this.recent = const []});
+  const ModelLibrary({
+    this.favorites = const [],
+    this.recent = const [],
+    this.disabled = const [],
+  });
 
   static bool sameModel(ModelRef? a, ModelRef? b) =>
       a != null &&
@@ -19,6 +29,10 @@ class ModelLibrary {
   bool isFavorite(ModelRef model) =>
       favorites.any((item) => sameModel(item, model));
 
+  /// Absent from [disabled] means shown: the picker starts with everything.
+  bool isEnabled(ModelRef model) =>
+      !disabled.any((item) => sameModel(item, model));
+
   ModelLibrary toggleFavorite(ModelRef model) => ModelLibrary(
     favorites: List.unmodifiable(
       isFavorite(model)
@@ -26,6 +40,19 @@ class ModelLibrary {
           : [...favorites, model.normalized],
     ),
     recent: recent,
+    disabled: disabled,
+  );
+
+  /// Turns a model on or off in this phone's picker. This does not touch the
+  /// server: another client still sees every model the provider serves.
+  ModelLibrary withEnabled(ModelRef model, bool enabled) => ModelLibrary(
+    favorites: favorites,
+    recent: recent,
+    disabled: List.unmodifiable(
+      enabled
+          ? disabled.where((item) => !sameModel(item, model))
+          : [...disabled, model.normalized],
+    ),
   );
 
   ModelLibrary remember(ModelRef model) => ModelLibrary(
@@ -36,6 +63,7 @@ class ModelLibrary {
         ...recent.where((item) => !sameModel(item, model)),
       ].take(recentLimit),
     ),
+    disabled: disabled,
   );
 
   /// Only call after a successful catalog refresh. A failed request must
@@ -43,6 +71,7 @@ class ModelLibrary {
   ModelLibrary retainWhere(bool Function(ModelRef) available) => ModelLibrary(
     favorites: List.unmodifiable(favorites.where(available)),
     recent: List.unmodifiable(recent.where(available)),
+    disabled: List.unmodifiable(disabled.where(available)),
   );
 
   ModelRef? next(
@@ -66,6 +95,8 @@ class ModelLibrary {
   Map<String, Object> toJson() => {
     'favorites': favorites.map((model) => model.toJson()).toList(),
     'recent': recent.map((model) => model.toJson()).toList(),
+    if (disabled.isNotEmpty)
+      'disabled': disabled.map((model) => model.toJson()).toList(),
   };
 
   factory ModelLibrary.fromJson(Object? value) {
@@ -90,6 +121,7 @@ class ModelLibrary {
     return ModelLibrary(
       favorites: read(value['favorites']),
       recent: read(value['recent'], limit: recentLimit),
+      disabled: read(value['disabled']),
     );
   }
 }

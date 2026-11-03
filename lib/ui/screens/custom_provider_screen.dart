@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -8,6 +9,7 @@ import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_provider_store.dart';
 import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../domain/custom_provider.dart';
+import '../../domain/custom_provider_record.dart';
 import '../../domain/provider_model_source.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
@@ -38,7 +40,18 @@ class CustomProviderScreen extends StatefulWidget {
   /// The in-app server bridge. Null means "make one" — instances are cheap.
   final BuiltinLinux? linux;
 
-  const CustomProviderScreen({super.key, required this.controller, this.linux});
+  /// An entry to edit. Null adds a new one.
+  ///
+  /// Editing keeps the id: renaming a provider means removing it and adding
+  /// another, because every conversation pinned to it would lose its model.
+  final CustomProviderRecord? editing;
+
+  const CustomProviderScreen({
+    super.key,
+    required this.controller,
+    this.linux,
+    this.editing,
+  });
 
   @override
   State<CustomProviderScreen> createState() => _CustomProviderScreenState();
@@ -74,12 +87,33 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
   /// this app may write.
   bool get _writable => looksLikeInAppServer(widget.controller.profile);
 
+  /// True when editing an entry already in the config.
+  bool get _editing => widget.editing != null;
+
   ProviderConfigFormat get _format =>
       _resolved?.format ?? ProviderConfigFormat.v2;
 
   @override
   void initState() {
     super.initState();
+    final editing = widget.editing;
+    if (editing != null) {
+      _name.text = editing.name;
+      _id.text = editing.id;
+      _baseUrl.text = editing.baseUrl;
+      _protocol = editing.protocol;
+      _listed = editing.models;
+      _selected.addAll(editing.models.map((model) => model.id));
+      _autoID = false;
+      if (editing.apiKey != null) _apiKey.text = editing.apiKey!;
+      if (editing.keyMode == ProviderKeyMode.secretFile &&
+          editing.secretPath != null) {
+        // The key is shown the way the person saved it, so editing the
+        // protocol does not also mean retyping the key. The file lives on
+        // the server this app can read.
+        unawaited(_loadSecret(editing.secretPath!));
+      }
+    }
     _id.addListener(() {
       final fixed = CustomProviderDraft.normalizeProviderId(_id.text);
       if (_id.text == fixed) return;
@@ -92,6 +126,12 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       );
     });
     _prepare();
+  }
+
+  Future<void> _loadSecret(String path) async {
+    final key = await _store.readSecret(path);
+    if (!mounted || key == null || key.isEmpty) return;
+    setState(() => _apiKey.text = key);
   }
 
   Future<void> _prepare() async {
@@ -126,6 +166,14 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
     protocol: _protocol,
     baseUrl: _baseUrl.text,
     apiKey: _apiKey.text,
+    // An entry that keeps its key elsewhere (`{env:…}`, a server sign-in)
+    // stays that way: saving must not turn it into a file reference with
+    // nothing in the file.
+    keyMode: widget.editing?.keyMode ?? ProviderKeyMode.secretFile,
+    keyPlaceholder: widget.editing?.keyPlaceholder,
+    // An edited entry keeps the key file it already points at; a new one
+    // uses the standard location.
+    keyFile: widget.editing?.secretPath,
     models: [
       for (final id in _selected)
         _listed.firstWhere(
@@ -200,7 +248,11 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       final draft = _draft();
       draft.validate();
       final resolved = _resolved ?? await _store.resolve();
-      final receipt = await _store.save(draft, resolved: resolved);
+      final receipt = await _store.save(
+        draft,
+        resolved: resolved,
+        replace: _editing,
+      );
       final reloaded = await _tryReload();
       if (!mounted) return;
       setState(() {
@@ -304,7 +356,7 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
     return KitScreen(
       width: KitScreenWidth.list,
       topBar: KitTopBar(
-        title: l10n.providerAddTitle,
+        title: _editing ? l10n.providerEditTitle : l10n.providerAddTitle,
         subtitle: widget.controller.profile?.name,
       ),
       status: _saving
@@ -398,7 +450,9 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       label: l10n.providerAddId,
       controller: _id,
       kind: KitFieldKind.mono,
-      helper: l10n.providerAddIdHelper,
+      helper: _editing ? null : l10n.providerAddIdHelper,
+      enabled: !_editing,
+      disabledReason: _editing ? l10n.providerEditIdLocked : null,
       onChanged: (_) {
         _autoID = false;
         setState(() {});
@@ -450,7 +504,36 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       onChanged: (_) => setState(() {}),
       fieldKey: const ValueKey('custom-provider-api-key'),
     ),
+    _gap(context),
+    // Tests what the form currently says, before saving it: a wrong protocol
+    // or endpoint is cheaper to find here than in a conversation.
+    KitButton.secondary(
+      key: const ValueKey('custom-provider-test'),
+      label: l10n.providerEditTest,
+      icon: AppIconography.play,
+      onPressed: _baseUrl.text.trim().isEmpty || _selected.isEmpty
+          ? null
+          : _testNow,
+    ),
   ];
+
+  Future<void> _testNow() async {
+    if (_selected.isEmpty) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ProviderProbeScreen(
+          providerName: _name.text.trim().isEmpty
+              ? _id.text.trim()
+              : _name.text.trim(),
+          model: _selected.first,
+          baseUrl: CustomProviderDraft.normalizeBaseUrl(_baseUrl.text, _protocol),
+          protocol: _protocol,
+          apiKey: _apiKey.text,
+          autoRun: true,
+        ),
+      ),
+    );
+  }
 
   List<Widget> _modelsSection(BuildContext context, AppLocalizations l10n) {
     final filtered = _query.trim().isEmpty
@@ -587,7 +670,9 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
             key: const ValueKey('custom-provider-saved'),
             size: KitStateSize.page,
             icon: AppIconography.checkCircle,
-            title: l10n.providerAddSaved(_name.text.trim(), receipt.configPath),
+            title: _editing
+                ? l10n.providerEditSaved(_name.text.trim())
+                : l10n.providerAddSaved(_name.text.trim(), receipt.configPath),
             body: _reloaded
                 ? l10n.providerAddRestarted
                 : l10n.providerAddRestartHint,

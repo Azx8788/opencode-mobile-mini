@@ -6,6 +6,118 @@ import 'app_localizations.dart';
 
 /// The translations for English (`en`).
 class AppLocalizationsEn extends AppLocalizations {
+  @override
+  String toolsDisableNamed(String name) {
+    return 'Disable $name';
+  }
+
+  @override
+  String toolsEnableNamed(String name) {
+    return 'Enable $name';
+  }
+
+  @override
+  String toolsDisabledNamed(String name) {
+    return 'Disabled $name; it applies to new conversations.';
+  }
+
+  @override
+  String toolsEnabledNamed(String name) {
+    return 'Enabled $name; it applies to new conversations.';
+  }
+
+  @override
+  String get toolsConfigureUnavailable => 'This server does not allow per-tool configuration.';
+
+  @override
+  String toolsConfigureFailed(String message) {
+    return 'The change was not saved: $message';
+  }
+  @override
+  String get providerManageTitle => 'Providers';
+
+  @override
+  String get providerManageIntro => 'The providers written into the server configuration. Tap a row to edit it; long-press for test and delete.';
+
+  @override
+  String get providerManageRefresh => 'Read again';
+
+  @override
+  String get providerManageWorking => 'Writing the configuration…';
+
+  @override
+  String get providerManageEmpty => 'No custom providers yet';
+
+  @override
+  String get providerManageEmptyBody => 'Add an OpenAI-compatible or Anthropic-compatible endpoint; its models are read from the endpoint itself.';
+
+  @override
+  String get providerManageLoadFailed => 'Could not read the provider configuration';
+
+  @override
+  String providerManageModels(int count) {
+    return '$count models';
+  }
+
+  @override
+  String providerManageDeleteTitle(String name) {
+    return 'Delete the provider “$name”?';
+  }
+
+  @override
+  String get providerManageDeleteBody => 'This removes the entry from the server configuration and keeps a backup. Conversations using this provider will need another model.';
+
+  @override
+  String providerManageDeleted(String name) {
+    return 'Deleted “$name”';
+  }
+
+  @override
+  String get providerManageEdit => 'Edit';
+
+  @override
+  String get providerManageTest => 'Test connection';
+
+  @override
+  String get providerManageDelete => 'Delete';
+
+  @override
+  String providerManageMenu(String name) {
+    return 'Actions for “$name”';
+  }
+
+  @override
+  String get providerManageNoModel => 'This provider has no saved models. Edit it and select one first.';
+
+  @override
+  String get providerManageNoKey => 'The key for this provider could not be read. Edit it, enter the key, then test.';
+
+  @override
+  String providerManageUnreadable(int count) {
+    return '$count entries cannot be edited here';
+  }
+
+  @override
+  String get providerManageUnreadableBody => 'Their shape is not something this form can rewrite safely (an override of a built-in provider, for example). Edit them on the server.';
+
+  @override
+  String get providerEditTitle => 'Edit provider';
+
+  @override
+  String get providerEditIdLocked => 'The id cannot change while editing: renaming means a new provider, and conversations pinned to this one lose their model.';
+
+  @override
+  String providerEditSaved(String name) {
+    return 'Saved “$name”';
+  }
+
+  @override
+  String get providerEditTest => 'Test connection';
+
+  @override
+  String providerModelsCount(int on, int total) {
+    return '$on of $total shown';
+  }
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
@@ -36030,7 +36142,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerModelsTitle => 'Models and checks';
 
   @override
-  String get providerModelsHint => 'Every provider the server knows, and the models it serves. Tap Test to run the five checks against one model.';
+  String get providerModelsHint => 'Every provider the server knows, and the models it serves. Tap Test to run the three checks against one model.';
 
   @override
   String get providerModelsEmpty => 'The server has not reported any providers yet.';
@@ -36059,13 +36171,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerProbeProtocol => 'Protocol';
 
   @override
-  String get providerProbeRun => 'Run the five checks';
+  String get providerProbeRun => 'Run the three checks';
 
   @override
   String get providerProbeRunning => 'Running…';
 
   @override
-  String get providerProbeNote => 'One short request per check: reply, stream, tool call, system prompt, finish reason.';
+  String get providerProbeNote => 'One short request per check: a plain reply, a stream, a tool call.';
 
   @override
   String get providerProbeNeedBaseUrl => "Enter the provider's base URL first.";
