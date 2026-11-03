@@ -146,8 +146,9 @@ enum _CounterPhase { hidden, near, limit }
 ///
 /// Field states (KitField.md): `default`, `focused`, `filled`, `error`,
 /// `disabled`, `checking`, `checking-slow`, `counter` (from 80 % of
-/// [maxLength]), `limit`. The secret kind adds `secret-masked`,
-/// `secret-revealed` and `secret-saved`; the multiline kind adds
+/// [maxLength]), `limit`. The secret kind adds `secret-plain` and
+/// `secret-saved` (it is never masked; Android skins hijack password fields
+/// with their own secure keyboard); the multiline kind adds
 /// `multiline-draft-restored`.
 ///
 /// - Loading: none of its own; a field whose value is being fetched is not
@@ -406,7 +407,6 @@ class _KitFieldState extends State<KitField> {
   _RedactedController? _secretEdit;
   FocusNode? _focusListening;
   String _lastText = '';
-  bool _revealed = false;
   bool _hovered = false;
   bool _replacing = false;
   _CounterPhase _phase = _CounterPhase.hidden;
@@ -746,7 +746,12 @@ class _KitFieldState extends State<KitField> {
       focusNode: _focus,
       enabled: widget.enabled,
       autofocus: widget.autofocus,
-      obscureText: secret && !_revealed,
+      // Never obscured. Several Android skins switch to their own "secure
+      // keyboard" as soon as a field reports itself as a password, which is
+      // not the keyboard a person expects when pasting a provider key. The
+      // field still keeps secrets out of suggestions, IME learning and the
+      // widget diagnostics; only the masking is gone.
+      obscureText: false,
       autocorrect: plainWords && !secret,
       enableSuggestions: plainWords && !secret,
       enableIMEPersonalizedLearning: !secret,
@@ -880,19 +885,6 @@ class _KitFieldState extends State<KitField> {
 
     final trailing = <Widget>[
       if (secret && !_showsSaved) ...[
-        KitIconButton(
-          key: widget.revealKey,
-          icon: _revealed ? AppIconography.hidden : AppIconography.visible,
-          size: 20,
-          tooltip: _revealed
-              ? l10n.kitFieldHideNamed(widget.label)
-              : l10n.kitFieldShowNamed(widget.label),
-          selected: _revealed,
-          disabledReason: widget.enabled ? null : widget.disabledReason,
-          onPressed: widget.enabled
-              ? () => setState(() => _revealed = !_revealed)
-              : null,
-        ),
         if (widget._mode == _KitFieldMode.secret)
           KitIconButton(
             key: widget.pasteKey,
