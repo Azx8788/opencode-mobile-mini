@@ -90,8 +90,35 @@ void main() {
     expect(gradle, contains('applicationId = "com.azx8788.opencode.mini"'));
     expect(gradle, contains('namespace = "com.azx8788.opencode.mini"'));
     expect(gradle, contains('"OpenCode Mini"'));
+  });
+
+  // The version used to be asserted as a constant here, which failed on the
+  // first bump. What actually matters is that the pubspec carries a valid
+  // version and that the changelog leads with it, so a bump without notes is
+  // the only way left to fail this check.
+  test('pubspec version is a valid build and heads the changelog', () {
     final pubspec = File('pubspec.yaml').readAsStringSync();
-    expect(pubspec, contains('version: 0.1.0+1'));
+    final match = RegExp(
+      r'^version:\s*(\d+\.\d+\.\d+)\+(\d+)$',
+      multiLine: true,
+    ).firstMatch(pubspec);
+    expect(
+      match,
+      isNotNull,
+      reason: 'pubspec.yaml needs a "major.minor.patch+build" version line',
+    );
+    final version = 'version: ${match!.group(1)}+${match.group(2)}';
+    expect(
+      int.parse(match.group(2)!),
+      greaterThan(0),
+      reason: 'the build number must be a positive integer',
+    );
+    final changelog = File('CHANGELOG.md').readAsStringSync();
+    expect(
+      changelog,
+      contains('## ${match.group(1)}+${match.group(2)} —'),
+      reason: 'CHANGELOG.md must lead with an entry for $version',
+    );
   });
 
   test('only English and Chinese ARB files ship', () {
