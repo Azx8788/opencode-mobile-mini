@@ -388,14 +388,24 @@ extension _ChatNotices on _ChatScreenState {
   /// conversation to [model] when one is given ("Use GPT-5.6 Pro and
   /// resend"). Whatever the message box holds is set aside for the send and
   /// put back after it.
-  Future<void> _resendUnanswered({CatalogModel? model}) async {
+  Future<void> _resendUnanswered({
+    CatalogModel? model,
+    ModelRef? modelRef,
+    String variant = '',
+  }) async {
     final words = _unansweredWords;
     if (words == null || _sending) return;
-    if (model != null) {
+    final target =
+        modelRef ??
+        (model == null
+            ? null
+            : ModelRef(providerID: model.providerID, modelID: model.id));
+    if (target != null) {
       try {
         await _conn.selectModelForSession(
           widget.sessionID,
-          ModelRef(providerID: model.providerID, modelID: model.id),
+          target,
+          variant: variant,
         );
       } catch (error) {
         if (mounted) _showActionError(error);
@@ -405,6 +415,32 @@ extension _ChatNotices on _ChatScreenState {
     }
     _setChatState(() => _promptError = null);
     await _sendInsteadOfDraft(words);
+  }
+
+  /// Returns the conversation to the model it ran on before the switch,
+  /// without sending anything: used when the switch itself was the problem.
+  Future<void> _switchBackModel() async {
+    final model = _previousModel;
+    if (model == null) return;
+    try {
+      await _conn.selectModelForSession(
+        widget.sessionID,
+        model,
+        variant: _previousVariant,
+      );
+    } catch (error) {
+      if (mounted) _showActionError(error);
+      return;
+    }
+    if (mounted) setState(() => _switchCaveats = const []);
+  }
+
+  /// "Switch back to X": returns the conversation to the model it ran on
+  /// before the switch that broke it, then sends the refused prompt again.
+  Future<void> _switchBackAndResend() async {
+    final model = _previousModel;
+    if (model == null) return;
+    await _resendUnanswered(modelRef: model, variant: _previousVariant);
   }
 
   SessionRetryState? get _retryState => _conn.retryStates[widget.sessionID];

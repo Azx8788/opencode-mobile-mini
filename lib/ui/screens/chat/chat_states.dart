@@ -244,6 +244,8 @@ _ChatStatus _promptErrorStatus(
   VoidCallback? onResend,
   String? suggestion,
   VoidCallback? onUseSuggestion,
+  String? previousModel,
+  VoidCallback? onSwitchBack,
 }) {
   final l10n = _chatL10n(context);
   final words = agentErrorWords(message, l10n);
@@ -259,6 +261,19 @@ _ChatStatus _promptErrorStatus(
           onPressed: () => unawaited(
             _showChatErrorDetails(context, title: headline, text: message),
           ),
+        )
+      : null;
+  // A provider that refused one of its own settings cannot be retried into
+  // agreement: the same request fails the same way. The fix that works is
+  // the model this conversation used before the switch.
+  final parameterRefused =
+      classifyAgentError(message) == AgentErrorCause.providerParameter;
+  final switchBack =
+      parameterRefused && previousModel != null && onSwitchBack != null
+      ? KitAction(
+          key: const ValueKey('prompt-error-switch-back'),
+          label: l10n.chatErrorSwitchBackTo(previousModel),
+          onPressed: onSwitchBack,
         )
       : null;
   final modelMissing = kind == MessageErrorKind.modelNotFound;
@@ -279,7 +294,8 @@ _ChatStatus _promptErrorStatus(
         )
       : null;
   final resend =
-      !modelMissing &&
+      !parameterRefused &&
+          !modelMissing &&
           kind != MessageErrorKind.contextOverflow &&
           kind != MessageErrorKind.providerAuth &&
           kind != MessageErrorKind.contentFilter &&
@@ -299,10 +315,12 @@ _ChatStatus _promptErrorStatus(
     messageKey: const ValueKey('prompt-error-headline'),
     supporting: words.hint,
     supportingKey: const ValueKey('prompt-error-hint'),
-    action: use ?? choose ?? resend ?? details,
+    action: switchBack ?? use ?? choose ?? resend ?? details,
     more: [
-      if (use != null) ?choose,
-      if (use != null || choose != null || resend != null) ?details,
+      if (switchBack != null) ?choose,
+      if (switchBack == null && use != null) ?choose,
+      if (switchBack != null || use != null || choose != null || resend != null)
+        ?details,
     ],
     onDismiss: onDismiss,
     dismissTooltip: l10n.chatUiDismissPromptError,

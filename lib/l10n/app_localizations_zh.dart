@@ -10128,6 +10128,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get agentErrorServerDiskFullHint => '请在那台电脑上释放一些空间，然后重试。';
 
   @override
+  String get agentErrorProviderParameter => '模型拒绝了这次请求里的某个设置。';
+
+  @override
+  String get agentErrorProviderParameterHint =>
+      '这家服务商不接受消息里带的一个设置。换回原来的模型，或改掉该设置后重试。';
+
+  @override
   String get agentErrorRecovered => '智能体在此之后继续运行了。';
 
   @override
@@ -18291,6 +18298,31 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatErrorUnknown => '智能体因错误而停止。';
 
   @override
+  String chatErrorSwitchBackTo(String model) {
+    return '换回 $model';
+  }
+
+  @override
+  String chatSwitchCaveatTitle(String model) {
+    return '$model 可能吃不下这段对话。';
+  }
+
+  @override
+  String chatSwitchCaveatImages(int count) {
+    return '图片 $count 张，它读不了';
+  }
+
+  @override
+  String chatSwitchCaveatTools(int count) {
+    return '工具结果 $count 条，它可能读不懂';
+  }
+
+  @override
+  String chatSwitchCaveatContext(int tokens, int limit) {
+    return '约 $tokens 个令牌，超过它的 $limit 上限';
+  }
+
+  @override
   String modelPickerThinkingChip(String level) {
     return '思考：$level';
   }
@@ -19934,6 +19966,17 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get sessionMenuForkHint => '打开一个副本，你可以另作处理';
+
+  @override
+  String chatForkedFrom(String title) {
+    return '分支自“$title”';
+  }
+
+  @override
+  String get chatForkedFromUnknown => '分支自另一段对话';
+
+  @override
+  String get chatForkedOpen => '打开';
 
   @override
   String get sessionMenuContinueComputerHint => '显示在那里继续的命令';

@@ -49,6 +49,10 @@ AgentErrorWords agentErrorWords(String raw, AppLocalizations l10n) {
       l10n.agentErrorServerDiskFull,
       l10n.agentErrorServerDiskFullHint,
     ),
+    AgentErrorCause.providerParameter => (
+      l10n.agentErrorProviderParameter,
+      l10n.agentErrorProviderParameterHint,
+    ),
     null => null,
   };
   if (words != null) {

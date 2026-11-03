@@ -11573,6 +11573,14 @@
     "description": "Plain-language error headline: ENOSPC on the server"
   },
   "agentErrorServerDiskFullHint": "Free some space there, then try again.",
+  "agentErrorProviderParameter": "The model refused one of the request settings.",
+  "@agentErrorProviderParameter": {
+    "description": "Chat: the provider rejected a request parameter (temperature, token limit, tool choice); the fix is usually switching back"
+  },
+  "agentErrorProviderParameterHint": "This provider does not accept a setting sent with the message. Switch back to the model you were using, or change the setting and try again.",
+  "@agentErrorProviderParameterHint": {
+    "description": "Chat: what to do when the provider refused a request parameter"
+  },
   "@agentErrorServerDiskFullHint": {
     "description": "What to do when the server disk is full"
   },
@@ -23090,6 +23098,54 @@
     "description": "Chat: an agent error of the content-filter kind; the server's text is under Details"
   },
   "chatErrorUnknown": "The agent stopped because of an error.",
+  "chatErrorSwitchBackTo": "Switch back to {model}",
+  "chatSwitchCaveatTitle": "{model} may not take this conversation as it is.",
+  "@chatSwitchCaveatTitle": {
+    "description": "Chat status after switching models: the new model may not accept what the history holds",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "chatSwitchCaveatImages": "Images: {count}, which it cannot read",
+  "@chatSwitchCaveatImages": {
+    "description": "Chat status: image attachments in the history that the new model cannot read",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatSwitchCaveatTools": "Tool results: {count}, which it may not understand",
+  "@chatSwitchCaveatTools": {
+    "description": "Chat status: tool results in the history that the new model may not understand",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "chatSwitchCaveatContext": "About {tokens} tokens, over its {limit} window",
+  "@chatSwitchCaveatContext": {
+    "description": "Chat status: the conversation is larger than the new model context window",
+    "placeholders": {
+      "tokens": {
+        "type": "int"
+      },
+      "limit": {
+        "type": "int"
+      }
+    }
+  },
+  "@chatErrorSwitchBackTo": {
+    "description": "Chat error banner: the action that moves this conversation back to the model that worked before",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
   "@chatErrorUnknown": {
     "description": "Chat: an agent or prompt error the app does not recognise; the server's text is under Details, never shown as the headline"
   },
@@ -25422,6 +25478,23 @@
     "description": "Conversation menu › Compact context: what happens"
   },
   "sessionMenuForkHint": "Opens a copy you can take another way",
+  "chatForkedFrom": "Branched from “{title}”",
+  "@chatForkedFrom": {
+    "description": "Status line under the title of a forked conversation: where this copy came from",
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "chatForkedFromUnknown": "Branched from another conversation",
+  "@chatForkedFromUnknown": {
+    "description": "Status line for a fork whose original conversation is not loaded here"
+  },
+  "chatForkedOpen": "Open",
+  "@chatForkedOpen": {
+    "description": "Action on a forked conversation that opens the conversation it came from"
+  },
   "@sessionMenuForkHint": {
     "description": "Conversation menu › Fork conversation: what happens; the copy opens at once"
   },

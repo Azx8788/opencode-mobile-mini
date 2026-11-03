@@ -384,6 +384,29 @@ extension _ChatSessionMenu on _ChatScreenState {
     if (parentID != null) await _openSubagentSession(parentID);
   }
 
+  /// "Open" on a fork's origin line: the conversation this copy was cut
+  /// from. Unlike a sub-agent's parent this is a conversation of the same
+  /// kind, so it needs no sub-agent navigation capability.
+  Future<void> _openForkOrigin(String sessionID) async {
+    if (_conn.isIsolated || _watching || sessionID == widget.sessionID) return;
+    final location = _conn.locationRevision;
+    try {
+      final repository = await _requireActionRepository();
+      final target =
+          _conn.sessionsById[sessionID] ??
+          await repository.getSessionDetails(sessionID);
+      if (!mounted || location != _conn.locationRevision) return;
+      if (!await _persistDraft() || !mounted) return;
+      await Navigator.of(context).push(
+        KitPageRoute<void>(
+          builder: (_) => ChatScreen(sessionID: target.id),
+        ),
+      );
+    } catch (error) {
+      if (mounted) _showActionError(error);
+    }
+  }
+
   Future<void> _openRelatedSession(Session target) async {
     if (_conn.isIsolated || !_subagentNavigation) return;
     final location = _conn.locationRevision;

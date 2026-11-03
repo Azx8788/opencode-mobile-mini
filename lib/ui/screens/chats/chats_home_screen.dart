@@ -862,6 +862,29 @@ class _ChatsHomeScreenState extends ConsumerState<ChatsHomeScreen> {
     );
   }
 
+  /// "Delete conversation" from a row's long-press menu: asks first, naming
+  /// the conversation, and keeps the question open with its Try again when
+  /// the server refuses. The list redraws from the feed the host refreshes.
+  Future<void> _deleteConversation(
+    BuildContext context,
+    ChatsHost host,
+    ChatFeedItem item,
+  ) async {
+    final l10n = AppLocalizations.of(context);
+    final title = presentedSessionTitleText(item.title, l10n: l10n);
+    await showKitConfirm(
+      context,
+      title: l10n.sessionDeleteTitle(title),
+      body: l10n.sessionDeleteBody,
+      confirmLabel: l10n.sessionMenuDelete,
+      kind: KitConfirmKind.destructive,
+      icon: AppIconography.delete,
+      confirmKey: const ValueKey('chats-row-delete-confirm'),
+      action: () => host.deleteConversation(item),
+    );
+    if (mounted) setState(() => _notice = null);
+  }
+
   Widget _row(
     BuildContext context,
     ChatsHost host,
@@ -935,6 +958,20 @@ class _ChatsHomeScreenState extends ConsumerState<ChatsHomeScreen> {
             : null,
         // Last time's titles open nothing until the server answers.
         onTap: standIn ? null : () => unawaited(_open(host, item, row: row)),
+        // A long press (or a right click) offers what this conversation can
+        // do from the list. Delete is the server's own: a runtime that only
+        // archives offers nothing here.
+        menu: [
+          if (!standIn && host.canDeleteConversation(item))
+            KitMenuItem(
+              key: const ValueKey('chats-row-delete'),
+              label: l10n.sessionMenuDelete,
+              icon: AppIconography.delete,
+              destructive: true,
+              onSelected: () =>
+                  unawaited(_deleteConversation(context, host, item)),
+            ),
+        ],
       ),
     );
   }

@@ -120,6 +120,14 @@ abstract interface class ChatsHost {
   /// replacement draft and opens it. Null when it opened, else plain words.
   Future<String?> openNewChatReplacing(BuildContext context, ChatFeedItem old);
 
+  /// Whether [item]'s connection can delete a conversation for good.
+  bool canDeleteConversation(ChatFeedItem item);
+
+  /// Deletes [item]'s conversation for good. The caller asks first; the
+  /// server's reason is thrown when it refuses (a conversation with a turn
+  /// still running, a server that only archives).
+  Future<void> deleteConversation(ChatFeedItem item);
+
   /// Hands [uri] (a page the app did not author) to the safe link opener.
   Future<void> openLink(BuildContext context, Uri uri);
 
@@ -451,6 +459,24 @@ class ConnectionChatsHost implements ChatsHost {
     } catch (error) {
       return productErrorText(error, l10n: l10n);
     }
+  }
+
+  @override
+  bool canDeleteConversation(ChatFeedItem item) {
+    if (item.sessionID.isEmpty) return false;
+    final owner = _conn.connectionForRow(item);
+    return owner != null && owner.capabilities.sessionDelete;
+  }
+
+  @override
+  Future<void> deleteConversation(ChatFeedItem item) async {
+    final owner = _conn.connectionForRow(item);
+    if (owner == null) throw StateError('Not connected');
+    await owner.deleteSession(item.sessionID);
+    // The list draws its rows from the feed, not from sessionsById: read it
+    // again so the deleted conversation leaves now, not on the next visit.
+    await _conn.refreshChatFeed();
+    await _conn.refreshSessions();
   }
 
   @override

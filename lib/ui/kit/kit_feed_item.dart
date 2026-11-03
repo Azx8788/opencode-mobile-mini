@@ -7,6 +7,7 @@ import 'kit_effects.dart';
 import 'kit_icon.dart';
 import 'kit_max_width.dart';
 import 'kit_since.dart';
+import 'kit_menu.dart';
 import 'kit_motion.dart';
 import 'kit_tappable.dart';
 import 'kit_text.dart';
@@ -74,6 +75,7 @@ class KitFeedItem extends StatelessWidget {
     this.tappableKey,
     this.request,
     this.running,
+    this.menu = const [],
   });
 
   /// The project's name; a name the server chose, so it is isolated for
@@ -112,6 +114,11 @@ class KitFeedItem extends StatelessWidget {
   /// segment timer and a line under the meta says what runs ("Running
   /// `flutter test`"); other styles keep their row.
   final KitFeedRunning? running;
+
+  /// What a long press (or a right click) offers for this conversation:
+  /// delete, and whatever else the connection allows. Empty: nothing, and
+  /// the row only opens.
+  final List<KitMenuItem> menu;
 
   /// Whether the conversation is live: it needs the person or runs.
   bool get _live =>
@@ -306,6 +313,7 @@ class KitFeedItem extends StatelessWidget {
       tappableKey: tappableKey,
       onTap: onTap,
       label: words,
+      menu: menu,
       child: body,
     );
   }
@@ -511,6 +519,7 @@ class KitFeedItem extends StatelessWidget {
       tappableKey: tappableKey,
       onTap: onTap,
       label: words,
+      menu: menu,
       child: body,
     );
   }

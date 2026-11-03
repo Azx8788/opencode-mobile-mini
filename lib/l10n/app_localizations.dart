@@ -18000,6 +18000,18 @@ abstract class AppLocalizations {
   /// **'Free some space there, then try again.'**
   String get agentErrorServerDiskFullHint;
 
+  /// Chat: the provider rejected a request parameter (temperature, token limit, tool choice); the fix is usually switching back
+  ///
+  /// In en, this message translates to:
+  /// **'The model refused one of the request settings.'**
+  String get agentErrorProviderParameter;
+
+  /// Chat: what to do when the provider refused a request parameter
+  ///
+  /// In en, this message translates to:
+  /// **'This provider does not accept a setting sent with the message. Switch back to the model you were using, or change the setting and try again.'**
+  String get agentErrorProviderParameterHint;
+
   /// Shown under an error inside a turn that continued afterwards
   ///
   /// In en, this message translates to:
@@ -30753,6 +30765,36 @@ abstract class AppLocalizations {
   /// **'The agent stopped because of an error.'**
   String get chatErrorUnknown;
 
+  /// Chat error banner: the action that moves this conversation back to the model that worked before
+  ///
+  /// In en, this message translates to:
+  /// **'Switch back to {model}'**
+  String chatErrorSwitchBackTo(String model);
+
+  /// Chat status after switching models: the new model may not accept what the history holds
+  ///
+  /// In en, this message translates to:
+  /// **'{model} may not take this conversation as it is.'**
+  String chatSwitchCaveatTitle(String model);
+
+  /// Chat status: image attachments in the history that the new model cannot read
+  ///
+  /// In en, this message translates to:
+  /// **'Images: {count}, which it cannot read'**
+  String chatSwitchCaveatImages(int count);
+
+  /// Chat status: tool results in the history that the new model may not understand
+  ///
+  /// In en, this message translates to:
+  /// **'Tool results: {count}, which it may not understand'**
+  String chatSwitchCaveatTools(int count);
+
+  /// Chat status: the conversation is larger than the new model context window
+  ///
+  /// In en, this message translates to:
+  /// **'About {tokens} tokens, over its {limit} window'**
+  String chatSwitchCaveatContext(int tokens, int limit);
+
   /// Model picker footer: the chip that opens the thinking level menu, with the level chosen
   ///
   /// In en, this message translates to:
@@ -33422,6 +33464,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Opens a copy you can take another way'**
   String get sessionMenuForkHint;
+
+  /// Status line under the title of a forked conversation: where this copy came from
+  ///
+  /// In en, this message translates to:
+  /// **'Branched from “{title}”'**
+  String chatForkedFrom(String title);
+
+  /// Status line for a fork whose original conversation is not loaded here
+  ///
+  /// In en, this message translates to:
+  /// **'Branched from another conversation'**
+  String get chatForkedFromUnknown;
+
+  /// Action on a forked conversation that opens the conversation it came from
+  ///
+  /// In en, this message translates to:
+  /// **'Open'**
+  String get chatForkedOpen;
 
   /// Conversation menu › Continue on computer: what happens
   ///

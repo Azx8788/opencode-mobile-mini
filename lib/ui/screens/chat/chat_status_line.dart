@@ -22,6 +22,7 @@ extension _ChatStatusLine on _ChatScreenState {
     required List<Session> siblings,
     required int siblingIndex,
   }) {
+    final forkOrigin = session?.forkedFromID;
     return _chatStatus([
       if (widget.watch case final watch?) _watchingStatus(watch),
       if (!_watching) ...[
@@ -72,6 +73,16 @@ extension _ChatStatusLine on _ChatScreenState {
               ),
               _ => null,
             },
+            previousModel: switch (_previousModel) {
+              final model? => presentedModelLabel(
+                model.providerID,
+                model.modelID,
+              ),
+              _ => null,
+            },
+            onSwitchBack: _previousModel == null
+                ? null
+                : () => unawaited(_switchBackAndResend()),
           ),
         _queuedDraftsStatus(
           context,
@@ -138,8 +149,87 @@ extension _ChatStatusLine on _ChatScreenState {
         // Below every real status line: first run's one notification
         // question (and what went wrong turning it on).
         _notifyOfferStatus(context),
+        // A model just switched to that cannot take what the history holds:
+        // said now, before the next prompt fails at the provider.
+        if (_switchCaveats.isNotEmpty) _switchCaveatStatus(context),
+        // Quiet and last: a fork says where it came from, never in place of
+        // something the conversation needs to say.
+        if (!_conn.isIsolated && forkOrigin != null)
+          _forkedFromStatus(context, origin: forkOrigin),
       ],
     ]);
+  }
+
+  /// "{model} may not take this conversation as it is": the switch already
+  /// happened, so the line says what the new model cannot take and offers
+  /// the way back, instead of waiting for the provider to refuse a request.
+  _ChatStatus? _switchCaveatStatus(BuildContext context) {
+    if (_switchCaveats.isEmpty) return null;
+    final l10n = _chatL10n(context);
+    final selection = _conn.selectionForSession(widget.sessionID);
+    final model = selection.model;
+    final name = model == null
+        ? ''
+        : presentedModelLabel(model.providerID, model.modelID);
+    final lines = [
+      for (final caveat in _switchCaveats)
+        switch (caveat.kind) {
+          SwitchCaveatKind.images => l10n.chatSwitchCaveatImages(caveat.count),
+          SwitchCaveatKind.tools => l10n.chatSwitchCaveatTools(caveat.count),
+          SwitchCaveatKind.context => l10n.chatSwitchCaveatContext(
+            caveat.tokens,
+            caveat.limit,
+          ),
+        },
+    ];
+    final previous = _previousModel;
+    return _ChatStatus(
+      id: 'model-switch-caveat',
+      icon: AppIconography.warning,
+      tone: AppStatusTone.attention,
+      message: l10n.chatSwitchCaveatTitle(name),
+      supporting: lines.join(' · '),
+      action: previous == null
+          ? null
+          : KitAction(
+              key: const ValueKey('model-switch-caveat-back'),
+              label: l10n.chatErrorSwitchBackTo(
+                presentedModelLabel(previous.providerID, previous.modelID),
+              ),
+              onPressed: () => unawaited(_switchBackModel()),
+            ),
+      onDismiss: () => _setChatState(() => _switchCaveats = const []),
+    );
+  }
+
+  /// "Branched from “X” · Open": the copy keeps the server's link to the
+  /// conversation it was cut from. Without that conversation loaded here
+  /// (another device, or deleted since) the line still says it is a copy,
+  /// and offers no door to nowhere.
+  _ChatStatus _forkedFromStatus(
+    BuildContext context, {
+    required String origin,
+  }) {
+    final l10n = _chatL10n(context);
+    final parent = _conn.sessionsById[origin];
+    final title = parent == null
+        ? null
+        : presentedSessionTitleText(parent.title, l10n: l10n);
+    return _ChatStatus(
+      id: 'fork-origin',
+      icon: AppIconography.branch,
+      quiet: true,
+      message: title == null
+          ? l10n.chatForkedFromUnknown
+          : l10n.chatForkedFrom(title),
+      action: parent == null
+          ? null
+          : KitAction(
+              key: const ValueKey('chat-fork-origin-open'),
+              label: l10n.chatForkedOpen,
+              onPressed: () => unawaited(_openForkOrigin(origin)),
+            ),
+    );
   }
 
   /// "Auto-approve is on · Turn off" (owner decision 4): shown only while

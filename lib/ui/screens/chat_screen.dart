@@ -41,6 +41,8 @@ import '../../state/detected_dev_servers.dart';
 import '../../state/dev_server_scan.dart';
 import '../../domain/mobile_tool_view.dart';
 import '../../domain/model_display_name.dart';
+import '../../domain/model_switch_fit.dart';
+import '../../state/model_library.dart';
 import '../../domain/token_count_format.dart';
 import '../../domain/prompt_attachment.dart';
 import 'agents/agent_sheet.dart' show AgentSheetStep, showAgentSheet;
@@ -391,6 +393,22 @@ class _ChatScreenState extends State<ChatScreen>
   late final _toolOutputLoader = _loadToolOutputFile;
   List<MessageWithParts> _messages = [];
   bool _loading = true;
+
+  /// The model this conversation ran on before the current one, with its
+  /// thinking level. Kept for one reason: a provider that refuses a setting
+  /// after a switch has a one-tap way back. Null until the person switches.
+  ModelRef? _previousModel;
+  String _previousVariant = '';
+
+  /// What the tracker last saw, so a switch is noticed exactly once.
+  ModelRef? _trackedModel;
+  String _trackedVariant = '';
+
+  /// What the model switched to may not take from this conversation
+  /// (images it cannot read, tool results it may not understand, a history
+  /// larger than its window). Shown once after a switch, until dismissed or
+  /// undone; empty when the new model takes everything.
+  List<SwitchCaveat> _switchCaveats = const [];
   Object? _error;
   final _composer = TextEditingController();
   final _focus = FocusNode();
@@ -628,9 +646,57 @@ class _ChatScreenState extends State<ChatScreen>
     if (mounted) setState(() {});
   }
 
+  /// Remembers the model the conversation just left, so a refusal on the
+  /// new one can offer "Switch back" instead of repeating an error. The
+  /// first selection seen (the server's, on open) is not a switch.
+  void _trackModelSelection() {
+    final selection = _conn.selectionForSession(widget.sessionID);
+    final model = selection.model;
+    if (model == null) return;
+    final tracked = _trackedModel;
+    if (tracked == null) {
+      _trackedModel = model;
+      _trackedVariant = selection.variant;
+      return;
+    }
+    if (ModelLibrary.sameModel(tracked, model)) {
+      _trackedVariant = selection.variant;
+      return;
+    }
+    _previousModel = tracked;
+    _previousVariant = _trackedVariant;
+    _trackedModel = model;
+    _trackedVariant = selection.variant;
+    // The page key does not change when only the model does, so this is the
+    // one rebuild that puts the warning on screen now.
+    final caveats = _caveatsFor(model);
+    _setChatState(() => _switchCaveats = caveats);
+  }
+
+  /// What [model] cannot take from the conversation as it stands. A catalog
+  /// that does not describe the model says nothing: no warning is better
+  /// than one that may be wrong.
+  List<SwitchCaveat> _caveatsFor(ModelRef model) {
+    CatalogModel? target;
+    for (final candidate in _conn.catalog?.models ?? const <CatalogModel>[]) {
+      if (candidate.providerID == model.providerID &&
+          candidate.id == model.modelID) {
+        target = candidate;
+        break;
+      }
+    }
+    if (target == null) return const [];
+    return ModelSwitchFit.assess(
+      target: target,
+      messages: _messages,
+      sessionTokens: _conn.sessionsById[widget.sessionID]?.tokens?.total ?? 0,
+    );
+  }
+
   void _onConnectionChanged() {
     if (_findOpen && _findLocation != _conn.locationRevision) _closeFind();
     if (!mounted) return;
+    _trackModelSelection();
     _readAloudScopeChanged();
     _announceCompletedFlush();
     _syncRetryTicker();

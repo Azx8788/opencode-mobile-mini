@@ -218,6 +218,16 @@ class Session {
   final String? projectID;
   final String? workspaceID;
   final String? parentID;
+
+  /// Set when this conversation is a fork: the conversation it was copied
+  /// from. The server keeps the link; the copy stands on its own (its own
+  /// messages, spend and model choice).
+  final String? forkedFromID;
+
+  /// The message the fork stopped before, when it was cut at a prompt;
+  /// null for a fork of the whole conversation.
+  final String? forkBoundaryMessageID;
+
   final String? directory;
   final String? path;
   final bool reverted;
@@ -260,6 +270,8 @@ class Session {
     this.projectID,
     this.workspaceID,
     this.parentID,
+    this.forkedFromID,
+    this.forkBoundaryMessageID,
     this.directory,
     this.path,
     this.reverted = false,
@@ -285,6 +297,8 @@ class Session {
       projectID: j['projectID'] as String?,
       workspaceID: j['workspaceID'] as String?,
       parentID: j['parentID'] as String?,
+      forkedFromID: _forkField(j['fork'], 'sessionID'),
+      forkBoundaryMessageID: _forkField(j['fork'], 'messageID'),
       directory: j['directory'] as String?,
       path: j['path'] as String?,
       reverted: j['revert'] != null,
@@ -335,6 +349,8 @@ class Session {
         ? this.workspaceID
         : workspaceID as String?,
     parentID: parentID,
+    forkedFromID: forkedFromID,
+    forkBoundaryMessageID: forkBoundaryMessageID,
     directory: identical(directory, _unchangedSessionField)
         ? this.directory
         : directory as String?,
@@ -376,6 +392,20 @@ String? modelRefString(dynamic v) {
 }
 
 // ---------------- Helpers ----------------
+
+/// A string field of a nested `{...}` map, or null when [value] is not a
+/// map or the field is missing. Used for the server's fork record.
+String? _forkField(dynamic value, String key) {
+  if (value is! Map) return null;
+  if (key == 'sessionID') {
+    final id = value['sessionID']?.toString().trim();
+    return id == null || id.isEmpty ? null : id;
+  }
+  final boundary = value['boundary'];
+  if (boundary is! Map) return null;
+  final id = boundary['messageID']?.toString().trim();
+  return id == null || id.isEmpty ? null : id;
+}
 
 int? _asInt(dynamic v) {
   if (v is int) return v;

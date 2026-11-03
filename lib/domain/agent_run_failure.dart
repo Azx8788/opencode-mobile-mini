@@ -134,6 +134,9 @@ AgentRunFailureKind classifyAgentRunFailure(String reason) {
   }
   return switch (classifyAgentError(text)) {
     AgentErrorCause.providerAuth => AgentRunFailureKind.signIn,
+    // A setting this model refuses: another model is the way on.
+    AgentErrorCause.providerParameter =>
+      AgentRunFailureKind.modelUnavailable,
     AgentErrorCause.outOfCredit => AgentRunFailureKind.noCredit,
     // A plan's allowance for this model is used up: another model works now.
     AgentErrorCause.usageLimit => AgentRunFailureKind.modelUnavailable,

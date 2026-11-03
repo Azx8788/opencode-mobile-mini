@@ -126,6 +126,8 @@ Session mapApi2Session(Api2Session session) => Session(
   projectID: session.projectID,
   workspaceID: session.location?.workspaceID,
   parentID: session.parentID,
+  forkedFromID: session.fork?.sessionID,
+  forkBoundaryMessageID: session.fork?.boundary?.messageID,
   directory: session.location?.directory,
   path: session.subpath?.isNotEmpty == true ? session.subpath : null,
   reverted: session.reverted,

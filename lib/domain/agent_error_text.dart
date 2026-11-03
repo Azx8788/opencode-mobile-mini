@@ -11,6 +11,8 @@
 /// localizations, and the original text is always kept for a Details view.
 library;
 
+import 'provider_parameter.dart';
+
 enum AgentErrorCause {
   /// The link between the server and the model provider broke mid-request.
   connectionDropped,
@@ -44,6 +46,11 @@ enum AgentErrorCause {
 
   /// The machine running the server has no disk space left.
   serverDiskFull,
+
+  /// The provider refused a request setting (a temperature, an output
+  /// limit, a tool choice) that the model in use does not accept. Seen
+  /// most after switching a conversation to another provider mid-way.
+  providerParameter,
 }
 
 /// Causes a server may retry. Actual retry state must come from the server.
@@ -136,6 +143,12 @@ final _rules = <(RegExp, AgentErrorCause)>[
 /// Unrecognised server text still belongs under Details.
 AgentErrorCause? classifyAgentError(String raw) {
   if (raw.trim().isEmpty) return null;
+  // A refused setting is more specific than the HTTP-shaped rules below
+  // (which would call many of these "provider busy" or "bad request"), and
+  // it is the one cause where switching back is the fix.
+  if (ProviderParameterIssue.read(raw) != null) {
+    return AgentErrorCause.providerParameter;
+  }
   for (final (pattern, cause) in _rules) {
     if (pattern.hasMatch(raw)) return cause;
   }

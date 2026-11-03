@@ -10859,6 +10859,15 @@ class AppLocalizationsEn extends AppLocalizations {
       'Free some space there, then try again.';
 
   @override
+  String get agentErrorProviderParameter =>
+      'The model refused one of the request settings.';
+
+  @override
+  String get agentErrorProviderParameterHint =>
+      'This provider does not accept a setting sent with the message. Switch '
+      'back to the model you were using, or change the setting and try again.';
+
+  @override
   String get agentErrorRecovered => 'The agent carried on after this.';
 
   @override
@@ -19396,6 +19405,31 @@ class AppLocalizationsEn extends AppLocalizations {
   String get chatErrorUnknown => 'The agent stopped because of an error.';
 
   @override
+  String chatErrorSwitchBackTo(String model) {
+    return 'Switch back to $model';
+  }
+
+  @override
+  String chatSwitchCaveatTitle(String model) {
+    return '$model may not take this conversation as it is.';
+  }
+
+  @override
+  String chatSwitchCaveatImages(int count) {
+    return 'Images: $count, which it cannot read';
+  }
+
+  @override
+  String chatSwitchCaveatTools(int count) {
+    return 'Tool results: $count, which it may not understand';
+  }
+
+  @override
+  String chatSwitchCaveatContext(int tokens, int limit) {
+    return 'About $tokens tokens, over its $limit window';
+  }
+
+  @override
   String modelPickerThinkingChip(String level) {
     return 'Thinking: $level';
   }
@@ -21175,6 +21209,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionMenuForkHint => 'Opens a copy you can take another way';
+
+  @override
+  String chatForkedFrom(String title) {
+    return 'Branched from “$title”';
+  }
+
+  @override
+  String get chatForkedFromUnknown => 'Branched from another conversation';
+
+  @override
+  String get chatForkedOpen => 'Open';
 
   @override
   String get sessionMenuContinueComputerHint =>
