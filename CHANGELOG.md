@@ -2,6 +2,20 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.1.1+2 — 2026-11-03
+
+Token usage now sits under the composer (input, output and cache reads for the
+last turn), every provider's model catalogue can be browsed from Integrations,
+and any model can be checked with five small requests: plain reply, streaming,
+tool call, instruction following and the max-token finish reason. Conversations
+can be deleted from the list (long-press) where the server allows it. A fork now
+shows where it came from, can open its origin, and can be started from a single
+prompt. Switching a conversation to another provider warns about images, tool
+results and context size before the request, and a provider parameter refusal
+offers to switch back instead of resending. Builds are now named from
+`pubspec.yaml`, so this release is `0.1.1+2` and its artifacts carry that
+version.
+
 ## 2.1.0+57 — 2026-10-31
 
 Two home-screen widgets (Conversations and Status), Git inside the
