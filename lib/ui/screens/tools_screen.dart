@@ -359,12 +359,12 @@ class _ToolsScreenState extends State<ToolsScreen> {
     final l10n = _copy(context);
     final repository = await widget.controller.prepareActionRepository();
     if (!mounted) return;
-    if (repository is! ToolConfigurationGateway) {
+    if (repository == null || repository is! ToolConfigurationGateway) {
       _say(l10n.toolsConfigureUnavailable);
       return;
     }
     try {
-      await repository.setCodingToolEnabled(
+      await (repository as ToolConfigurationGateway).setCodingToolEnabled(
         id,
         enabled,
         scope: CodingToolConfigScope.global,

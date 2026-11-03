@@ -93,8 +93,8 @@ mixin _ConnectionControllerModels on ChangeNotifier {
       return Future<void>.value();
     }
     _modelLibrary = next;
-    _notifyListeners();
-    return _persistModelLibrary();
+    _self._notifyListeners();
+    return _self._persistModelLibrary();
   }
 
   bool get serverOwnsSessionSelection =>

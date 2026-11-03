@@ -113,7 +113,8 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
       key = await _store.readSecret(secretPath);
     }
     if (!mounted) return;
-    if (key == null || key.isEmpty) {
+    final resolvedKey = key;
+    if (resolvedKey == null || resolvedKey.isEmpty) {
       _say(l10n.providerManageNoKey);
       return;
     }
@@ -124,7 +125,7 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
           model: record.models.first.id,
           baseUrl: record.baseUrl,
           protocol: record.protocol,
-          apiKey: key,
+          apiKey: resolvedKey,
           autoRun: true,
         ),
       ),
