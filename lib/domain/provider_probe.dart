@@ -423,13 +423,19 @@ class ProviderProbe {
     if (answer.statusCode < 200 || answer.statusCode >= 300) {
       return _Verdict(false, _httpFailure(answer));
     }
+    // A streamed answer is SSE, not one JSON document: parsing the whole
+    // body first would report "not JSON" for a perfectly good stream.
+    if (kind == ProviderProbeKind.streaming) {
+      return _judgeStream(protocol, answer.body);
+    }
     final body = _decode(answer.body);
     if (body == null) {
       return _Verdict(false, 'Answer is not JSON: ${_short(answer.body)}');
     }
     return switch (kind) {
+      // Handled above; kept so the switch stays exhaustive.
+      ProviderProbeKind.streaming => const _Verdict(false, 'Unreachable'),
       ProviderProbeKind.nonStreaming => _judgeText(protocol, body),
-      ProviderProbeKind.streaming => _judgeStream(protocol, answer.body, body),
       ProviderProbeKind.toolCall => _judgeTool(protocol, body),
       ProviderProbeKind.instruction => _judgeInstruction(protocol, body),
       ProviderProbeKind.finishReason => _judgeFinish(protocol, body),
@@ -443,11 +449,7 @@ class ProviderProbe {
         : _Verdict(true, 'Replied: ${_short(text)}');
   }
 
-  static _Verdict _judgeStream(
-    ProviderProtocol protocol,
-    String raw,
-    Map body,
-  ) {
+  static _Verdict _judgeStream(ProviderProtocol protocol, String raw) {
     if (!raw.contains('data:')) {
       // Some compatible gateways ignore `stream: true` and answer one JSON
       // object. That is a working endpoint but not a working stream.
