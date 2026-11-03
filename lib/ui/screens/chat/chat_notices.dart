@@ -432,7 +432,7 @@ extension _ChatNotices on _ChatScreenState {
       if (mounted) _showActionError(error);
       return;
     }
-    if (mounted) setState(() => _switchCaveats = const []);
+    if (mounted) _setChatState(() => _switchCaveats = const []);
   }
 
   /// "Switch back to X": returns the conversation to the model it ran on
