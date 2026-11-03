@@ -70,7 +70,8 @@ class ProviderParameterIssue {
   static final _refusal = RegExp(
     r'unsupported|not supported|does not support|doesn.t support'
     r'|unknown|unrecognized|unrecognised|invalid|out of range'
-    r'|must be|exceeds|too large|not allowed|rejected',
+    r'|must be|should be|exceeds?|too large|not allowed|rejected'
+    r'|maximum allowed|greater than|less than|at least|at most',
     caseSensitive: false,
   );
 
