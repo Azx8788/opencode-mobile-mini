@@ -44,4 +44,36 @@ void main() {
   test('an unknown id has no template', () {
     expect(providerTemplateFor('nope'), isNull);
   });
+
+  test('ModelScope asks its OpenAI-compatible root', () {
+    final modelscope = providerTemplateFor('modelscope');
+    expect(modelscope, isNotNull);
+    expect(modelscope!.protocol, ProviderProtocol.chatCompletions);
+    expect(modelscope.baseUrl, 'https://api-inference.modelscope.cn/v1');
+  });
+
+  test('AgentRouter keeps one root for both protocols', () {
+    // The docs give two addresses — no `/v1` for the Anthropic SDK, `/v1` for
+    // OpenAI-compatible — because the Anthropic SDK adds `/v1` itself. The
+    // config carries what the app appends, so one root serves both: switching
+    // to Anthropic keeps `/v1` and the request lands on `/v1/messages`.
+    final agentRouter = providerTemplateFor('agentrouter');
+    expect(agentRouter, isNotNull);
+    expect(agentRouter!.baseUrl, 'https://agentrouter.org/v1');
+    expect(
+      CustomProviderDraft.convertBaseUrl(
+        agentRouter.baseUrl,
+        from: ProviderProtocol.chatCompletions,
+        to: ProviderProtocol.anthropic,
+      ),
+      'https://agentrouter.org/v1',
+    );
+  });
+
+  test('书生·端砚 is a Responses provider', () {
+    final intern = providerTemplateFor('intern');
+    expect(intern, isNotNull);
+    expect(intern!.protocol, ProviderProtocol.responses);
+    expect(intern.baseUrl, 'https://discovery-api.intern-ai.org.cn/v1');
+  });
 }

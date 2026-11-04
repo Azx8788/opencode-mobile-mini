@@ -111,6 +111,8 @@ void main() {
         'mimo',
       ]),
     );
+    // Ours, from the providers' own docs.
+    expect(ids, containsAll(<String>['modelscope', 'agentrouter', 'intern']));
     // The blank template is an action, not a row.
     expect(ids, isNot(contains('custom')));
   });

@@ -2,6 +2,26 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.2+6 — 2026-11-05
+
+Three more providers ship, taken from their own integration docs rather than
+from rikkahub's list:
+
+  * **魔搭 ModelScope** — `https://api-inference.modelscope.cn/v1`, OpenAI
+    compatible, access token as the key. Its `/v1/models` answers without a
+    key, so the models tab fills itself.
+  * **AgentRouter** — `https://agentrouter.org/v1`. One entry covers both
+    halves of what its docs describe: OpenAI-compatible models stay on the
+    default protocol, and switching the protocol to Anthropic keeps `/v1`, so
+    the request lands on `/v1/messages` — which is where the Anthropic SDK
+    puts it when the docs say "base URL without `/v1`".
+  * **书生·端砚 (Intern TokenPlan)** — `https://discovery-api.intern-ai.org.cn/v1`,
+    Responses protocol. It is stateless: no `previous_response_id`, and
+    reasoning effort cannot be set per request.
+
+All three are ordinary rows of the same list: nothing is written until one is
+filled in, and every field stays editable. Builds are `0.3.2+6`.
+
 ## 0.3.1+5 — 2026-11-04
 
 Providers are one list now, and it is the app's own. The app ships the same

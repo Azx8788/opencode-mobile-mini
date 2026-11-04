@@ -8,7 +8,9 @@
 /// key, models — stays the person's.
 ///
 /// The order and the addresses follow rikkahub's `DEFAULT_PROVIDERS`, so the
-/// list a person sees here is the one the reference app shows.
+/// list a person sees here is the one the reference app shows. Three entries
+/// are ours, from the providers' own integration docs: ModelScope, AgentRouter
+/// and 书生·端砚, which rikkahub does not ship.
 library;
 
 import '../domain/custom_provider.dart';
@@ -77,6 +79,13 @@ const builtinProviderTemplates = <BuiltinProviderTemplate>[
     kind: ProviderTemplateKind.china,
   ),
   BuiltinProviderTemplate(
+    id: 'modelscope',
+    name: '魔搭 ModelScope',
+    baseUrl: 'https://api-inference.modelscope.cn/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.china,
+  ),
+  BuiltinProviderTemplate(
     id: 'deepseek',
     name: 'DeepSeek',
     baseUrl: 'https://api.deepseek.com/v1',
@@ -102,6 +111,13 @@ const builtinProviderTemplates = <BuiltinProviderTemplate>[
     id: 'openrouter',
     name: 'OpenRouter',
     baseUrl: 'https://openrouter.ai/api/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.gateway,
+  ),
+  BuiltinProviderTemplate(
+    id: 'agentrouter',
+    name: 'AgentRouter',
+    baseUrl: 'https://agentrouter.org/v1',
     protocol: ProviderProtocol.chatCompletions,
     kind: ProviderTemplateKind.gateway,
   ),
@@ -135,6 +151,13 @@ const builtinProviderTemplates = <BuiltinProviderTemplate>[
     name: '智谱AI开放平台',
     baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
     protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.china,
+  ),
+  BuiltinProviderTemplate(
+    id: 'intern',
+    name: '书生·端砚',
+    baseUrl: 'https://discovery-api.intern-ai.org.cn/v1',
+    protocol: ProviderProtocol.responses,
     kind: ProviderTemplateKind.china,
   ),
   BuiltinProviderTemplate(

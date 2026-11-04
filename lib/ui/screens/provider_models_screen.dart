@@ -202,6 +202,8 @@ const _knownBaseUrls = <String, String>{
   'google': 'https://generativelanguage.googleapis.com/v1beta',
   'gemini': 'https://generativelanguage.googleapis.com/v1beta',
   'openrouter': 'https://openrouter.ai/api/v1',
+  'agentrouter': 'https://agentrouter.org/v1',
+  'modelscope': 'https://api-inference.modelscope.cn/v1',
   'deepseek': 'https://api.deepseek.com/v1',
   'groq': 'https://api.groq.com/openai/v1',
   'mistral': 'https://api.mistral.ai/v1',
