@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_provider_store.dart';
+import '../../builtin/builtin_provider_templates.dart';
 import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
 import '../../domain/custom_provider.dart' show ProviderProtocol;
 import '../../domain/custom_provider_record.dart';
@@ -88,18 +89,61 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
     }
   }
 
-  Future<void> _openForm(CustomProviderRecord? record) async {
+  Future<void> _openForm(
+    CustomProviderRecord? record, {
+    BuiltinProviderTemplate? template,
+  }) async {
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute(
         builder: (_) => CustomProviderScreen(
           controller: widget.controller,
           linux: widget.linux,
           editing: record,
+          template: template,
         ),
       ),
     );
     if (saved == true && mounted) await _load();
   }
+
+  /// The way in: pick what kind of provider this is, then fill it in on the
+  /// detail page. The template only prefills the address and protocol; it
+  /// writes nothing.
+  Future<void> _pickTemplate() async {
+    final l10n = _l10nOf(context);
+    final template = await showKitSheet<BuiltinProviderTemplate>(
+      context,
+      title: l10n.providerTemplateTitle,
+      subtitle: l10n.providerTemplateSubtitle,
+      itemCount: builtinProviderTemplates.length,
+      itemBuilder: (sheetContext, index) {
+        final template = builtinProviderTemplates[index];
+        final custom = template.kind == ProviderTemplateKind.custom;
+        return KitRow(
+          key: ValueKey('provider-template-${template.id}'),
+          title: custom ? l10n.providerTemplateCustomName : template.name,
+          supporting: TextSpan(
+            text: custom
+                ? l10n.providerTemplateCustom
+                : '${template.baseUrl} · ${_kindLabel(l10n, template.kind)}',
+          ),
+          supportingMaxLines: 2,
+          trailing: const KitChevron(),
+          onTap: () => Navigator.of(sheetContext).pop(template),
+        );
+      },
+    );
+    if (template == null || !mounted) return;
+    await _openForm(null, template: template);
+  }
+
+  String _kindLabel(AppLocalizations l10n, ProviderTemplateKind kind) =>
+      switch (kind) {
+        ProviderTemplateKind.official => l10n.providerTemplateOfficial,
+        ProviderTemplateKind.gateway => l10n.providerTemplateGateway,
+        ProviderTemplateKind.china => l10n.providerTemplateChina,
+        ProviderTemplateKind.custom => l10n.providerTemplateCustom,
+      };
 
   Future<void> _test(CustomProviderRecord record) async {
     final l10n = _l10nOf(context);
@@ -175,6 +219,12 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
         title: l10n.providerManageTitle,
         subtitle: widget.controller.profile?.name,
         actions: [
+          KitAction(
+            key: const ValueKey('providers-add-top'),
+            label: l10n.providerAddTitle,
+            icon: AppIconography.add,
+            onPressed: _loading ? null : _pickTemplate,
+          ),
           KitAction(
             key: const ValueKey('providers-refresh'),
             label: l10n.providerManageRefresh,
@@ -277,8 +327,7 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
       KitRowGroup(
         margin: EdgeInsets.zero,
         children: [
-          for (final record in catalogue.records)
-            _row(context, l10n, record),
+          for (final record in catalogue.records) _row(context, l10n, record),
           if (catalogue.unreadable > 0)
             KitRow(
               key: const ValueKey('providers-unreadable'),
@@ -289,13 +338,6 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
               disabledReason: l10n.providerManageUnreadableBody,
             ),
         ],
-      ),
-      gap,
-      KitButton.secondary(
-        key: const ValueKey('providers-add'),
-        label: l10n.providerAddTitle,
-        icon: AppIconography.add,
-        onPressed: () => _openForm(null),
       ),
     ];
   }
@@ -310,6 +352,7 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
       ProviderProtocol.chatCompletions => l10n.providerAddProtocolChat,
       ProviderProtocol.responses => l10n.providerAddProtocolResponses,
       ProviderProtocol.anthropic => l10n.providerAddProtocolAnthropic,
+      ProviderProtocol.google => 'Google',
     };
     return KitRow(
       key: ValueKey('provider-row-${record.id}'),

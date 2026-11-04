@@ -18,20 +18,34 @@ class ProviderProbeScreen extends StatefulWidget {
     super.key,
     required this.providerName,
     required this.model,
+    this.models = const [],
     this.baseUrl = '',
     this.protocol = ProviderProtocol.chatCompletions,
     this.apiKey = '',
+    this.resolveKey,
+    this.headers = const {},
     this.autoRun = false,
   });
 
   final String providerName;
   final String model;
+
+  /// Every model worth testing; one is enough, several get a picker.
+  final List<String> models;
+
   final String baseUrl;
   final ProviderProtocol protocol;
 
   /// A key already known (an edited entry's, or the one the list read from
   /// the server). Empty means the person types one.
   final String apiKey;
+
+  /// Reads the key the entry already has (a file on the server, a value in
+  /// the config). Called once, when the field is empty.
+  final Future<String> Function()? resolveKey;
+
+  /// Extra headers the provider needs, merged into every check.
+  final Map<String, String> headers;
 
   /// Starts the checks as the screen opens, for the "test this provider"
   /// path where pressing Run is a second, pointless confirmation.
@@ -45,6 +59,7 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
   final _baseUrl = TextEditingController();
   final _apiKey = TextEditingController();
   late ProviderProtocol _protocol = widget.protocol;
+  late String _model = widget.model;
   final List<ProviderProbeResult> _results = [];
   bool _running = false;
 
@@ -53,10 +68,21 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
     super.initState();
     _baseUrl.text = widget.baseUrl;
     _apiKey.text = widget.apiKey;
-    if (widget.autoRun && widget.baseUrl.trim().isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (mounted) _run();
-      });
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _prime();
+    });
+  }
+
+  /// Reads a stored key when the caller did not hand one over, then runs the
+  /// checks if asked. The key stays in memory for this screen only.
+  Future<void> _prime() async {
+    if (_apiKey.text.trim().isEmpty && widget.resolveKey != null) {
+      final key = await widget.resolveKey!();
+      if (!mounted) return;
+      if (key.isNotEmpty) setState(() => _apiKey.text = key);
+    }
+    if (widget.autoRun && _baseUrl.text.trim().isNotEmpty) {
+      await _run();
     }
   }
 
@@ -83,8 +109,9 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
     await probe.runAll(
       protocol: _protocol,
       baseUrl: _baseUrl.text,
-      model: widget.model,
+      model: _model,
       apiKey: _apiKey.text,
+      headers: widget.headers,
       onResult: (result) {
         if (!mounted) return;
         setState(() => _results.add(result));
@@ -106,7 +133,7 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
     final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.providerProbeTitle(widget.model)),
+        title: Text(l10n.providerProbeTitle(_model)),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(20),
           child: Padding(
@@ -160,6 +187,29 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
                     setState(() => _protocol = value);
                   },
           ),
+          if (widget.models.length > 1) ...[
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              key: const ValueKey('probe-model'),
+              initialValue: _model,
+              decoration: InputDecoration(
+                labelText: l10n.providerTestPickModel,
+              ),
+              items: [
+                for (final model in widget.models)
+                  DropdownMenuItem(
+                    value: model,
+                    child: Text(model, overflow: TextOverflow.ellipsis),
+                  ),
+              ],
+              onChanged: _running
+                  ? null
+                  : (value) {
+                      if (value == null) return;
+                      setState(() => _model = value);
+                    },
+            ),
+          ],
           const SizedBox(height: 16),
           FilledButton.icon(
             key: const ValueKey('probe-run'),
@@ -206,5 +256,6 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
         ProviderProtocol.chatCompletions => 'Chat Completions',
         ProviderProtocol.responses => 'Responses',
         ProviderProtocol.anthropic => 'Anthropic Messages',
+        ProviderProtocol.google => 'Google Gemini',
       };
 }

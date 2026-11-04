@@ -36196,4 +36196,156 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerProbeFinish => 'Finish condition';
+
+  /// Detail tab: configuration
+  @override
+  String get providerTabConfig => "Configuration";
+
+  /// Detail tab: models
+  @override
+  String get providerTabModels => "Models";
+
+  /// Detail tab: advanced
+  @override
+  String get providerTabAdvanced => "Advanced";
+
+  /// Provider-level switch
+  @override
+  String get providerEnable => "Enable this provider";
+
+  /// Under the provider-level switch
+  @override
+  String get providerEnableHint => "Off hides every model it serves from this phone's picker; the server configuration is unchanged.";
+
+  /// Restores a template's base URL
+  @override
+  String get providerResetDefault => "Reset to the default address";
+
+  /// Read-only request path derived from the protocol
+  @override
+  String get providerPath => "Request path";
+
+  /// Under the request path row
+  @override
+  String get providerPathHelper => "Set by the protocol, read-only. Keep it out of the base URL; a pasted one is removed.";
+
+  /// Shown when Responses is chosen for a non-OpenAI host
+  @override
+  String get providerResponsesWarning => "Most gateways do not serve the Responses API; switch only if this provider does.";
+
+  /// Balance section title
+  @override
+  String get providerBalanceSection => "Account balance";
+
+  /// Enables the balance query
+  @override
+  String get providerBalanceEnable => "Show account balance";
+
+  /// Balance endpoint field
+  @override
+  String get providerBalanceUrl => "Balance URL";
+
+  /// Balance URL helper
+  @override
+  String get providerBalanceUrlHelper => "You may use {{baseUrl}} and {{apiKey}}; follow the provider's docs.";
+
+  /// JSON path field
+  @override
+  String get providerBalancePath => "Balance field";
+
+  /// JSON path helper
+  @override
+  String get providerBalancePathHelper => "Where the balance sits in the answer, e.g. balance_infos[0].total_balance.";
+
+  /// Runs the balance query
+  @override
+  String get providerBalanceQuery => "Check balance";
+
+  /// Label of the balance value
+  @override
+  String get providerBalanceValue => "Balance";
+
+  /// Balance failure prefix
+  @override
+  String get providerBalanceFailed => "Could not read the balance";
+
+  /// Custom headers section title
+  @override
+  String get providerHeadersSection => "Custom headers";
+
+  /// Custom headers helper
+  @override
+  String get providerHeadersHint => "Sent with every request; a row with an empty name or value is dropped on save.";
+
+  /// Adds a header row
+  @override
+  String get providerHeadersAdd => "Add header";
+
+  /// Header name field
+  @override
+  String get providerHeadersName => "Name";
+
+  /// Header value field
+  @override
+  String get providerHeadersValue => "Value";
+
+  /// Header name presets sheet title
+  @override
+  String get providerHeadersPresets => "Common names";
+
+  /// Empty custom headers state
+  @override
+  String get providerHeadersEmpty => "No custom headers yet. Some gateways need HTTP-Referer or X-Title before they answer.";
+
+  /// Models tab explanation
+  @override
+  String get providerDetailModelsHint => "Ask the provider for its own model list with the address, key and protocol above, then tick what to enable.";
+
+  /// Models tab when no address
+  @override
+  String get providerModelsConfigFirst => "Fill in the API Base Url first.";
+
+  /// Models tab when the key is server-side
+  @override
+  String get providerModelsKeyServer => "This provider's key lives on the server and cannot be read here; fetching may need a server sign-in.";
+
+  /// Prefix of the selected model count
+  @override
+  String get providerModelsSelected => "Selected";
+
+  /// Adds a manually typed model id
+  @override
+  String get providerModelsAdd => "Add";
+
+  /// Template sheet title
+  @override
+  String get providerTemplateTitle => "Choose a provider type";
+
+  /// Template sheet subtitle
+  @override
+  String get providerTemplateSubtitle => "Fills the name, address and protocol; every field stays editable.";
+
+  /// Template kind
+  @override
+  String get providerTemplateOfficial => "Official API";
+
+  /// Template kind
+  @override
+  String get providerTemplateGateway => "Aggregator";
+
+  /// Template kind
+  @override
+  String get providerTemplateChina => "China direct";
+
+  /// Template kind
+  @override
+  String get providerTemplateCustom => "Your own endpoint";
+
+  /// Custom template row
+  @override
+  String get providerTemplateCustomName => "Custom provider";
+
+  /// Probe model picker
+  @override
+  String get providerTestPickModel => "Model to test";
 }

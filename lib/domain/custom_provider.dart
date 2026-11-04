@@ -29,26 +29,52 @@ enum ProviderProtocol {
     npm: '@ai-sdk/openai-compatible',
     package: 'aisdk:@ai-sdk/openai-compatible',
     endpointSuffixes: ['/chat/completions', '/completions'],
+    defaultPath: '/v1',
   ),
   responses(
     npm: '@ai-sdk/openai',
     package: 'aisdk:@ai-sdk/openai',
     endpointSuffixes: ['/responses'],
+    defaultPath: '/v1',
   ),
   anthropic(
     npm: '@ai-sdk/anthropic',
     package: 'aisdk:@ai-sdk/anthropic',
     endpointSuffixes: ['/messages'],
+    defaultPath: '/v1',
+  ),
+  google(
+    npm: '@ai-sdk/google',
+    package: 'aisdk:@ai-sdk/google',
+    endpointSuffixes: ['/models'],
+    defaultPath: '/v1beta',
   );
 
   const ProviderProtocol({
     required this.npm,
     required this.package,
     required this.endpointSuffixes,
+    required this.defaultPath,
   });
 
   final String npm;
   final String package;
+
+  /// The path a base URL usually ends with for this protocol. Switching the
+  /// protocol swaps `/v1` and `/v1beta` where a base URL already ends with
+  /// one, so a gateway does not keep the previous protocol's root by
+  /// accident. Any other path is left exactly as typed.
+  final String defaultPath;
+
+  /// What a saved provider's chat request appends to its base URL. Shown
+  /// read-only: the config has no field for a custom path, so offering an
+  /// editable one would be a switch that does nothing.
+  String get chatPath => switch (this) {
+    chatCompletions => '/chat/completions',
+    responses => '/responses',
+    anthropic => '/messages',
+    google => '/models/{model}:generateContent',
+  };
 
   /// Paths people copy from an endpoint's docs by mistake. Base URLs are
   /// kept otherwise intact: gateways legitimately end in `/v1`, `/v4`,
@@ -85,6 +111,72 @@ enum ProviderConfigFormat {
       isOpenCode2 ? ProviderConfigFormat.v2 : ProviderConfigFormat.v1;
 }
 
+/// One extra HTTP header a provider needs and its protocol does not carry.
+///
+/// Common on gateways that gate access by origin (`HTTP-Referer`,
+/// `X-Title`) or that fingerprint clients (`User-Agent`). Names are matched
+/// case-insensitively, as HTTP does; a later header with the same name wins.
+class CustomProviderHeader {
+  const CustomProviderHeader({required this.name, required this.value});
+
+  final String name;
+  final String value;
+
+  bool get isEmpty => name.trim().isEmpty || value.trim().isEmpty;
+
+  /// The header as the config and the app's own requests want it, or null
+  /// when a half-filled row should be ignored.
+  MapEntry<String, String>? get entry =>
+      isEmpty ? null : MapEntry(name.trim(), value.trim());
+
+  @override
+  bool operator ==(Object other) =>
+      other is CustomProviderHeader &&
+      other.name.trim().toLowerCase() == name.trim().toLowerCase() &&
+      other.value.trim() == value.trim();
+
+  @override
+  int get hashCode => name.trim().toLowerCase().hashCode ^ value.hashCode;
+
+  Map<String, String> toJson() => {'name': name, 'value': value};
+
+  factory CustomProviderHeader.fromJson(Object? value) {
+    if (value is! Map) {
+      return const CustomProviderHeader(name: '', value: '');
+    }
+    final name = value['name'];
+    final headerValue = value['value'];
+    return CustomProviderHeader(
+      name: name is String ? name : '',
+      value: headerValue is String ? headerValue : '',
+    );
+  }
+}
+
+/// Header names worth offering: the ones gateways actually ask for. The
+/// field still accepts any name — this is a shortcut, not a whitelist.
+const providerHeaderPresets = <String>[
+  'User-Agent',
+  'HTTP-Referer',
+  'X-Title',
+  'Referer',
+  'Origin',
+];
+
+/// Reads the header map a config entry holds, dropping entries that are not
+/// `{name: value}` strings.
+List<CustomProviderHeader> readProviderHeaders(Object? raw) {
+  if (raw is! Map) return const [];
+  final headers = <CustomProviderHeader>[];
+  for (final entry in raw.entries) {
+    final name = '${entry.key}'.trim();
+    final value = entry.value;
+    if (name.isEmpty || value is! String || value.trim().isEmpty) continue;
+    headers.add(CustomProviderHeader(name: name, value: value.trim()));
+  }
+  return List.unmodifiable(headers);
+}
+
 /// One model the endpoint listed.
 class CustomProviderModel {
   const CustomProviderModel({required this.id, this.name});
@@ -115,12 +207,14 @@ class CustomProviderDraft {
     this.apiKey,
     this.keyMode = ProviderKeyMode.secretFile,
     List<CustomProviderModel> models = const [],
+    List<CustomProviderHeader> headers = const [],
     this.timeoutMs = 600000,
     String? keyFile,
     this.keyPlaceholder,
   }) : id = normalizeProviderId(id),
        baseUrl = normalizeBaseUrl(baseUrl, protocol),
        models = normalizeModels(models),
+       headers = normalizeHeaders(headers),
        _keyFile = keyFile;
 
   final String name;
@@ -130,6 +224,7 @@ class CustomProviderDraft {
   final String? apiKey;
   final ProviderKeyMode keyMode;
   final List<CustomProviderModel> models;
+  final List<CustomProviderHeader> headers;
   final int timeoutMs;
 
   /// Where an existing entry keeps its key. Null for a new provider, which
@@ -217,6 +312,88 @@ class CustomProviderDraft {
     ];
   }
 
+  /// Deduplicated by name (the last value wins), blanks dropped, order kept.
+  static List<CustomProviderHeader> normalizeHeaders(
+    List<CustomProviderHeader> headers,
+  ) {
+    final byName = <String, CustomProviderHeader>{};
+    for (final header in headers) {
+      final entry = header.entry;
+      if (entry == null) continue;
+      byName[entry.key.toLowerCase()] = header;
+    }
+    return List.unmodifiable(byName.values);
+  }
+
+  /// The headers as an HTTP map for the app's own requests (model list,
+  /// probes, balance).
+  Map<String, String> get headerMap {
+    final map = <String, String>{};
+    for (final header in headers) {
+      final entry = header.entry;
+      if (entry != null) map[entry.key] = entry.value;
+    }
+    return map;
+  }
+
+  /// The same provider under another wire protocol: the key, models and
+  /// headers carry over; only the package and a `/v1` ↔ `/v1beta` root
+  /// change. A custom path is never rewritten.
+  CustomProviderDraft switchProtocol(ProviderProtocol next) {
+    if (next == protocol) return this;
+    return CustomProviderDraft(
+      name: name,
+      id: id,
+      protocol: next,
+      baseUrl: convertBaseUrl(baseUrl, from: protocol, to: next),
+      apiKey: apiKey,
+      keyMode: keyMode,
+      models: models,
+      headers: headers,
+      timeoutMs: timeoutMs,
+      keyFile: _keyFile,
+      keyPlaceholder: keyPlaceholder,
+    );
+  }
+
+  /// [baseUrl] re-rooted for [to] when it already ends in [from]'s default
+  /// path. Everything else is kept byte for byte: gateways legitimately end
+  /// in `/v4`, `/openai` or nothing at all, and guessing would invent a URL
+  /// that does not answer.
+  static String convertBaseUrl(
+    String baseUrl, {
+    required ProviderProtocol from,
+    required ProviderProtocol to,
+  }) {
+    final uri = Uri.tryParse(baseUrl.trim());
+    if (uri == null || !uri.hasAuthority) return baseUrl;
+    var path = uri.path;
+    for (final suffix in from.endpointSuffixes) {
+      if (path.toLowerCase().endsWith(suffix)) {
+        path = path.substring(0, path.length - suffix.length);
+        break;
+      }
+    }
+    while (path.endsWith('/') && path.length > 1) {
+      path = path.substring(0, path.length - 1);
+    }
+    final fromRoot = from.defaultPath;
+    final toRoot = to.defaultPath;
+    if (fromRoot != toRoot && path.toLowerCase().endsWith(fromRoot)) {
+      path = path.substring(0, path.length - fromRoot.length) + toRoot;
+    }
+    return normalizeBaseUrl(
+      Uri(
+        scheme: uri.scheme,
+        userInfo: uri.userInfo.isEmpty ? null : uri.userInfo,
+        host: uri.host,
+        port: uri.hasPort ? uri.port : null,
+        path: path,
+      ).toString(),
+      to,
+    );
+  }
+
   /// Rejects what cannot be saved, with a reason the form can show.
   void validate() {
     if (name.trim().isEmpty) {
@@ -264,6 +441,7 @@ class CustomProviderDraft {
       if (keyMode == ProviderKeyMode.plaintext) 'apiKey': apiKey!.trim(),
       if (keyMode == ProviderKeyMode.external && keyPlaceholder != null)
         'apiKey': keyPlaceholder!,
+      if (headerMap.isNotEmpty) 'headers': headerMap,
       'timeout': timeoutMs,
     },
     'models': {
@@ -303,6 +481,7 @@ class CustomProviderDraft {
       if (keyMode == ProviderKeyMode.plaintext) 'apiKey': apiKey!.trim(),
       if (keyMode == ProviderKeyMode.external && keyPlaceholder != null)
         'apiKey': keyPlaceholder!,
+      if (headerMap.isNotEmpty) 'headers': headerMap,
       'timeout': timeoutMs,
     },
     'models': {

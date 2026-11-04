@@ -147,8 +147,9 @@ enum _CounterPhase { hidden, near, limit }
 /// Field states (KitField.md): `default`, `focused`, `filled`, `error`,
 /// `disabled`, `checking`, `checking-slow`, `counter` (from 80 % of
 /// [maxLength]), `limit`. The secret kind adds `secret-plain` and
-/// `secret-saved` (it is never masked; Android skins hijack password fields
-/// with their own secure keyboard); the multiline kind adds
+/// `secret-saved`: its value is drawn as dots with an eye that shows it, but
+/// the field never reports itself as a password — Android skins hijack
+/// password fields with their own secure keyboard; the multiline kind adds
 /// `multiline-draft-restored`.
 ///
 /// - Loading: none of its own; a field whose value is being fetched is not
@@ -404,11 +405,16 @@ class _KitFieldState extends State<KitField> {
   /// The secret modes' editable controller, kept in step with [_controller]
   /// both ways; its diagnostics never carry the text, so element dumps and
   /// the inspector show no secret (SEC-2).
-  _RedactedController? _secretEdit;
+  RedactedController? _secretEdit;
   FocusNode? _focusListening;
   String _lastText = '';
   bool _hovered = false;
   bool _replacing = false;
+
+  /// True while the secret kinds draw their value as dots. Masking is drawn
+  /// by the controller's text span, never by `obscureText`, so no Android
+  /// skin swaps in its secure keyboard (see [RedactedController]).
+  bool _masked = true;
   _CounterPhase _phase = _CounterPhase.hidden;
   DateTime? _slowAnnouncedFor;
 
@@ -484,7 +490,9 @@ class _KitFieldState extends State<KitField> {
       _lastText = controller.text;
     }
     if (widget._isSecret && _secretEdit == null) {
-      _secretEdit = _RedactedController()..addListener(_editToHost);
+      _secretEdit = RedactedController()
+        ..setMasked(_masked)
+        ..addListener(_editToHost);
     }
     _hostToEdit();
     final focus = _focus;
@@ -622,11 +630,21 @@ class _KitFieldState extends State<KitField> {
 
   void _replace() {
     _controller.clear();
-    setState(() => _replacing = true);
+    // A key typed from scratch starts masked, whatever the last one did.
+    _secretEdit?.setMasked(true);
+    setState(() {
+      _replacing = true;
+      _masked = true;
+    });
     widget.onReplace?.call();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _focus.requestFocus();
     });
+  }
+
+  void _toggleMasked() {
+    setState(() => _masked = !_masked);
+    _secretEdit?.setMasked(_masked);
   }
 
   bool get _technical => switch (widget.kind) {
@@ -749,8 +767,9 @@ class _KitFieldState extends State<KitField> {
       // Never obscured. Several Android skins switch to their own "secure
       // keyboard" as soon as a field reports itself as a password, which is
       // not the keyboard a person expects when pasting a provider key. The
-      // field still keeps secrets out of suggestions, IME learning and the
-      // widget diagnostics; only the masking is gone.
+      // secret kind still reads as dots: masking happens in the controller's
+      // text span, so the value never spells itself out on screen while the
+      // field stays an ordinary one to the system.
       obscureText: false,
       autocorrect: plainWords && !secret,
       enableSuggestions: plainWords && !secret,
@@ -885,6 +904,19 @@ class _KitFieldState extends State<KitField> {
 
     final trailing = <Widget>[
       if (secret && !_showsSaved) ...[
+        if (widget._mode == _KitFieldMode.secret)
+          KitIconButton(
+            key: widget.revealKey,
+            // The eye is what the button does, not what the field is: dots
+            // offer "show", a shown value offers "hide".
+            icon: _masked ? AppIconography.visible : AppIconography.hidden,
+            size: 20,
+            tooltip: _masked
+                ? l10n.kitFieldShowNamed(widget.label)
+                : l10n.kitFieldHideNamed(widget.label),
+            disabledReason: widget.enabled ? null : widget.disabledReason,
+            onPressed: widget.enabled ? _toggleMasked : null,
+          ),
         if (widget._mode == _KitFieldMode.secret)
           KitIconButton(
             key: widget.pasteKey,
@@ -1173,8 +1205,51 @@ class _KitFieldState extends State<KitField> {
   }
 }
 
-/// A controller whose diagnostics name it but never its text.
-class _RedactedController extends TextEditingController {
+/// A controller whose diagnostics name it but never its text, and that can
+/// draw its value as dots while holding the real one.
+///
+/// The dots come from [buildTextSpan], the same hook Flutter's `obscureText`
+/// uses, but the field never reports itself as a password: Android skins
+/// switch to their own "secure keyboard" the moment a field does, and that is
+/// not the keyboard a person expects when pasting a provider key. The caret,
+/// the selection and the scroll position stay on the dots, so editing still
+/// behaves.
+@visibleForTesting
+class RedactedController extends TextEditingController {
+  /// What the dots are, and how many: one per character, so a pasted key
+  /// still reads as long or short at a glance.
+  static const String dot = '\u2022';
+
+  bool _masked = true;
+
+  bool get masked => _masked;
+
+  /// Masking alone changes no value, so the listener has to be told to lay
+  /// the field out again.
+  void setMasked(bool value) {
+    if (_masked == value) return;
+    _masked = value;
+    notifyListeners();
+  }
+
+  @override
+  TextSpan buildTextSpan({
+    required BuildContext context,
+    TextStyle? style,
+    required bool withComposing,
+  }) {
+    if (!_masked || text.isEmpty) {
+      return super.buildTextSpan(
+        context: context,
+        style: style,
+        withComposing: withComposing,
+      );
+    }
+    // No composing region while masked: an underline over dots would say
+    // nothing, and the dots are not the text being composed.
+    return TextSpan(style: style, text: dot * text.characters.length);
+  }
+
   @override
   String toString() => '${describeIdentity(this)}(redacted)';
 }

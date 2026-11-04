@@ -99,6 +99,7 @@ class ProviderProbe {
     required String baseUrl,
     required String model,
     String? apiKey,
+    Map<String, String> headers = const {},
     void Function(ProviderProbeResult result)? onResult,
     bool Function()? cancelled,
   }) async {
@@ -111,6 +112,7 @@ class ProviderProbe {
         baseUrl: baseUrl,
         model: model,
         apiKey: apiKey,
+        headers: headers,
       );
       results.add(result);
       onResult?.call(result);
@@ -126,6 +128,7 @@ class ProviderProbe {
     required String baseUrl,
     required String model,
     String? apiKey,
+    Map<String, String> headers = const {},
   }) async {
     final started = DateTime.now();
     try {
@@ -135,6 +138,7 @@ class ProviderProbe {
         baseUrl: baseUrl,
         model: model,
         apiKey: apiKey,
+        headers: headers,
       );
       final answer = await _send(request);
       final verdict = _judge(kind, protocol, answer);
@@ -170,29 +174,36 @@ class ProviderProbe {
     required String baseUrl,
     required String model,
     String? apiKey,
+    Map<String, String> headers = const {},
   }) {
     final base = baseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
     if (base.isEmpty) {
       throw const FormatException('Enter the base URL first');
     }
     final key = apiKey?.trim() ?? '';
-    final headers = <String, String>{
+    final streaming = kind == ProviderProbeKind.streaming;
+    final requestHeaders = <String, String>{
       'content-type': 'application/json',
-      'accept': kind == ProviderProbeKind.streaming
-          ? 'text/event-stream'
-          : 'application/json',
+      'accept': streaming ? 'text/event-stream' : 'application/json',
+      // The person's own headers win: a gateway that needs a particular
+      // origin or title must also get it on the probe.
       ..._authHeaders(protocol, key),
+      ...headers,
     };
-    final stream = kind == ProviderProbeKind.streaming;
-    final url = Uri.parse('$base${_endpoint(protocol)}');
+    final url = Uri.parse(
+      protocol == ProviderProtocol.google
+          ? '$base/models/$model:${streaming ? 'streamGenerateContent?alt=sse' : 'generateContent'}'
+          : '$base${_endpoint(protocol)}',
+    );
     final body = switch (protocol) {
-      ProviderProtocol.chatCompletions => _chatBody(kind, model, stream),
-      ProviderProtocol.responses => _responsesBody(kind, model, stream),
-      ProviderProtocol.anthropic => _anthropicBody(kind, model, stream),
+      ProviderProtocol.chatCompletions => _chatBody(kind, model, streaming),
+      ProviderProtocol.responses => _responsesBody(kind, model, streaming),
+      ProviderProtocol.anthropic => _anthropicBody(kind, model, streaming),
+      ProviderProtocol.google => _googleBody(kind),
     };
     return ProviderProbeRequest(
       url: url,
-      headers: headers,
+      headers: requestHeaders,
       body: jsonEncode(body),
       timeout: _timeout,
     );
@@ -209,6 +220,7 @@ class ProviderProbe {
         'x-api-key': key,
         'anthropic-version': '2023-06-01',
       },
+      ProviderProtocol.google => {'x-goog-api-key': key},
       _ => {'authorization': 'Bearer $key'},
     };
   }
@@ -217,6 +229,8 @@ class ProviderProbe {
     ProviderProtocol.chatCompletions => '/chat/completions',
     ProviderProtocol.responses => '/responses',
     ProviderProtocol.anthropic => '/messages',
+    // Unused: Google's URL carries the model and method.
+    ProviderProtocol.google => '/models',
   };
 
   // ---------------- Request bodies ----------------
@@ -313,6 +327,46 @@ class ProviderProbe {
         ];
     }
     return body;
+  }
+
+  static Map<String, Object?> _googleBody(ProviderProbeKind kind) {
+    final prompt = switch (kind) {
+      ProviderProbeKind.nonStreaming => 'Reply with the single word OK.',
+      ProviderProbeKind.streaming => 'Count from 1 to 5, one number per line.',
+      ProviderProbeKind.toolCall => 'What is the weather in Berlin? Use the tool.',
+    };
+    return <String, Object?>{
+      // Google takes the model in the URL, not the body.
+      'contents': [
+        {
+          'role': 'user',
+          'parts': [
+            {'text': prompt},
+          ],
+        },
+      ],
+      'generationConfig': {
+        'maxOutputTokens': kind == ProviderProbeKind.nonStreaming ? 24 : 64,
+      },
+      if (kind == ProviderProbeKind.toolCall)
+        'tools': [
+          {
+            'functionDeclarations': [
+              {
+                'name': 'get_weather',
+                'description': 'Current weather for a city.',
+                'parameters': {
+                  'type': 'OBJECT',
+                  'properties': {
+                    'city': {'type': 'STRING'},
+                  },
+                  'required': ['city'],
+                },
+              },
+            ],
+          },
+        ],
+    };
   }
 
   static Map<String, Object?> _anthropicBody(
@@ -438,7 +492,28 @@ class ProviderProbe {
         if (delta is! Map) return '';
         final text = delta['text'];
         return text is String ? text : '';
+      case ProviderProtocol.google:
+        return _googleText(frame);
     }
+  }
+
+  /// The text in one Gemini answer or stream frame.
+  static String _googleText(Map frame) {
+    final candidates = frame['candidates'];
+    if (candidates is! List || candidates.isEmpty) return '';
+    final first = candidates.first;
+    if (first is! Map) return '';
+    final content = first['content'];
+    if (content is! Map) return '';
+    final parts = content['parts'];
+    if (parts is! List) return '';
+    final buffer = StringBuffer();
+    for (final part in parts) {
+      if (part is Map && part['text'] is String) {
+        buffer.write(part['text'] as String);
+      }
+    }
+    return buffer.toString();
   }
 
   static _Verdict _judgeTool(ProviderProtocol protocol, Map body) {
@@ -446,10 +521,30 @@ class ProviderProbe {
       ProviderProtocol.chatCompletions => _chatToolNames(body).isNotEmpty,
       ProviderProtocol.responses => _responseToolCalls(body),
       ProviderProtocol.anthropic => _anthropicToolUses(body),
+      ProviderProtocol.google => _googleFunctionCalls(body),
     };
     return called
         ? const _Verdict(true, 'Called get_weather')
         : const _Verdict(false, 'Answered without calling the tool');
+  }
+
+  static bool _googleFunctionCalls(Map body) {
+    final candidates = body['candidates'];
+    if (candidates is! List) return false;
+    for (final candidate in candidates) {
+      if (candidate is! Map) continue;
+      final content = candidate['content'];
+      if (content is! Map) continue;
+      final parts = content['parts'];
+      if (parts is! List) continue;
+      for (final part in parts) {
+        if (part is Map && part['functionCall'] is Map) {
+          final name = (part['functionCall'] as Map)['name'];
+          if (name is String && name.isNotEmpty) return true;
+        }
+      }
+    }
+    return false;
   }
 
   static List<String> _chatToolNames(Map body) {
@@ -531,6 +626,8 @@ class ProviderProbe {
           }
         }
         return buffer.toString();
+      case ProviderProtocol.google:
+        return _googleText(body);
     }
   }
 

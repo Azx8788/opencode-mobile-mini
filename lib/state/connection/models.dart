@@ -83,12 +83,50 @@ mixin _ConnectionControllerModels on ChangeNotifier {
 
   /// Whether the picker shows this model on this phone. A local preference:
   /// the server still serves every model, and another client sees them all.
-  bool isModelEnabled(ModelRef model) => _modelLibrary.isEnabled(model);
+  /// A hidden provider hides everything it serves.
+  bool isModelEnabled(ModelRef model) =>
+      !isProviderHidden(model.normalized.providerID) &&
+      _modelLibrary.isEnabled(model);
+
+  /// Whether the provider's models are hidden from this phone's picker.
+  bool isProviderHidden(String providerID) =>
+      _modelLibrary.isProviderHidden(providerID);
+
+  /// The provider-level switch: off means none of its models is offered,
+  /// without touching the server's configuration.
+  Future<void> setProviderHidden(String providerID, bool hidden) {
+    final id = providerID.trim();
+    if (id.isEmpty || _modelLibrary.isProviderHidden(id) == hidden) {
+      return Future<void>.value();
+    }
+    _modelLibrary = _modelLibrary.withProviderHidden(id, hidden);
+    _self._notifyListeners();
+    return _self._persistModelLibrary();
+  }
+
+  /// The provider's optional balance endpoint (a local setting).
+  ProviderBalance? balanceFor(String providerID) =>
+      _modelLibrary.balanceFor(providerID);
+
+  Future<void> setBalance(String providerID, ProviderBalance balance) {
+    final id = providerID.trim();
+    if (id.isEmpty) return Future<void>.value();
+    _modelLibrary = _modelLibrary.withBalance(id, balance);
+    _self._notifyListeners();
+    return _self._persistModelLibrary();
+  }
 
   /// Turns one model on or off for the picker, and remembers it per server.
   Future<void> setModelEnabled(ModelRef model, bool enabled) {
-    final next = _modelLibrary.withEnabled(model.normalized, enabled);
+    var next = _modelLibrary;
+    if (enabled) {
+      // Turning a model on inside a hidden provider says the provider is
+      // wanted again; leaving it hidden would make the switch do nothing.
+      next = next.withProviderHidden(model.normalized.providerID, false);
+    }
+    next = next.withEnabled(model.normalized, enabled);
     if (next.disabled.length == _modelLibrary.disabled.length &&
+        next.hiddenProviders.length == _modelLibrary.hiddenProviders.length &&
         next.isEnabled(model) == _modelLibrary.isEnabled(model)) {
       return Future<void>.value();
     }

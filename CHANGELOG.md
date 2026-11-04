@@ -2,6 +2,25 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.0+4 — 2026-11-04
+
+Providers are now a first-class section, arranged the way the person thinks
+about them. The list opens with a template picker — OpenAI, Anthropic, Gemini,
+DeepSeek, Moonshot, 智谱, OpenRouter, 硅基流动 or a blank one — and a provider's
+page has three tabs: configuration, models and advanced. Configuration holds
+the enable switch (local to this phone), name, API key, base URL with
+reset-to-default, the wire protocol (Chat Completions, Responses, Anthropic
+Messages or Google Gemini) and a read-only request path, plus an optional
+balance endpoint with a JSON path. Models asks the provider for its own list
+with exactly the address, key and protocol above — saved or not — and ticks
+what to enable, with search, select-all-filtered and a manual id. Advanced
+holds extra headers with the usual presets and the three connection checks,
+now testable per model. Gemini is a real protocol now: model list, probes and
+config entry. Custom headers are written into the config and sent by the app's
+own requests. The key field is masked again, with an eye to show it and Paste
+beside it: the dots are drawn by the field's own text rather than by a password
+flag, so no Android skin swaps in its secure keyboard. Builds are `0.3.0+4`.
+
 ## 0.2.0+3 — 2026-11-04
 
 Providers are now managed, not just added. Integrations lists the custom

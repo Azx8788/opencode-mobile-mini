@@ -1023,7 +1023,12 @@ class ProfileStore {
 
   Future<void> setModelLibrary(String profileId, ModelLibrary library) async {
     final key = '$_modelLibraryKey$profileId';
-    final saved = library.favorites.isEmpty && library.recent.isEmpty
+    final empty =
+        library.favorites.isEmpty &&
+        library.recent.isEmpty &&
+        library.hiddenProviders.isEmpty &&
+        library.balances.isEmpty;
+    final saved = empty
         ? await prefs.remove(key)
         : await prefs.setString(key, jsonEncode(library.toJson()));
     if (!saved) throw StateError('Could not save model shortcuts');

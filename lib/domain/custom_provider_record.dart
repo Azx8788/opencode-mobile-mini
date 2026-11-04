@@ -29,6 +29,7 @@ class CustomProviderRecord {
     this.secretPath,
     this.keyPlaceholder,
     this.models = const [],
+    this.headers = const [],
   });
 
   /// The key this provider has in the config's provider map.
@@ -55,6 +56,9 @@ class CustomProviderRecord {
 
   final List<CustomProviderModel> models;
 
+  /// Extra headers the entry sends with every request.
+  final List<CustomProviderHeader> headers;
+
   /// The draft the form starts from. The key is not resolved here — a
   /// missing key file must not block editing the rest of the entry — so the
   /// caller passes what it read, if anything.
@@ -67,6 +71,7 @@ class CustomProviderRecord {
     keyMode: keyMode,
     keyPlaceholder: keyPlaceholder,
     models: models,
+    headers: headers,
   );
 
   /// The protocol a package name implies. OpenCode picks the wire format by
@@ -80,9 +85,7 @@ class CustomProviderRecord {
       return ProviderProtocol.responses;
     }
     if (value.contains('google') || value.contains('gemini')) {
-      // Not a protocol this app writes yet; reading one back as Chat
-      // Completions would mislabel it. The form keeps it read-only.
-      return ProviderProtocol.chatCompletions;
+      return ProviderProtocol.google;
     }
     return ProviderProtocol.chatCompletions;
   }
@@ -174,6 +177,7 @@ CustomProviderRecord? _recordFrom(
     secretPath: key.path,
     keyPlaceholder: key.placeholder,
     models: models,
+    headers: readProviderHeaders(settings['headers']),
   );
 }
 

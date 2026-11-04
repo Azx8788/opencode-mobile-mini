@@ -56836,6 +56836,120 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Finish condition'**
   String get providerProbeFinish;
+
+  /// Detail tab: configuration
+  String get providerTabConfig;
+
+  /// Detail tab: models
+  String get providerTabModels;
+
+  /// Detail tab: advanced
+  String get providerTabAdvanced;
+
+  /// Provider-level switch
+  String get providerEnable;
+
+  /// Under the provider-level switch
+  String get providerEnableHint;
+
+  /// Restores a template's base URL
+  String get providerResetDefault;
+
+  /// Read-only request path derived from the protocol
+  String get providerPath;
+
+  /// Under the request path row
+  String get providerPathHelper;
+
+  /// Shown when Responses is chosen for a non-OpenAI host
+  String get providerResponsesWarning;
+
+  /// Balance section title
+  String get providerBalanceSection;
+
+  /// Enables the balance query
+  String get providerBalanceEnable;
+
+  /// Balance endpoint field
+  String get providerBalanceUrl;
+
+  /// Balance URL helper
+  String get providerBalanceUrlHelper;
+
+  /// JSON path field
+  String get providerBalancePath;
+
+  /// JSON path helper
+  String get providerBalancePathHelper;
+
+  /// Runs the balance query
+  String get providerBalanceQuery;
+
+  /// Label of the balance value
+  String get providerBalanceValue;
+
+  /// Balance failure prefix
+  String get providerBalanceFailed;
+
+  /// Custom headers section title
+  String get providerHeadersSection;
+
+  /// Custom headers helper
+  String get providerHeadersHint;
+
+  /// Adds a header row
+  String get providerHeadersAdd;
+
+  /// Header name field
+  String get providerHeadersName;
+
+  /// Header value field
+  String get providerHeadersValue;
+
+  /// Header name presets sheet title
+  String get providerHeadersPresets;
+
+  /// Empty custom headers state
+  String get providerHeadersEmpty;
+
+  /// Models tab explanation
+  String get providerDetailModelsHint;
+
+  /// Models tab when no address
+  String get providerModelsConfigFirst;
+
+  /// Models tab when the key is server-side
+  String get providerModelsKeyServer;
+
+  /// Prefix of the selected model count
+  String get providerModelsSelected;
+
+  /// Adds a manually typed model id
+  String get providerModelsAdd;
+
+  /// Template sheet title
+  String get providerTemplateTitle;
+
+  /// Template sheet subtitle
+  String get providerTemplateSubtitle;
+
+  /// Template kind
+  String get providerTemplateOfficial;
+
+  /// Template kind
+  String get providerTemplateGateway;
+
+  /// Template kind
+  String get providerTemplateChina;
+
+  /// Template kind
+  String get providerTemplateCustom;
+
+  /// Custom template row
+  String get providerTemplateCustomName;
+
+  /// Probe model picker
+  String get providerTestPickModel;
 }
 
 class _AppLocalizationsDelegate

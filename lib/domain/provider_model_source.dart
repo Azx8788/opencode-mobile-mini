@@ -63,6 +63,7 @@ class ProviderModelSource {
     required String baseUrl,
     required ProviderProtocol protocol,
     String? apiKey,
+    Map<String, String> headers = const {},
     Duration timeout = const Duration(seconds: 20),
   }) async {
     final base = baseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
@@ -71,15 +72,20 @@ class ProviderModelSource {
     }
     final key = apiKey?.trim() ?? '';
     final candidates = <Uri>[
-      Uri.parse('$base/models'),
-      if (!base.toLowerCase().endsWith('/v1')) Uri.parse('$base/v1/models'),
+      if (protocol == ProviderProtocol.google)
+        Uri.parse('$base/models?pageSize=100')
+      else ...[
+        Uri.parse('$base/models'),
+        if (!base.toLowerCase().endsWith('/v1')) Uri.parse('$base/v1/models'),
+      ],
     ];
     ProviderModelFetchFailure? lastFailure;
     for (final url in candidates) {
       final attempts = <Map<String, String>>[
-        if (key.isNotEmpty) _headers(protocol, key, anthropicStyle: true),
-        if (key.isNotEmpty) _headers(protocol, key, anthropicStyle: false),
-        const <String, String>{'Accept': 'application/json'},
+        if (key.isNotEmpty) {..._headers(protocol, key, anthropicStyle: true), ...headers},
+        if (key.isNotEmpty && protocol != ProviderProtocol.google)
+          {..._headers(protocol, key, anthropicStyle: false), ...headers},
+        <String, String>{'Accept': 'application/json', ...headers},
       ];
       for (final headers in attempts) {
         try {
@@ -150,6 +156,12 @@ class ProviderModelSource {
     String key, {
     required bool anthropicStyle,
   }) {
+    if (protocol == ProviderProtocol.google) {
+      return {
+        'x-goog-api-key': key,
+        'Accept': 'application/json',
+      };
+    }
     // Anthropic's own hosts read `x-api-key`, while the many gateways that
     // translate Messages read the usual bearer token. Sending the native
     // header first and falling back covers both without asking the person
@@ -188,17 +200,22 @@ class ProviderModelSource {
     };
     final models = <CustomProviderModel>[];
     for (final entry in entries) {
-      final id = switch (entry) {
+      final raw = switch (entry) {
         String value => value,
         Map<String, Object?> map => map['id'] ?? map['model'] ?? map['name'],
         _ => null,
       };
-      if (id is! String || id.trim().isEmpty) continue;
+      if (raw is! String || raw.trim().isEmpty) continue;
+      // Gemini lists its models as `models/gemini-2.5-pro`, while every
+      // other endpoint uses the bare id. The request path wants the bare id.
+      var id = raw.trim();
+      if (id.startsWith('models/')) id = id.substring('models/'.length);
+      if (id.isEmpty) continue;
       final name = entry is Map<String, Object?>
           ? entry['display_name'] ?? entry['displayName']
           : null;
       models.add(
-        CustomProviderModel(id: id.trim(), name: name is String ? name : null),
+        CustomProviderModel(id: id, name: name is String ? name : null),
       );
     }
     return CustomProviderDraft.normalizeModels(models);

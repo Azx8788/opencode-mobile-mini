@@ -187,6 +187,9 @@ ProviderProtocol providerProbeProtocol(String providerID) {
   if (id.contains('anthropic') || id.contains('claude')) {
     return ProviderProtocol.anthropic;
   }
+  if (id.contains('google') || id.contains('gemini')) {
+    return ProviderProtocol.google;
+  }
   if (id == 'openai' || id.startsWith('openai-')) {
     return ProviderProtocol.responses;
   }
@@ -196,6 +199,8 @@ ProviderProtocol providerProbeProtocol(String providerID) {
 const _knownBaseUrls = <String, String>{
   'openai': 'https://api.openai.com/v1',
   'anthropic': 'https://api.anthropic.com/v1',
+  'google': 'https://generativelanguage.googleapis.com/v1beta',
+  'gemini': 'https://generativelanguage.googleapis.com/v1beta',
   'openrouter': 'https://openrouter.ai/api/v1',
   'deepseek': 'https://api.deepseek.com/v1',
   'groq': 'https://api.groq.com/openai/v1',

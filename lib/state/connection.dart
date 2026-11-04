@@ -42,6 +42,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../domain/models.dart';
+import '../domain/provider_balance.dart';
 import '../domain/session_history.dart';
 import '../domain/tool_label.dart';
 import '../domain/background_tasks.dart';

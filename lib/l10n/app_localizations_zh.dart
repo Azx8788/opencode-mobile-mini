@@ -34194,4 +34194,156 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerProbeFinish => '完成条件';
+
+  /// Detail tab: configuration
+  @override
+  String get providerTabConfig => "配置";
+
+  /// Detail tab: models
+  @override
+  String get providerTabModels => "模型";
+
+  /// Detail tab: advanced
+  @override
+  String get providerTabAdvanced => "高级";
+
+  /// Provider-level switch
+  @override
+  String get providerEnable => "启用这个供应商";
+
+  /// Under the provider-level switch
+  @override
+  String get providerEnableHint => "关闭后它提供的所有模型都不会出现在这台手机的选择器里；服务器配置不变。";
+
+  /// Restores a template's base URL
+  @override
+  String get providerResetDefault => "恢复默认地址";
+
+  /// Read-only request path derived from the protocol
+  @override
+  String get providerPath => "接口路径";
+
+  /// Under the request path row
+  @override
+  String get providerPathHelper => "由协议决定，只读。Base URL 不要包含它；误粘贴会被自动去掉。";
+
+  /// Shown when Responses is chosen for a non-OpenAI host
+  @override
+  String get providerResponsesWarning => "Responses API 多数网关不支持，只有确认供应商支持时再切换。";
+
+  /// Balance section title
+  @override
+  String get providerBalanceSection => "账户余额";
+
+  /// Enables the balance query
+  @override
+  String get providerBalanceEnable => "获取账户余额";
+
+  /// Balance endpoint field
+  @override
+  String get providerBalanceUrl => "余额接口";
+
+  /// Balance URL helper
+  @override
+  String get providerBalanceUrlHelper => "可用 {{baseUrl}} 和 {{apiKey}} 占位，按供应商文档填写。";
+
+  /// JSON path field
+  @override
+  String get providerBalancePath => "余额字段";
+
+  /// JSON path helper
+  @override
+  String get providerBalancePathHelper => "余额在答案 JSON 里的位置，例如 balance_infos[0].total_balance。";
+
+  /// Runs the balance query
+  @override
+  String get providerBalanceQuery => "查询余额";
+
+  /// Label of the balance value
+  @override
+  String get providerBalanceValue => "余额";
+
+  /// Balance failure prefix
+  @override
+  String get providerBalanceFailed => "余额读取失败";
+
+  /// Custom headers section title
+  @override
+  String get providerHeadersSection => "自定义 Headers";
+
+  /// Custom headers helper
+  @override
+  String get providerHeadersHint => "每次请求都会带上；名称为空或值为空的行会在保存时丢掉。";
+
+  /// Adds a header row
+  @override
+  String get providerHeadersAdd => "添加 Header";
+
+  /// Header name field
+  @override
+  String get providerHeadersName => "名称";
+
+  /// Header value field
+  @override
+  String get providerHeadersValue => "值";
+
+  /// Header name presets sheet title
+  @override
+  String get providerHeadersPresets => "常用名称";
+
+  /// Empty custom headers state
+  @override
+  String get providerHeadersEmpty => "还没有自定义 Header。有些网关需要 HTTP-Referer 或 X-Title 才允许访问。";
+
+  /// Models tab explanation
+  @override
+  String get providerDetailModelsHint => "用上面填好的地址、密钥和协议，向供应商请求它自己的模型列表，再勾选要启用的。";
+
+  /// Models tab when no address
+  @override
+  String get providerModelsConfigFirst => "先填好 API Base Url。";
+
+  /// Models tab when the key is server-side
+  @override
+  String get providerModelsKeyServer => "这个供应商的密钥保存在服务器上，应用读不到；拉取列表可能需要先在服务器登录。";
+
+  /// Prefix of the selected model count
+  @override
+  String get providerModelsSelected => "已选";
+
+  /// Adds a manually typed model id
+  @override
+  String get providerModelsAdd => "添加";
+
+  /// Template sheet title
+  @override
+  String get providerTemplateTitle => "选择供应商类型";
+
+  /// Template sheet subtitle
+  @override
+  String get providerTemplateSubtitle => "选中后预填名称、地址和协议，所有字段之后都能改。";
+
+  /// Template kind
+  @override
+  String get providerTemplateOfficial => "官方接口";
+
+  /// Template kind
+  @override
+  String get providerTemplateGateway => "聚合网关";
+
+  /// Template kind
+  @override
+  String get providerTemplateChina => "国内直连";
+
+  /// Template kind
+  @override
+  String get providerTemplateCustom => "自己填地址和协议";
+
+  /// Custom template row
+  @override
+  String get providerTemplateCustomName => "自定义供应商";
+
+  /// Probe model picker
+  @override
+  String get providerTestPickModel => "测试用的模型";
 }

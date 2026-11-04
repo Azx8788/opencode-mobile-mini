@@ -1,4 +1,5 @@
 import '../domain/models.dart' show ModelRef;
+import '../domain/provider_balance.dart';
 
 /// Personal model shortcuts for one server. These never choose a model for
 /// another session; selection remains the connection controller's job.
@@ -7,17 +8,26 @@ import '../domain/models.dart' show ModelRef;
 /// four hundred models, and the picker is not a catalog to scroll. It is a
 /// list of what the person turned off, so an empty list keeps the old
 /// behaviour — everything the server reports is shown.
+///
+/// [hiddenProviders] is the provider-level switch: hiding one takes all its
+/// models out of the picker without touching the server's config.
+/// [balances] holds each provider's optional balance endpoint; it never
+/// leaves this phone.
 class ModelLibrary {
   static const recentLimit = 8;
 
   final List<ModelRef> favorites;
   final List<ModelRef> recent;
   final List<ModelRef> disabled;
+  final Set<String> hiddenProviders;
+  final Map<String, ProviderBalance> balances;
 
   const ModelLibrary({
     this.favorites = const [],
     this.recent = const [],
     this.disabled = const [],
+    this.hiddenProviders = const {},
+    this.balances = const {},
   });
 
   static bool sameModel(ModelRef? a, ModelRef? b) =>
@@ -41,6 +51,8 @@ class ModelLibrary {
     ),
     recent: recent,
     disabled: disabled,
+    hiddenProviders: hiddenProviders,
+    balances: balances,
   );
 
   /// Turns a model on or off in this phone's picker. This does not touch the
@@ -53,7 +65,53 @@ class ModelLibrary {
           ? disabled.where((item) => !sameModel(item, model))
           : [...disabled, model.normalized],
     ),
+    hiddenProviders: hiddenProviders,
+    balances: balances,
   );
+
+  /// Whether the provider's models are hidden from the picker. A local
+  /// preference, like [disabled], one level up.
+  bool isProviderHidden(String providerID) =>
+      hiddenProviders.contains(providerID.trim());
+
+  ModelLibrary withProviderHidden(String providerID, bool hidden) {
+    final id = providerID.trim();
+    if (id.isEmpty) return this;
+    final next = {...hiddenProviders};
+    if (hidden) {
+      next.add(id);
+    } else {
+      next.remove(id);
+    }
+    return ModelLibrary(
+      favorites: favorites,
+      recent: recent,
+      disabled: disabled,
+      hiddenProviders: Set.unmodifiable(next),
+      balances: balances,
+    );
+  }
+
+  ProviderBalance? balanceFor(String providerID) =>
+      balances[providerID.trim()];
+
+  ModelLibrary withBalance(String providerID, ProviderBalance balance) {
+    final id = providerID.trim();
+    if (id.isEmpty) return this;
+    final next = {...balances};
+    if (!balance.enabled && !balance.isConfigured) {
+      next.remove(id);
+    } else {
+      next[id] = balance;
+    }
+    return ModelLibrary(
+      favorites: favorites,
+      recent: recent,
+      disabled: disabled,
+      hiddenProviders: hiddenProviders,
+      balances: Map.unmodifiable(next),
+    );
+  }
 
   ModelLibrary remember(ModelRef model) => ModelLibrary(
     favorites: favorites,
@@ -64,6 +122,8 @@ class ModelLibrary {
       ].take(recentLimit),
     ),
     disabled: disabled,
+    hiddenProviders: hiddenProviders,
+    balances: balances,
   );
 
   /// Only call after a successful catalog refresh. A failed request must
@@ -72,6 +132,8 @@ class ModelLibrary {
     favorites: List.unmodifiable(favorites.where(available)),
     recent: List.unmodifiable(recent.where(available)),
     disabled: List.unmodifiable(disabled.where(available)),
+    hiddenProviders: hiddenProviders,
+    balances: balances,
   );
 
   ModelRef? next(
@@ -97,6 +159,14 @@ class ModelLibrary {
     'recent': recent.map((model) => model.toJson()).toList(),
     if (disabled.isNotEmpty)
       'disabled': disabled.map((model) => model.toJson()).toList(),
+    if (hiddenProviders.isNotEmpty)
+      'hiddenProviders': hiddenProviders.toList()..sort(),
+    if (balances.isNotEmpty)
+      'balances': {
+        for (final entry in balances.entries)
+          if (entry.value.enabled || entry.value.isConfigured)
+            entry.key: entry.value.toJson(),
+      },
   };
 
   factory ModelLibrary.fromJson(Object? value) {
@@ -118,10 +188,30 @@ class ModelLibrary {
       return List.unmodifiable(result);
     }
 
+    final hidden = <String>{};
+    final rawHidden = value['hiddenProviders'];
+    if (rawHidden is List) {
+      for (final item in rawHidden) {
+        if (item is String && item.trim().isNotEmpty) hidden.add(item.trim());
+      }
+    }
+    final balances = <String, ProviderBalance>{};
+    final rawBalances = value['balances'];
+    if (rawBalances is Map) {
+      for (final entry in rawBalances.entries) {
+        final id = '${entry.key}'.trim();
+        if (id.isEmpty) continue;
+        final balance = ProviderBalance.fromJson(entry.value);
+        if (balance.enabled || balance.isConfigured) balances[id] = balance;
+      }
+    }
+
     return ModelLibrary(
       favorites: read(value['favorites']),
       recent: read(value['recent'], limit: recentLimit),
       disabled: read(value['disabled']),
+      hiddenProviders: Set.unmodifiable(hidden),
+      balances: Map.unmodifiable(balances),
     );
   }
 }
