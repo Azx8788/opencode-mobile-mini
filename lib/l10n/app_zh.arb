@@ -9435,145 +9435,358 @@
   "providerProbeInstruction": "系统提示词",
   "providerProbeFinish": "完成条件",
   "providerManageTitle": "供应商",
-  "@providerManageTitle": {"description": "供应商"},
+  "@providerManageTitle": {
+    "description": "供应商"
+  },
   "providerManageIntro": "服务器配置里的自定义供应商。点一行编辑，长按可以测试或删除。",
-  "@providerManageIntro": {"description": "服务器配置里的自定义供应商。点一行编辑，长按可以测试或删除。"},
+  "@providerManageIntro": {
+    "description": "服务器配置里的自定义供应商。点一行编辑，长按可以测试或删除。"
+  },
   "providerManageRefresh": "重新读取",
-  "@providerManageRefresh": {"description": "重新读取"},
+  "@providerManageRefresh": {
+    "description": "重新读取"
+  },
   "providerManageWorking": "正在写入配置…",
-  "@providerManageWorking": {"description": "正在写入配置…"},
+  "@providerManageWorking": {
+    "description": "正在写入配置…"
+  },
   "providerManageEmpty": "还没有自定义供应商",
-  "@providerManageEmpty": {"description": "还没有自定义供应商"},
+  "@providerManageEmpty": {
+    "description": "还没有自定义供应商"
+  },
   "providerManageEmptyBody": "添加一个 OpenAI 兼容或 Anthropic 兼容的端点，模型从端点自己拉取。",
-  "@providerManageEmptyBody": {"description": "添加一个 OpenAI 兼容或 Anthropic 兼容的端点，模型从端点自己拉取。"},
+  "@providerManageEmptyBody": {
+    "description": "添加一个 OpenAI 兼容或 Anthropic 兼容的端点，模型从端点自己拉取。"
+  },
   "providerManageLoadFailed": "读取供应商配置失败",
-  "@providerManageLoadFailed": {"description": "读取供应商配置失败"},
+  "@providerManageLoadFailed": {
+    "description": "读取供应商配置失败"
+  },
   "providerManageModels": "{count} 个模型",
-  "@providerManageModels": {"placeholders": {"count": {"type": "int"}}},
+  "@providerManageModels": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "providerManageDeleteTitle": "删除供应商“{name}”？",
-  "@providerManageDeleteTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@providerManageDeleteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "providerManageDeleteBody": "会从服务器配置里移除这一项，并保留一份备份。正在使用该供应商的会话需要换成别的模型。",
-  "@providerManageDeleteBody": {"description": "会从服务器配置里移除这一项，并保留一份备份。正在使用该供应商的会话需要换成别的模型。"},
+  "@providerManageDeleteBody": {
+    "description": "会从服务器配置里移除这一项，并保留一份备份。正在使用该供应商的会话需要换成别的模型。"
+  },
   "providerManageDeleted": "已删除“{name}”",
-  "@providerManageDeleted": {"placeholders": {"name": {"type": "String"}}},
+  "@providerManageDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "providerManageEdit": "编辑",
-  "@providerManageEdit": {"description": "编辑"},
+  "@providerManageEdit": {
+    "description": "编辑"
+  },
   "providerManageTest": "测试连接",
-  "@providerManageTest": {"description": "测试连接"},
+  "@providerManageTest": {
+    "description": "测试连接"
+  },
   "providerManageDelete": "删除",
-  "@providerManageDelete": {"description": "删除"},
+  "@providerManageDelete": {
+    "description": "删除"
+  },
   "providerManageMenu": "“{name}”的操作",
-  "@providerManageMenu": {"placeholders": {"name": {"type": "String"}}},
+  "@providerManageMenu": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "providerManageNoModel": "这个供应商没有已保存的模型，先编辑并勾选一个。",
-  "@providerManageNoModel": {"description": "这个供应商没有已保存的模型，先编辑并勾选一个。"},
+  "@providerManageNoModel": {
+    "description": "这个供应商没有已保存的模型，先编辑并勾选一个。"
+  },
   "providerManageNoKey": "找不到这个供应商的密钥，先编辑并填入密钥再测试。",
-  "@providerManageNoKey": {"description": "找不到这个供应商的密钥，先编辑并填入密钥再测试。"},
+  "@providerManageNoKey": {
+    "description": "找不到这个供应商的密钥，先编辑并填入密钥再测试。"
+  },
   "providerManageUnreadable": "{count} 个条目无法在这里编辑",
-  "@providerManageUnreadable": {"placeholders": {"count": {"type": "int"}}},
+  "@providerManageUnreadable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "providerManageUnreadableBody": "这些条目的结构不是这个表单能安全重写的（例如内置供应商的覆盖配置）。请在服务器上直接编辑。",
-  "@providerManageUnreadableBody": {"description": "这些条目的结构不是这个表单能安全重写的（例如内置供应商的覆盖配置）。请在服务器上直接编辑。"},
+  "@providerManageUnreadableBody": {
+    "description": "这些条目的结构不是这个表单能安全重写的（例如内置供应商的覆盖配置）。请在服务器上直接编辑。"
+  },
   "providerEditTitle": "编辑供应商",
-  "@providerEditTitle": {"description": "编辑供应商"},
+  "@providerEditTitle": {
+    "description": "编辑供应商"
+  },
   "providerEditIdLocked": "编辑时不能改 ID：改名等于删旧建新，正在使用它的会话会失去模型。",
-  "@providerEditIdLocked": {"description": "编辑时不能改 ID：改名等于删旧建新，正在使用它的会话会失去模型。"},
+  "@providerEditIdLocked": {
+    "description": "编辑时不能改 ID：改名等于删旧建新，正在使用它的会话会失去模型。"
+  },
   "providerEditSaved": "已保存“{name}”",
-  "@providerEditSaved": {"placeholders": {"name": {"type": "String"}}},
+  "@providerEditSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "providerEditTest": "测试连接",
-  "@providerEditTest": {"description": "测试连接"},
+  "@providerEditTest": {
+    "description": "测试连接"
+  },
   "providerModelsCount": "已启用 {on} / {total}",
-  "@providerModelsCount": {"placeholders": {"on": {"type": "int"}, "total": {"type": "int"}}},
+  "@providerModelsCount": {
+    "placeholders": {
+      "on": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "toolsDisableNamed": "禁用 {name}",
-  "@toolsDisableNamed": {"placeholders": {"name": {"type": "String"}}},
+  "@toolsDisableNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "toolsEnableNamed": "启用 {name}",
-  "@toolsEnableNamed": {"placeholders": {"name": {"type": "String"}}},
+  "@toolsEnableNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "toolsDisabledNamed": "已禁用 {name}，从新会话开始生效。",
-  "@toolsDisabledNamed": {"placeholders": {"name": {"type": "String"}}},
+  "@toolsDisabledNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "toolsEnabledNamed": "已启用 {name}，从新会话开始生效。",
-  "@toolsEnabledNamed": {"placeholders": {"name": {"type": "String"}}},
+  "@toolsEnabledNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "toolsConfigureUnavailable": "这个服务器不支持单独配置工具。",
-  "@toolsConfigureUnavailable": {"description": "这个服务器不支持单独配置工具。"},
+  "@toolsConfigureUnavailable": {
+    "description": "这个服务器不支持单独配置工具。"
+  },
   "toolsConfigureFailed": "配置没有写入：{message}",
-  "@toolsConfigureFailed": {"placeholders": {"message": {"type": "String"}}},
+  "@toolsConfigureFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "providerTabConfig": "配置",
-  "@providerTabConfig": {"description": "Detail tab: configuration"},
+  "@providerTabConfig": {
+    "description": "Detail tab: configuration"
+  },
   "providerTabModels": "模型",
-  "@providerTabModels": {"description": "Detail tab: models"},
+  "@providerTabModels": {
+    "description": "Detail tab: models"
+  },
   "providerTabAdvanced": "高级",
-  "@providerTabAdvanced": {"description": "Detail tab: advanced"},
+  "@providerTabAdvanced": {
+    "description": "Detail tab: advanced"
+  },
   "providerEnable": "启用这个供应商",
-  "@providerEnable": {"description": "Provider-level switch"},
+  "@providerEnable": {
+    "description": "Provider-level switch"
+  },
   "providerEnableHint": "关闭后它提供的所有模型都不会出现在这台手机的选择器里；服务器配置不变。",
-  "@providerEnableHint": {"description": "Under the provider-level switch"},
+  "@providerEnableHint": {
+    "description": "Under the provider-level switch"
+  },
   "providerResetDefault": "恢复默认地址",
-  "@providerResetDefault": {"description": "Restores a template's base URL"},
+  "@providerResetDefault": {
+    "description": "Restores a template's base URL"
+  },
   "providerPath": "接口路径",
-  "@providerPath": {"description": "Read-only request path derived from the protocol"},
+  "@providerPath": {
+    "description": "Read-only request path derived from the protocol"
+  },
   "providerPathHelper": "由协议决定，只读。Base URL 不要包含它；误粘贴会被自动去掉。",
-  "@providerPathHelper": {"description": "Under the request path row"},
+  "@providerPathHelper": {
+    "description": "Under the request path row"
+  },
   "providerResponsesWarning": "Responses API 多数网关不支持，只有确认供应商支持时再切换。",
-  "@providerResponsesWarning": {"description": "Shown when Responses is chosen for a non-OpenAI host"},
+  "@providerResponsesWarning": {
+    "description": "Shown when Responses is chosen for a non-OpenAI host"
+  },
   "providerBalanceSection": "账户余额",
-  "@providerBalanceSection": {"description": "Balance section title"},
+  "@providerBalanceSection": {
+    "description": "Balance section title"
+  },
   "providerBalanceEnable": "获取账户余额",
-  "@providerBalanceEnable": {"description": "Enables the balance query"},
+  "@providerBalanceEnable": {
+    "description": "Enables the balance query"
+  },
   "providerBalanceUrl": "余额接口",
-  "@providerBalanceUrl": {"description": "Balance endpoint field"},
+  "@providerBalanceUrl": {
+    "description": "Balance endpoint field"
+  },
   "providerBalanceUrlHelper": "可用 {baseUrl} 和 {apiKey} 占位，按供应商文档填写。",
   "@providerBalanceUrlHelper": {
     "description": "Balance URL helper",
     "placeholders": {
-      "baseUrl": {"type": "String"},
-      "apiKey": {"type": "String"}
+      "baseUrl": {
+        "type": "String"
+      },
+      "apiKey": {
+        "type": "String"
+      }
     }
   },
   "providerBalancePath": "余额字段",
-  "@providerBalancePath": {"description": "JSON path field"},
+  "@providerBalancePath": {
+    "description": "JSON path field"
+  },
   "providerBalancePathHelper": "余额在答案 JSON 里的位置，例如 balance_infos[0].total_balance。",
-  "@providerBalancePathHelper": {"description": "JSON path helper"},
+  "@providerBalancePathHelper": {
+    "description": "JSON path helper"
+  },
   "providerBalanceQuery": "查询余额",
-  "@providerBalanceQuery": {"description": "Runs the balance query"},
+  "@providerBalanceQuery": {
+    "description": "Runs the balance query"
+  },
   "providerBalanceValue": "余额",
-  "@providerBalanceValue": {"description": "Label of the balance value"},
+  "@providerBalanceValue": {
+    "description": "Label of the balance value"
+  },
   "providerBalanceFailed": "余额读取失败",
-  "@providerBalanceFailed": {"description": "Balance failure prefix"},
+  "@providerBalanceFailed": {
+    "description": "Balance failure prefix"
+  },
   "providerHeadersSection": "自定义 Headers",
-  "@providerHeadersSection": {"description": "Custom headers section title"},
+  "@providerHeadersSection": {
+    "description": "Custom headers section title"
+  },
   "providerHeadersHint": "每次请求都会带上；名称为空或值为空的行会在保存时丢掉。",
-  "@providerHeadersHint": {"description": "Custom headers helper"},
+  "@providerHeadersHint": {
+    "description": "Custom headers helper"
+  },
   "providerHeadersAdd": "添加 Header",
-  "@providerHeadersAdd": {"description": "Adds a header row"},
+  "@providerHeadersAdd": {
+    "description": "Adds a header row"
+  },
   "providerHeadersName": "名称",
-  "@providerHeadersName": {"description": "Header name field"},
+  "@providerHeadersName": {
+    "description": "Header name field"
+  },
   "providerHeadersValue": "值",
-  "@providerHeadersValue": {"description": "Header value field"},
+  "@providerHeadersValue": {
+    "description": "Header value field"
+  },
   "providerHeadersPresets": "常用名称",
-  "@providerHeadersPresets": {"description": "Header name presets sheet title"},
+  "@providerHeadersPresets": {
+    "description": "Header name presets sheet title"
+  },
   "providerHeadersEmpty": "还没有自定义 Header。有些网关需要 HTTP-Referer 或 X-Title 才允许访问。",
-  "@providerHeadersEmpty": {"description": "Empty custom headers state"},
+  "@providerHeadersEmpty": {
+    "description": "Empty custom headers state"
+  },
   "providerDetailModelsHint": "用上面填好的地址、密钥和协议，向供应商请求它自己的模型列表，再勾选要启用的。",
-  "@providerDetailModelsHint": {"description": "Models tab explanation"},
+  "@providerDetailModelsHint": {
+    "description": "Models tab explanation"
+  },
   "providerModelsConfigFirst": "先填好 API Base Url。",
-  "@providerModelsConfigFirst": {"description": "Models tab when no address"},
+  "@providerModelsConfigFirst": {
+    "description": "Models tab when no address"
+  },
   "providerModelsKeyServer": "这个供应商的密钥保存在服务器上，应用读不到；拉取列表可能需要先在服务器登录。",
-  "@providerModelsKeyServer": {"description": "Models tab when the key is server-side"},
+  "@providerModelsKeyServer": {
+    "description": "Models tab when the key is server-side"
+  },
   "providerModelsSelected": "已选",
-  "@providerModelsSelected": {"description": "Prefix of the selected model count"},
+  "@providerModelsSelected": {
+    "description": "Prefix of the selected model count"
+  },
   "providerModelsAdd": "添加",
-  "@providerModelsAdd": {"description": "Adds a manually typed model id"},
+  "@providerModelsAdd": {
+    "description": "Adds a manually typed model id"
+  },
   "providerTemplateTitle": "选择供应商类型",
-  "@providerTemplateTitle": {"description": "Template sheet title"},
+  "@providerTemplateTitle": {
+    "description": "Template sheet title"
+  },
   "providerTemplateSubtitle": "选中后预填名称、地址和协议，所有字段之后都能改。",
-  "@providerTemplateSubtitle": {"description": "Template sheet subtitle"},
+  "@providerTemplateSubtitle": {
+    "description": "Template sheet subtitle"
+  },
   "providerTemplateOfficial": "官方接口",
-  "@providerTemplateOfficial": {"description": "Template kind"},
+  "@providerTemplateOfficial": {
+    "description": "Template kind"
+  },
   "providerTemplateGateway": "聚合网关",
-  "@providerTemplateGateway": {"description": "Template kind"},
+  "@providerTemplateGateway": {
+    "description": "Template kind"
+  },
   "providerTemplateChina": "国内直连",
-  "@providerTemplateChina": {"description": "Template kind"},
+  "@providerTemplateChina": {
+    "description": "Template kind"
+  },
   "providerTemplateCustom": "自己填地址和协议",
-  "@providerTemplateCustom": {"description": "Template kind"},
+  "@providerTemplateCustom": {
+    "description": "Template kind"
+  },
   "providerTemplateCustomName": "自定义供应商",
-  "@providerTemplateCustomName": {"description": "Custom template row"},
+  "@providerTemplateCustomName": {
+    "description": "Custom template row"
+  },
   "providerTestPickModel": "测试用的模型",
-  "@providerTestPickModel": {"description": "Probe model picker"}
+  "@providerTestPickModel": {
+    "description": "Probe model picker"
+  },
+  "providerGroupConfigured": "已配置",
+  "@providerGroupConfigured": {
+    "description": "供应商列表分组：已经保存过的"
+  },
+  "providerGroupAvailable": "可选供应商",
+  "@providerGroupAvailable": {
+    "description": "供应商列表分组：内置但还没配置的"
+  },
+  "providerNotConfigured": "未配置",
+  "@providerNotConfigured": {
+    "description": "还没填密钥或选模型时的行说明"
+  },
+  "providerManageSetup": "去配置",
+  "@providerManageSetup": {
+    "description": "未配置条目的菜单项"
+  },
+  "providerManageSubtitle": "内置的和自己加的在一张表里：点开填密钥、选协议、勾模型。",
+  "@providerManageSubtitle": {
+    "description": "Integrations 里进入供应商窗口的那一行"
+  },
+  "providerManageOneWindow": "供应商现在只在一个窗口里配置：内置的和自己加的都在那里，地址、协议、密钥、模型放在一起；服务器那份列表不再单独编辑。",
+  "@providerManageOneWindow": {
+    "description": "Integrations 供应商节提示"
+  }
 }

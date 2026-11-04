@@ -34319,4 +34319,23 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerTestPickModel => '测试用的模型';
+
+  @override
+  String get providerGroupConfigured => '已配置';
+
+  @override
+  String get providerGroupAvailable => '可选供应商';
+
+  @override
+  String get providerNotConfigured => '未配置';
+
+  @override
+  String get providerManageSetup => '去配置';
+
+  @override
+  String get providerManageSubtitle => '内置的和自己加的在一张表里：点开填密钥、选协议、勾模型。';
+
+  @override
+  String get providerManageOneWindow =>
+      '供应商现在只在一个窗口里配置：内置的和自己加的都在那里，地址、协议、密钥、模型放在一起；服务器那份列表不再单独编辑。';
 }

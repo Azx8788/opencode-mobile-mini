@@ -57151,6 +57151,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Model to test'**
   String get providerTestPickModel;
+
+  /// Providers list group: entries already saved
+  ///
+  /// In en, this message translates to:
+  /// **'Configured'**
+  String get providerGroupConfigured;
+
+  /// Providers list group: shipped entries not set up yet
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get providerGroupAvailable;
+
+  /// Provider row subtitle when the entry has no key or models yet
+  ///
+  /// In en, this message translates to:
+  /// **'Not configured'**
+  String get providerNotConfigured;
+
+  /// Provider row action for an entry that has no configuration yet
+  ///
+  /// In en, this message translates to:
+  /// **'Set up'**
+  String get providerManageSetup;
+
+  /// Integrations entry row into the provider window
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped and your own endpoints in one list: tap to set the key, choose the protocol and pick models.'**
+  String get providerManageSubtitle;
+
+  /// Integrations provider section notice
+  ///
+  /// In en, this message translates to:
+  /// **'Providers are configured in one window now — the ones the app ships and the ones you add. Address, protocol, key and models live together, and the server list is no longer a separate place to edit.'**
+  String get providerManageOneWindow;
 }
 
 class _AppLocalizationsDelegate

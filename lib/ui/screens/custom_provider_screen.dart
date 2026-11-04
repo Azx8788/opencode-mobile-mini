@@ -115,6 +115,11 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
   /// True when editing an entry already in the config.
   bool get _editing => widget.editing != null;
 
+  /// True when the id is not the person's to type: an entry already saved
+  /// keeps its id, and a shipped provider keeps the one the app ships it
+  /// under (so `openai` cannot become a second OpenAI beside itself).
+  bool get _idLocked => _editing || widget.template != null;
+
   /// True when the entry already has a key somewhere; the field then shows
   /// "Saved · Replace" instead of an empty box that looks like a lost key.
   bool get _hasStoredKey {
@@ -173,6 +178,10 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       _id.text = template.id;
       _baseUrl.text = template.baseUrl;
       _protocol = template.protocol;
+      // A shipped provider keeps the id it is shipped under: `openai` must
+      // stay `openai`, or saving it would add a second OpenAI beside the one
+      // the model picker already knows.
+      _autoID = false;
       final balance = template.balance;
       if (balance != null) {
         _balanceUrl.text = balance.url;
@@ -870,9 +879,9 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       label: l10n.providerAddId,
       controller: _id,
       kind: KitFieldKind.mono,
-      helper: _editing ? null : l10n.providerAddIdHelper,
-      enabled: !_editing,
-      disabledReason: _editing ? l10n.providerEditIdLocked : null,
+      helper: _idLocked ? null : l10n.providerAddIdHelper,
+      enabled: !_idLocked,
+      disabledReason: _idLocked ? l10n.providerEditIdLocked : null,
       onChanged: (_) {
         _autoID = false;
         setState(() {});

@@ -53,6 +53,10 @@ void main() {
         'openrouter',
       ]);
       expect(catalogue.unreadable, 1);
+      // Named, not just counted: the provider list shows the app's own rows
+      // for ids like this, and a row must not offer to overwrite an entry it
+      // could not read.
+      expect(catalogue.unreadableIDs, {'builtin-override'});
     });
 
     test('keeps a secret file a reference, not a value', () {

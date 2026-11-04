@@ -106,45 +106,6 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
     if (saved == true && mounted) await _load();
   }
 
-  /// The way in: pick what kind of provider this is, then fill it in on the
-  /// detail page. The template only prefills the address and protocol; it
-  /// writes nothing.
-  Future<void> _pickTemplate() async {
-    final l10n = _l10nOf(context);
-    final template = await showKitSheet<BuiltinProviderTemplate>(
-      context,
-      title: l10n.providerTemplateTitle,
-      subtitle: l10n.providerTemplateSubtitle,
-      itemCount: builtinProviderTemplates.length,
-      itemBuilder: (sheetContext, index) {
-        final template = builtinProviderTemplates[index];
-        final custom = template.kind == ProviderTemplateKind.custom;
-        return KitRow(
-          key: ValueKey('provider-template-${template.id}'),
-          title: custom ? l10n.providerTemplateCustomName : template.name,
-          supporting: TextSpan(
-            text: custom
-                ? l10n.providerTemplateCustom
-                : '${template.baseUrl} · ${_kindLabel(l10n, template.kind)}',
-          ),
-          supportingMaxLines: 2,
-          trailing: const KitChevron(),
-          onTap: () => Navigator.of(sheetContext).pop(template),
-        );
-      },
-    );
-    if (template == null || !mounted) return;
-    await _openForm(null, template: template);
-  }
-
-  String _kindLabel(AppLocalizations l10n, ProviderTemplateKind kind) =>
-      switch (kind) {
-        ProviderTemplateKind.official => l10n.providerTemplateOfficial,
-        ProviderTemplateKind.gateway => l10n.providerTemplateGateway,
-        ProviderTemplateKind.china => l10n.providerTemplateChina,
-        ProviderTemplateKind.custom => l10n.providerTemplateCustom,
-      };
-
   Future<void> _test(CustomProviderRecord record) async {
     final l10n = _l10nOf(context);
     if (record.models.isEmpty) {
@@ -223,7 +184,7 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
             key: const ValueKey('providers-add-top'),
             label: l10n.providerAddTitle,
             icon: AppIconography.add,
-            onPressed: _loading ? null : _pickTemplate,
+            onPressed: _loading ? null : () => _openForm(null),
           ),
           KitAction(
             key: const ValueKey('providers-refresh'),
@@ -304,95 +265,125 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
       ];
     }
     if (catalogue == null) return const [];
-    if (catalogue.isEmpty) {
-      return [
-        gap,
-        KitStateView(
-          key: const ValueKey('providers-empty'),
-          size: KitStateSize.inline,
-          icon: AppIconography.model,
-          title: l10n.providerManageEmpty,
-          body: l10n.providerManageEmptyBody,
-          primary: KitAction(
-            key: const ValueKey('providers-add-empty'),
-            label: l10n.providerAddTitle,
-            icon: AppIconography.add,
-            onPressed: () => _openForm(null),
-          ),
-        ),
-      ];
-    }
+    final entries = providerListEntries(catalogue);
+    final configured = [for (final entry in entries) if (entry.configured) entry];
+    final available = [
+      for (final entry in entries)
+        if (!entry.configured) entry,
+    ];
     return [
       gap,
-      KitRowGroup(
-        margin: EdgeInsets.zero,
-        children: [
-          for (final record in catalogue.records) _row(context, l10n, record),
-          if (catalogue.unreadable > 0)
-            KitRow(
-              key: const ValueKey('providers-unreadable'),
-              title: l10n.providerManageUnreadable(catalogue.unreadable),
-              supporting: TextSpan(text: l10n.providerManageUnreadableBody),
-              supportingMaxLines: 3,
-              enabled: false,
-              disabledReason: l10n.providerManageUnreadableBody,
-            ),
+      if (configured.isNotEmpty) ...[
+        KitRowGroup(
+          margin: EdgeInsets.zero,
+          label: l10n.providerGroupConfigured,
+          children: [
+            for (final entry in configured) _row(context, l10n, entry),
+          ],
+        ),
+        if (catalogue.unreadable > 0) ...[
+          SizedBox(height: tokens.space3),
+          KitRowGroup(
+            margin: EdgeInsets.zero,
+            children: [
+              KitRow(
+                key: const ValueKey('providers-unreadable'),
+                title: l10n.providerManageUnreadable(catalogue.unreadable),
+                supporting: TextSpan(text: l10n.providerManageUnreadableBody),
+                supportingMaxLines: 3,
+                enabled: false,
+                disabledReason: l10n.providerManageUnreadableBody,
+              ),
+            ],
+          ),
         ],
-      ),
+      ],
+      if (available.isNotEmpty) ...[
+        SizedBox(height: tokens.space4),
+        KitRowGroup(
+          margin: EdgeInsets.zero,
+          label: l10n.providerGroupAvailable,
+          children: [
+            for (final entry in available) _row(context, l10n, entry),
+          ],
+        ),
+      ],
     ];
   }
 
   Widget _row(
     BuildContext context,
     AppLocalizations l10n,
-    CustomProviderRecord record,
+    ProviderListEntry entry,
   ) {
     final tokens = KitTokens.of(context);
-    final protocol = switch (record.protocol) {
+    final record = entry.record;
+    final protocol = switch (entry.protocol) {
       ProviderProtocol.chatCompletions => l10n.providerAddProtocolChat,
       ProviderProtocol.responses => l10n.providerAddProtocolResponses,
       ProviderProtocol.anthropic => l10n.providerAddProtocolAnthropic,
       ProviderProtocol.google => 'Google',
     };
     return KitRow(
-      key: ValueKey('provider-row-${record.id}'),
-      title: record.name,
+      key: ValueKey('provider-row-${entry.id}'),
+      title: entry.name,
       supporting: TextSpan(
         text: [
-          record.id,
+          entry.id,
           protocol,
-          l10n.providerManageModels(record.models.length),
+          if (record == null)
+            entry.blocked
+                ? l10n.providerManageUnreadableBody
+                : l10n.providerNotConfigured
+          else
+            l10n.providerManageModels(record.models.length),
         ].join(' · '),
       ),
-      supportingMaxLines: 2,
+      supportingMaxLines: 3,
+      enabled: !entry.blocked,
+      disabledReason: entry.blocked ? l10n.providerManageUnreadableBody : null,
       trailing: const KitChevron(),
-      onTap: () => _openForm(record),
-      menuLabel: l10n.providerManageMenu(record.name),
+      onTap: entry.blocked
+          ? null
+          : () => _openForm(
+              record,
+              template: record == null ? entry.template : null,
+            ),
+      menuLabel: l10n.providerManageMenu(entry.name),
       menu: [
-        KitMenuItem(
-          key: ValueKey('provider-edit-${record.id}'),
-          label: l10n.providerManageEdit,
-          icon: AppIconography.edit,
-          onSelected: () => _openForm(record),
-        ),
-        KitMenuItem(
-          key: ValueKey('provider-test-${record.id}'),
-          label: l10n.providerManageTest,
-          icon: AppIconography.play,
-          onSelected: () => _test(record),
-        ),
-        KitMenuItem(
-          key: ValueKey('provider-delete-${record.id}'),
-          label: l10n.providerManageDelete,
-          icon: AppIconography.delete,
-          destructive: true,
-          onSelected: () => _delete(record),
-        ),
+        if (record == null)
+          KitMenuItem(
+            key: ValueKey('provider-setup-${entry.id}'),
+            label: l10n.providerManageSetup,
+            icon: AppIconography.edit,
+            onSelected: () => _openForm(null, template: entry.template),
+          )
+        else ...[
+          KitMenuItem(
+            key: ValueKey('provider-edit-${entry.id}'),
+            label: l10n.providerManageEdit,
+            icon: AppIconography.edit,
+            onSelected: () => _openForm(record),
+          ),
+          KitMenuItem(
+            key: ValueKey('provider-test-${entry.id}'),
+            label: l10n.providerManageTest,
+            icon: AppIconography.play,
+            onSelected: () => _test(record),
+          ),
+          KitMenuItem(
+            key: ValueKey('provider-delete-${entry.id}'),
+            label: l10n.providerManageDelete,
+            icon: AppIconography.delete,
+            destructive: true,
+            onSelected: () => _delete(record),
+          ),
+        ],
       ],
       below: Padding(
         padding: EdgeInsetsDirectional.only(top: tokens.space1),
         child: Text(
-          record.baseUrl,
+          entry.baseUrl,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: KitText.styleOf(context, KitTextRole.caption),

@@ -2,6 +2,25 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.1+5 — 2026-11-04
+
+Providers are one list now, and it is the app's own. The app ships the same
+twenty entries rikkahub opens with — OpenAI, Gemini, AiHubMix, APIMart,
+SiliconFlow, DeepSeek, Moonshot, OpenRouter, Vercel AI Gateway, DashScope,
+Volcengine, Zhipu, StepFun, 302.AI, Hunyuan, xAI, Suixiang, MaruCode, MiniMax
+and MIMO — and they sit in the same window as the ones you add: configured
+entries first, the rest under "available", each opening the same three tabs.
+Nothing is written until you fill one in. A shipped entry keeps its id (so
+`openai` stays `openai`), takes the address it ships with as "restore
+default", and can be pointed anywhere.
+
+The server's own provider rows are gone from Integrations: they could take a
+key and nothing else — no address, no protocol, no models. That window now
+lists only what the server actually reports as connected, plus the way into
+the provider list. An entry under a shipped id that the form cannot read
+(a hand-written override, say) is shown as a signpost instead of a blank row,
+so saving can never replace it by accident. Builds are `0.3.1+5`.
+
 ## 0.3.0+4 — 2026-11-04
 
 Providers are now a first-class section, arranged the way the person thinks

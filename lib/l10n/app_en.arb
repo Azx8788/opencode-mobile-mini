@@ -44066,145 +44066,358 @@
     "description": "Probe name: a token ceiling ends the turn with the provider's limit signal"
   },
   "providerManageTitle": "Providers",
-  "@providerManageTitle": {"description": "Providers"},
+  "@providerManageTitle": {
+    "description": "Providers"
+  },
   "providerManageIntro": "The providers written into the server configuration. Tap a row to edit it; long-press for test and delete.",
-  "@providerManageIntro": {"description": "The providers written into the server configuration. Tap a row to edit it; long-press for test and delete."},
+  "@providerManageIntro": {
+    "description": "The providers written into the server configuration. Tap a row to edit it; long-press for test and delete."
+  },
   "providerManageRefresh": "Read again",
-  "@providerManageRefresh": {"description": "Read again"},
+  "@providerManageRefresh": {
+    "description": "Read again"
+  },
   "providerManageWorking": "Writing the configuration…",
-  "@providerManageWorking": {"description": "Writing the configuration…"},
+  "@providerManageWorking": {
+    "description": "Writing the configuration…"
+  },
   "providerManageEmpty": "No custom providers yet",
-  "@providerManageEmpty": {"description": "No custom providers yet"},
+  "@providerManageEmpty": {
+    "description": "No custom providers yet"
+  },
   "providerManageEmptyBody": "Add an OpenAI-compatible or Anthropic-compatible endpoint; its models are read from the endpoint itself.",
-  "@providerManageEmptyBody": {"description": "Add an OpenAI-compatible or Anthropic-compatible endpoint; its models are read from the endpoint itself."},
+  "@providerManageEmptyBody": {
+    "description": "Add an OpenAI-compatible or Anthropic-compatible endpoint; its models are read from the endpoint itself."
+  },
   "providerManageLoadFailed": "Could not read the provider configuration",
-  "@providerManageLoadFailed": {"description": "Could not read the provider configuration"},
+  "@providerManageLoadFailed": {
+    "description": "Could not read the provider configuration"
+  },
   "providerManageModels": "{count} models",
-  "@providerManageModels": {"placeholders": {"count": {"type": "int"}}},
+  "@providerManageModels": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "providerManageDeleteTitle": "Delete the provider “{name}”?",
-  "@providerManageDeleteTitle": {"placeholders": {"name": {"type": "String"}}},
+  "@providerManageDeleteTitle": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "providerManageDeleteBody": "This removes the entry from the server configuration and keeps a backup. Conversations using this provider will need another model.",
-  "@providerManageDeleteBody": {"description": "This removes the entry from the server configuration and keeps a backup. Conversations using this provider will need another model."},
+  "@providerManageDeleteBody": {
+    "description": "This removes the entry from the server configuration and keeps a backup. Conversations using this provider will need another model."
+  },
   "providerManageDeleted": "Deleted “{name}”",
-  "@providerManageDeleted": {"placeholders": {"name": {"type": "String"}}},
+  "@providerManageDeleted": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "providerManageEdit": "Edit",
-  "@providerManageEdit": {"description": "Edit"},
+  "@providerManageEdit": {
+    "description": "Edit"
+  },
   "providerManageTest": "Test connection",
-  "@providerManageTest": {"description": "Test connection"},
+  "@providerManageTest": {
+    "description": "Test connection"
+  },
   "providerManageDelete": "Delete",
-  "@providerManageDelete": {"description": "Delete"},
+  "@providerManageDelete": {
+    "description": "Delete"
+  },
   "providerManageMenu": "Actions for “{name}”",
-  "@providerManageMenu": {"placeholders": {"name": {"type": "String"}}},
+  "@providerManageMenu": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "providerManageNoModel": "This provider has no saved models. Edit it and select one first.",
-  "@providerManageNoModel": {"description": "This provider has no saved models. Edit it and select one first."},
+  "@providerManageNoModel": {
+    "description": "This provider has no saved models. Edit it and select one first."
+  },
   "providerManageNoKey": "The key for this provider could not be read. Edit it, enter the key, then test.",
-  "@providerManageNoKey": {"description": "The key for this provider could not be read. Edit it, enter the key, then test."},
+  "@providerManageNoKey": {
+    "description": "The key for this provider could not be read. Edit it, enter the key, then test."
+  },
   "providerManageUnreadable": "{count} entries cannot be edited here",
-  "@providerManageUnreadable": {"placeholders": {"count": {"type": "int"}}},
+  "@providerManageUnreadable": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "providerManageUnreadableBody": "Their shape is not something this form can rewrite safely (an override of a built-in provider, for example). Edit them on the server.",
-  "@providerManageUnreadableBody": {"description": "Their shape is not something this form can rewrite safely (an override of a built-in provider, for example). Edit them on the server."},
+  "@providerManageUnreadableBody": {
+    "description": "Their shape is not something this form can rewrite safely (an override of a built-in provider, for example). Edit them on the server."
+  },
   "providerEditTitle": "Edit provider",
-  "@providerEditTitle": {"description": "Edit provider"},
+  "@providerEditTitle": {
+    "description": "Edit provider"
+  },
   "providerEditIdLocked": "The id cannot change while editing: renaming means a new provider, and conversations pinned to this one lose their model.",
-  "@providerEditIdLocked": {"description": "The id cannot change while editing: renaming means a new provider, and conversations pinned to this one lose their model."},
+  "@providerEditIdLocked": {
+    "description": "The id cannot change while editing: renaming means a new provider, and conversations pinned to this one lose their model."
+  },
   "providerEditSaved": "Saved “{name}”",
-  "@providerEditSaved": {"placeholders": {"name": {"type": "String"}}},
+  "@providerEditSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "providerEditTest": "Test connection",
-  "@providerEditTest": {"description": "Test connection"},
+  "@providerEditTest": {
+    "description": "Test connection"
+  },
   "providerModelsCount": "{on} of {total} shown",
-  "@providerModelsCount": {"placeholders": {"on": {"type": "int"}, "total": {"type": "int"}}},
+  "@providerModelsCount": {
+    "placeholders": {
+      "on": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "toolsDisableNamed": "Disable {name}",
-  "@toolsDisableNamed": {"placeholders": {"name": {"type": "String"}}},
+  "@toolsDisableNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "toolsEnableNamed": "Enable {name}",
-  "@toolsEnableNamed": {"placeholders": {"name": {"type": "String"}}},
+  "@toolsEnableNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "toolsDisabledNamed": "Disabled {name}; it applies to new conversations.",
-  "@toolsDisabledNamed": {"placeholders": {"name": {"type": "String"}}},
+  "@toolsDisabledNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "toolsEnabledNamed": "Enabled {name}; it applies to new conversations.",
-  "@toolsEnabledNamed": {"placeholders": {"name": {"type": "String"}}},
+  "@toolsEnabledNamed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "toolsConfigureUnavailable": "This server does not allow per-tool configuration.",
-  "@toolsConfigureUnavailable": {"description": "This server does not allow per-tool configuration."},
+  "@toolsConfigureUnavailable": {
+    "description": "This server does not allow per-tool configuration."
+  },
   "toolsConfigureFailed": "The change was not saved: {message}",
-  "@toolsConfigureFailed": {"placeholders": {"message": {"type": "String"}}},
+  "@toolsConfigureFailed": {
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
   "providerTabConfig": "Configuration",
-  "@providerTabConfig": {"description": "Detail tab: configuration"},
+  "@providerTabConfig": {
+    "description": "Detail tab: configuration"
+  },
   "providerTabModels": "Models",
-  "@providerTabModels": {"description": "Detail tab: models"},
+  "@providerTabModels": {
+    "description": "Detail tab: models"
+  },
   "providerTabAdvanced": "Advanced",
-  "@providerTabAdvanced": {"description": "Detail tab: advanced"},
+  "@providerTabAdvanced": {
+    "description": "Detail tab: advanced"
+  },
   "providerEnable": "Enable this provider",
-  "@providerEnable": {"description": "Provider-level switch"},
+  "@providerEnable": {
+    "description": "Provider-level switch"
+  },
   "providerEnableHint": "Off hides every model it serves from this phone's picker; the server configuration is unchanged.",
-  "@providerEnableHint": {"description": "Under the provider-level switch"},
+  "@providerEnableHint": {
+    "description": "Under the provider-level switch"
+  },
   "providerResetDefault": "Reset to the default address",
-  "@providerResetDefault": {"description": "Restores a template's base URL"},
+  "@providerResetDefault": {
+    "description": "Restores a template's base URL"
+  },
   "providerPath": "Request path",
-  "@providerPath": {"description": "Read-only request path derived from the protocol"},
+  "@providerPath": {
+    "description": "Read-only request path derived from the protocol"
+  },
   "providerPathHelper": "Set by the protocol, read-only. Keep it out of the base URL; a pasted one is removed.",
-  "@providerPathHelper": {"description": "Under the request path row"},
+  "@providerPathHelper": {
+    "description": "Under the request path row"
+  },
   "providerResponsesWarning": "Most gateways do not serve the Responses API; switch only if this provider does.",
-  "@providerResponsesWarning": {"description": "Shown when Responses is chosen for a non-OpenAI host"},
+  "@providerResponsesWarning": {
+    "description": "Shown when Responses is chosen for a non-OpenAI host"
+  },
   "providerBalanceSection": "Account balance",
-  "@providerBalanceSection": {"description": "Balance section title"},
+  "@providerBalanceSection": {
+    "description": "Balance section title"
+  },
   "providerBalanceEnable": "Show account balance",
-  "@providerBalanceEnable": {"description": "Enables the balance query"},
+  "@providerBalanceEnable": {
+    "description": "Enables the balance query"
+  },
   "providerBalanceUrl": "Balance URL",
-  "@providerBalanceUrl": {"description": "Balance endpoint field"},
+  "@providerBalanceUrl": {
+    "description": "Balance endpoint field"
+  },
   "providerBalanceUrlHelper": "You may use {baseUrl} and {apiKey}; follow the provider's docs.",
   "@providerBalanceUrlHelper": {
     "description": "Balance URL helper",
     "placeholders": {
-      "baseUrl": {"type": "String"},
-      "apiKey": {"type": "String"}
+      "baseUrl": {
+        "type": "String"
+      },
+      "apiKey": {
+        "type": "String"
+      }
     }
   },
   "providerBalancePath": "Balance field",
-  "@providerBalancePath": {"description": "JSON path field"},
+  "@providerBalancePath": {
+    "description": "JSON path field"
+  },
   "providerBalancePathHelper": "Where the balance sits in the answer, e.g. balance_infos[0].total_balance.",
-  "@providerBalancePathHelper": {"description": "JSON path helper"},
+  "@providerBalancePathHelper": {
+    "description": "JSON path helper"
+  },
   "providerBalanceQuery": "Check balance",
-  "@providerBalanceQuery": {"description": "Runs the balance query"},
+  "@providerBalanceQuery": {
+    "description": "Runs the balance query"
+  },
   "providerBalanceValue": "Balance",
-  "@providerBalanceValue": {"description": "Label of the balance value"},
+  "@providerBalanceValue": {
+    "description": "Label of the balance value"
+  },
   "providerBalanceFailed": "Could not read the balance",
-  "@providerBalanceFailed": {"description": "Balance failure prefix"},
+  "@providerBalanceFailed": {
+    "description": "Balance failure prefix"
+  },
   "providerHeadersSection": "Custom headers",
-  "@providerHeadersSection": {"description": "Custom headers section title"},
+  "@providerHeadersSection": {
+    "description": "Custom headers section title"
+  },
   "providerHeadersHint": "Sent with every request; a row with an empty name or value is dropped on save.",
-  "@providerHeadersHint": {"description": "Custom headers helper"},
+  "@providerHeadersHint": {
+    "description": "Custom headers helper"
+  },
   "providerHeadersAdd": "Add header",
-  "@providerHeadersAdd": {"description": "Adds a header row"},
+  "@providerHeadersAdd": {
+    "description": "Adds a header row"
+  },
   "providerHeadersName": "Name",
-  "@providerHeadersName": {"description": "Header name field"},
+  "@providerHeadersName": {
+    "description": "Header name field"
+  },
   "providerHeadersValue": "Value",
-  "@providerHeadersValue": {"description": "Header value field"},
+  "@providerHeadersValue": {
+    "description": "Header value field"
+  },
   "providerHeadersPresets": "Common names",
-  "@providerHeadersPresets": {"description": "Header name presets sheet title"},
+  "@providerHeadersPresets": {
+    "description": "Header name presets sheet title"
+  },
   "providerHeadersEmpty": "No custom headers yet. Some gateways need HTTP-Referer or X-Title before they answer.",
-  "@providerHeadersEmpty": {"description": "Empty custom headers state"},
+  "@providerHeadersEmpty": {
+    "description": "Empty custom headers state"
+  },
   "providerDetailModelsHint": "Ask the provider for its own model list with the address, key and protocol above, then tick what to enable.",
-  "@providerDetailModelsHint": {"description": "Models tab explanation"},
+  "@providerDetailModelsHint": {
+    "description": "Models tab explanation"
+  },
   "providerModelsConfigFirst": "Fill in the API Base Url first.",
-  "@providerModelsConfigFirst": {"description": "Models tab when no address"},
+  "@providerModelsConfigFirst": {
+    "description": "Models tab when no address"
+  },
   "providerModelsKeyServer": "This provider's key lives on the server and cannot be read here; fetching may need a server sign-in.",
-  "@providerModelsKeyServer": {"description": "Models tab when the key is server-side"},
+  "@providerModelsKeyServer": {
+    "description": "Models tab when the key is server-side"
+  },
   "providerModelsSelected": "Selected",
-  "@providerModelsSelected": {"description": "Prefix of the selected model count"},
+  "@providerModelsSelected": {
+    "description": "Prefix of the selected model count"
+  },
   "providerModelsAdd": "Add",
-  "@providerModelsAdd": {"description": "Adds a manually typed model id"},
+  "@providerModelsAdd": {
+    "description": "Adds a manually typed model id"
+  },
   "providerTemplateTitle": "Choose a provider type",
-  "@providerTemplateTitle": {"description": "Template sheet title"},
+  "@providerTemplateTitle": {
+    "description": "Template sheet title"
+  },
   "providerTemplateSubtitle": "Fills the name, address and protocol; every field stays editable.",
-  "@providerTemplateSubtitle": {"description": "Template sheet subtitle"},
+  "@providerTemplateSubtitle": {
+    "description": "Template sheet subtitle"
+  },
   "providerTemplateOfficial": "Official API",
-  "@providerTemplateOfficial": {"description": "Template kind"},
+  "@providerTemplateOfficial": {
+    "description": "Template kind"
+  },
   "providerTemplateGateway": "Aggregator",
-  "@providerTemplateGateway": {"description": "Template kind"},
+  "@providerTemplateGateway": {
+    "description": "Template kind"
+  },
   "providerTemplateChina": "China direct",
-  "@providerTemplateChina": {"description": "Template kind"},
+  "@providerTemplateChina": {
+    "description": "Template kind"
+  },
   "providerTemplateCustom": "Your own endpoint",
-  "@providerTemplateCustom": {"description": "Template kind"},
+  "@providerTemplateCustom": {
+    "description": "Template kind"
+  },
   "providerTemplateCustomName": "Custom provider",
-  "@providerTemplateCustomName": {"description": "Custom template row"},
+  "@providerTemplateCustomName": {
+    "description": "Custom template row"
+  },
   "providerTestPickModel": "Model to test",
-  "@providerTestPickModel": {"description": "Probe model picker"}
+  "@providerTestPickModel": {
+    "description": "Probe model picker"
+  },
+  "providerGroupConfigured": "Configured",
+  "@providerGroupConfigured": {
+    "description": "Providers list group: entries already saved"
+  },
+  "providerGroupAvailable": "Available",
+  "@providerGroupAvailable": {
+    "description": "Providers list group: shipped entries not set up yet"
+  },
+  "providerNotConfigured": "Not configured",
+  "@providerNotConfigured": {
+    "description": "Provider row subtitle when the entry has no key or models yet"
+  },
+  "providerManageSetup": "Set up",
+  "@providerManageSetup": {
+    "description": "Provider row action for an entry that has no configuration yet"
+  },
+  "providerManageSubtitle": "Shipped and your own endpoints in one list: tap to set the key, choose the protocol and pick models.",
+  "@providerManageSubtitle": {
+    "description": "Integrations entry row into the provider window"
+  },
+  "providerManageOneWindow": "Providers are configured in one window now — the ones the app ships and the ones you add. Address, protocol, key and models live together, and the server list is no longer a separate place to edit.",
+  "@providerManageOneWindow": {
+    "description": "Integrations provider section notice"
+  }
 }

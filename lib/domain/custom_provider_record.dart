@@ -96,6 +96,7 @@ class CustomProviderCatalogue {
   const CustomProviderCatalogue({
     required this.records,
     required this.unreadable,
+    this.unreadableIDs = const <String>{},
   });
 
   final List<CustomProviderRecord> records;
@@ -104,6 +105,15 @@ class CustomProviderCatalogue {
   /// can say "1 entry can only be edited on the server" instead of hiding
   /// them.
   final int unreadable;
+
+  /// Which entries those are.
+  ///
+  /// The list shows the providers the app ships even when they are not in the
+  /// config, so a row for `openai` may sit beside an `openai` entry this app
+  /// cannot read. Without the ids the row would look unconfigured, and saving
+  /// it would replace the entry — losing a hand-written `{env:…}` key. With
+  /// them the row can say where it has to be edited.
+  final Set<String> unreadableIDs;
 
   static const empty = CustomProviderCatalogue(
     records: <CustomProviderRecord>[],
@@ -122,20 +132,23 @@ CustomProviderCatalogue readCustomProviders(
   final root = document[_rootKey(format)];
   if (root is! Map) return CustomProviderCatalogue.empty;
   final records = <CustomProviderRecord>[];
-  var unreadable = 0;
+  final unreadableIDs = <String>{};
   for (final entry in root.entries) {
+    final id = '${entry.key}';
     final value = entry.value;
-    final record = value is Map
-        ? _recordFrom('${entry.key}', value, format)
-        : null;
+    final record = value is Map ? _recordFrom(id, value, format) : null;
     if (record == null) {
-      unreadable++;
+      unreadableIDs.add(id);
     } else {
       records.add(record);
     }
   }
   records.sort((a, b) => a.id.compareTo(b.id));
-  return CustomProviderCatalogue(records: records, unreadable: unreadable);
+  return CustomProviderCatalogue(
+    records: records,
+    unreadable: unreadableIDs.length,
+    unreadableIDs: unreadableIDs,
+  );
 }
 
 String _rootKey(ProviderConfigFormat format) =>

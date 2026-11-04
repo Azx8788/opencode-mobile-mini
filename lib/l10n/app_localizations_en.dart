@@ -36335,4 +36335,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerTestPickModel => 'Model to test';
+
+  @override
+  String get providerGroupConfigured => 'Configured';
+
+  @override
+  String get providerGroupAvailable => 'Available';
+
+  @override
+  String get providerNotConfigured => 'Not configured';
+
+  @override
+  String get providerManageSetup => 'Set up';
+
+  @override
+  String get providerManageSubtitle =>
+      'Shipped and your own endpoints in one list: tap to set the key, choose the protocol and pick models.';
+
+  @override
+  String get providerManageOneWindow =>
+      'Providers are configured in one window now — the ones the app ships and the ones you add. Address, protocol, key and models live together, and the server list is no longer a separate place to edit.';
 }
