@@ -613,11 +613,12 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
     return KitScreen(
       width: KitScreenWidth.list,
       topBar: KitTopBar(
-        title: _editing
-            ? (_name.text.trim().isEmpty
-                  ? l10n.providerEditTitle
-                  : _name.text.trim())
-            : l10n.providerAddTitle,
+        // Named as soon as it has a name: a shipped provider opens titled
+        // "OpenAI", not "Add a provider", because that is what is being
+        // configured.
+        title: _name.text.trim().isNotEmpty
+            ? _name.text.trim()
+            : (_editing ? l10n.providerEditTitle : l10n.providerAddTitle),
         subtitle: widget.controller.profile?.name,
         actions: [
           KitAction(
