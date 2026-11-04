@@ -44149,8 +44149,14 @@
   "@providerBalanceEnable": {"description": "Enables the balance query"},
   "providerBalanceUrl": "Balance URL",
   "@providerBalanceUrl": {"description": "Balance endpoint field"},
-  "providerBalanceUrlHelper": "You may use {{baseUrl}} and {{apiKey}}; follow the provider's docs.",
-  "@providerBalanceUrlHelper": {"description": "Balance URL helper"},
+  "providerBalanceUrlHelper": "You may use {baseUrl} and {apiKey}; follow the provider's docs.",
+  "@providerBalanceUrlHelper": {
+    "description": "Balance URL helper",
+    "placeholders": {
+      "baseUrl": {"type": "String"},
+      "apiKey": {"type": "String"}
+    }
+  },
   "providerBalancePath": "Balance field",
   "@providerBalancePath": {"description": "JSON path field"},
   "providerBalancePathHelper": "Where the balance sits in the answer, e.g. balance_infos[0].total_balance.",

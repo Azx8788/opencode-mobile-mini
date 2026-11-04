@@ -6,118 +6,6 @@ import 'app_localizations.dart';
 
 /// The translations for English (`en`).
 class AppLocalizationsEn extends AppLocalizations {
-  @override
-  String toolsDisableNamed(String name) {
-    return 'Disable $name';
-  }
-
-  @override
-  String toolsEnableNamed(String name) {
-    return 'Enable $name';
-  }
-
-  @override
-  String toolsDisabledNamed(String name) {
-    return 'Disabled $name; it applies to new conversations.';
-  }
-
-  @override
-  String toolsEnabledNamed(String name) {
-    return 'Enabled $name; it applies to new conversations.';
-  }
-
-  @override
-  String get toolsConfigureUnavailable => 'This server does not allow per-tool configuration.';
-
-  @override
-  String toolsConfigureFailed(String message) {
-    return 'The change was not saved: $message';
-  }
-  @override
-  String get providerManageTitle => 'Providers';
-
-  @override
-  String get providerManageIntro => 'The providers written into the server configuration. Tap a row to edit it; long-press for test and delete.';
-
-  @override
-  String get providerManageRefresh => 'Read again';
-
-  @override
-  String get providerManageWorking => 'Writing the configuration…';
-
-  @override
-  String get providerManageEmpty => 'No custom providers yet';
-
-  @override
-  String get providerManageEmptyBody => 'Add an OpenAI-compatible or Anthropic-compatible endpoint; its models are read from the endpoint itself.';
-
-  @override
-  String get providerManageLoadFailed => 'Could not read the provider configuration';
-
-  @override
-  String providerManageModels(int count) {
-    return '$count models';
-  }
-
-  @override
-  String providerManageDeleteTitle(String name) {
-    return 'Delete the provider “$name”?';
-  }
-
-  @override
-  String get providerManageDeleteBody => 'This removes the entry from the server configuration and keeps a backup. Conversations using this provider will need another model.';
-
-  @override
-  String providerManageDeleted(String name) {
-    return 'Deleted “$name”';
-  }
-
-  @override
-  String get providerManageEdit => 'Edit';
-
-  @override
-  String get providerManageTest => 'Test connection';
-
-  @override
-  String get providerManageDelete => 'Delete';
-
-  @override
-  String providerManageMenu(String name) {
-    return 'Actions for “$name”';
-  }
-
-  @override
-  String get providerManageNoModel => 'This provider has no saved models. Edit it and select one first.';
-
-  @override
-  String get providerManageNoKey => 'The key for this provider could not be read. Edit it, enter the key, then test.';
-
-  @override
-  String providerManageUnreadable(int count) {
-    return '$count entries cannot be edited here';
-  }
-
-  @override
-  String get providerManageUnreadableBody => 'Their shape is not something this form can rewrite safely (an override of a built-in provider, for example). Edit them on the server.';
-
-  @override
-  String get providerEditTitle => 'Edit provider';
-
-  @override
-  String get providerEditIdLocked => 'The id cannot change while editing: renaming means a new provider, and conversations pinned to this one lose their model.';
-
-  @override
-  String providerEditSaved(String name) {
-    return 'Saved “$name”';
-  }
-
-  @override
-  String get providerEditTest => 'Test connection';
-
-  @override
-  String providerModelsCount(int on, int total) {
-    return '$on of $total shown';
-  }
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
@@ -10976,8 +10864,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentErrorProviderParameterHint =>
-      'This provider does not accept a setting sent with the message. Switch '
-      'back to the model you were using, or change the setting and try again.';
+      'This provider does not accept a setting sent with the message. Switch back to the model you were using, or change the setting and try again.';
 
   @override
   String get agentErrorRecovered => 'The agent carried on after this.';
@@ -36142,10 +36029,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerModelsTitle => 'Models and checks';
 
   @override
-  String get providerModelsHint => 'Every provider the server knows, and the models it serves. Tap Test to run the three checks against one model.';
+  String get providerModelsHint =>
+      'Every provider the server knows, and the models it serves. Tap Test to run the five checks against one model.';
 
   @override
-  String get providerModelsEmpty => 'The server has not reported any providers yet.';
+  String get providerModelsEmpty =>
+      'The server has not reported any providers yet.';
 
   @override
   String get providerModelsTest => 'Test';
@@ -36171,16 +36060,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerProbeProtocol => 'Protocol';
 
   @override
-  String get providerProbeRun => 'Run the three checks';
+  String get providerProbeRun => 'Run the five checks';
 
   @override
   String get providerProbeRunning => 'Running…';
 
   @override
-  String get providerProbeNote => 'One short request per check: a plain reply, a stream, a tool call.';
+  String get providerProbeNote =>
+      'One short request per check: reply, stream, tool call, system prompt, finish reason.';
 
   @override
-  String get providerProbeNeedBaseUrl => "Enter the provider's base URL first.";
+  String get providerProbeNeedBaseUrl =>
+      'Enter the provider\'s base URL first.';
 
   @override
   String get providerProbeNonStreaming => 'Non-streaming reply';
@@ -36197,155 +36088,251 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get providerProbeFinish => 'Finish condition';
 
-  /// Detail tab: configuration
   @override
-  String get providerTabConfig => "Configuration";
+  String get providerManageTitle => 'Providers';
 
-  /// Detail tab: models
   @override
-  String get providerTabModels => "Models";
+  String get providerManageIntro =>
+      'The providers written into the server configuration. Tap a row to edit it; long-press for test and delete.';
 
-  /// Detail tab: advanced
   @override
-  String get providerTabAdvanced => "Advanced";
+  String get providerManageRefresh => 'Read again';
 
-  /// Provider-level switch
   @override
-  String get providerEnable => "Enable this provider";
+  String get providerManageWorking => 'Writing the configuration…';
 
-  /// Under the provider-level switch
   @override
-  String get providerEnableHint => "Off hides every model it serves from this phone's picker; the server configuration is unchanged.";
+  String get providerManageEmpty => 'No custom providers yet';
 
-  /// Restores a template's base URL
   @override
-  String get providerResetDefault => "Reset to the default address";
+  String get providerManageEmptyBody =>
+      'Add an OpenAI-compatible or Anthropic-compatible endpoint; its models are read from the endpoint itself.';
 
-  /// Read-only request path derived from the protocol
   @override
-  String get providerPath => "Request path";
+  String get providerManageLoadFailed =>
+      'Could not read the provider configuration';
 
-  /// Under the request path row
   @override
-  String get providerPathHelper => "Set by the protocol, read-only. Keep it out of the base URL; a pasted one is removed.";
+  String providerManageModels(int count) {
+    return '$count models';
+  }
 
-  /// Shown when Responses is chosen for a non-OpenAI host
   @override
-  String get providerResponsesWarning => "Most gateways do not serve the Responses API; switch only if this provider does.";
+  String providerManageDeleteTitle(String name) {
+    return 'Delete the provider “$name”?';
+  }
 
-  /// Balance section title
   @override
-  String get providerBalanceSection => "Account balance";
+  String get providerManageDeleteBody =>
+      'This removes the entry from the server configuration and keeps a backup. Conversations using this provider will need another model.';
 
-  /// Enables the balance query
   @override
-  String get providerBalanceEnable => "Show account balance";
+  String providerManageDeleted(String name) {
+    return 'Deleted “$name”';
+  }
 
-  /// Balance endpoint field
   @override
-  String get providerBalanceUrl => "Balance URL";
+  String get providerManageEdit => 'Edit';
 
-  /// Balance URL helper
   @override
-  String get providerBalanceUrlHelper => "You may use {{baseUrl}} and {{apiKey}}; follow the provider's docs.";
+  String get providerManageTest => 'Test connection';
 
-  /// JSON path field
   @override
-  String get providerBalancePath => "Balance field";
+  String get providerManageDelete => 'Delete';
 
-  /// JSON path helper
   @override
-  String get providerBalancePathHelper => "Where the balance sits in the answer, e.g. balance_infos[0].total_balance.";
+  String providerManageMenu(String name) {
+    return 'Actions for “$name”';
+  }
 
-  /// Runs the balance query
   @override
-  String get providerBalanceQuery => "Check balance";
+  String get providerManageNoModel =>
+      'This provider has no saved models. Edit it and select one first.';
 
-  /// Label of the balance value
   @override
-  String get providerBalanceValue => "Balance";
+  String get providerManageNoKey =>
+      'The key for this provider could not be read. Edit it, enter the key, then test.';
 
-  /// Balance failure prefix
   @override
-  String get providerBalanceFailed => "Could not read the balance";
+  String providerManageUnreadable(int count) {
+    return '$count entries cannot be edited here';
+  }
 
-  /// Custom headers section title
   @override
-  String get providerHeadersSection => "Custom headers";
+  String get providerManageUnreadableBody =>
+      'Their shape is not something this form can rewrite safely (an override of a built-in provider, for example). Edit them on the server.';
 
-  /// Custom headers helper
   @override
-  String get providerHeadersHint => "Sent with every request; a row with an empty name or value is dropped on save.";
+  String get providerEditTitle => 'Edit provider';
 
-  /// Adds a header row
   @override
-  String get providerHeadersAdd => "Add header";
+  String get providerEditIdLocked =>
+      'The id cannot change while editing: renaming means a new provider, and conversations pinned to this one lose their model.';
 
-  /// Header name field
   @override
-  String get providerHeadersName => "Name";
+  String providerEditSaved(String name) {
+    return 'Saved “$name”';
+  }
 
-  /// Header value field
   @override
-  String get providerHeadersValue => "Value";
+  String get providerEditTest => 'Test connection';
 
-  /// Header name presets sheet title
   @override
-  String get providerHeadersPresets => "Common names";
+  String providerModelsCount(int on, int total) {
+    return '$on of $total shown';
+  }
 
-  /// Empty custom headers state
   @override
-  String get providerHeadersEmpty => "No custom headers yet. Some gateways need HTTP-Referer or X-Title before they answer.";
+  String toolsDisableNamed(String name) {
+    return 'Disable $name';
+  }
 
-  /// Models tab explanation
   @override
-  String get providerDetailModelsHint => "Ask the provider for its own model list with the address, key and protocol above, then tick what to enable.";
+  String toolsEnableNamed(String name) {
+    return 'Enable $name';
+  }
 
-  /// Models tab when no address
   @override
-  String get providerModelsConfigFirst => "Fill in the API Base Url first.";
+  String toolsDisabledNamed(String name) {
+    return 'Disabled $name; it applies to new conversations.';
+  }
 
-  /// Models tab when the key is server-side
   @override
-  String get providerModelsKeyServer => "This provider's key lives on the server and cannot be read here; fetching may need a server sign-in.";
+  String toolsEnabledNamed(String name) {
+    return 'Enabled $name; it applies to new conversations.';
+  }
 
-  /// Prefix of the selected model count
   @override
-  String get providerModelsSelected => "Selected";
+  String get toolsConfigureUnavailable =>
+      'This server does not allow per-tool configuration.';
 
-  /// Adds a manually typed model id
   @override
-  String get providerModelsAdd => "Add";
+  String toolsConfigureFailed(String message) {
+    return 'The change was not saved: $message';
+  }
 
-  /// Template sheet title
   @override
-  String get providerTemplateTitle => "Choose a provider type";
+  String get providerTabConfig => 'Configuration';
 
-  /// Template sheet subtitle
   @override
-  String get providerTemplateSubtitle => "Fills the name, address and protocol; every field stays editable.";
+  String get providerTabModels => 'Models';
 
-  /// Template kind
   @override
-  String get providerTemplateOfficial => "Official API";
+  String get providerTabAdvanced => 'Advanced';
 
-  /// Template kind
   @override
-  String get providerTemplateGateway => "Aggregator";
+  String get providerEnable => 'Enable this provider';
 
-  /// Template kind
   @override
-  String get providerTemplateChina => "China direct";
+  String get providerEnableHint =>
+      'Off hides every model it serves from this phone\'s picker; the server configuration is unchanged.';
 
-  /// Template kind
   @override
-  String get providerTemplateCustom => "Your own endpoint";
+  String get providerResetDefault => 'Reset to the default address';
 
-  /// Custom template row
   @override
-  String get providerTemplateCustomName => "Custom provider";
+  String get providerPath => 'Request path';
 
-  /// Probe model picker
   @override
-  String get providerTestPickModel => "Model to test";
+  String get providerPathHelper =>
+      'Set by the protocol, read-only. Keep it out of the base URL; a pasted one is removed.';
+
+  @override
+  String get providerResponsesWarning =>
+      'Most gateways do not serve the Responses API; switch only if this provider does.';
+
+  @override
+  String get providerBalanceSection => 'Account balance';
+
+  @override
+  String get providerBalanceEnable => 'Show account balance';
+
+  @override
+  String get providerBalanceUrl => 'Balance URL';
+
+  @override
+  String providerBalanceUrlHelper(String baseUrl, String apiKey) {
+    return 'You may use $baseUrl and $apiKey; follow the provider\'s docs.';
+  }
+
+  @override
+  String get providerBalancePath => 'Balance field';
+
+  @override
+  String get providerBalancePathHelper =>
+      'Where the balance sits in the answer, e.g. balance_infos[0].total_balance.';
+
+  @override
+  String get providerBalanceQuery => 'Check balance';
+
+  @override
+  String get providerBalanceValue => 'Balance';
+
+  @override
+  String get providerBalanceFailed => 'Could not read the balance';
+
+  @override
+  String get providerHeadersSection => 'Custom headers';
+
+  @override
+  String get providerHeadersHint =>
+      'Sent with every request; a row with an empty name or value is dropped on save.';
+
+  @override
+  String get providerHeadersAdd => 'Add header';
+
+  @override
+  String get providerHeadersName => 'Name';
+
+  @override
+  String get providerHeadersValue => 'Value';
+
+  @override
+  String get providerHeadersPresets => 'Common names';
+
+  @override
+  String get providerHeadersEmpty =>
+      'No custom headers yet. Some gateways need HTTP-Referer or X-Title before they answer.';
+
+  @override
+  String get providerDetailModelsHint =>
+      'Ask the provider for its own model list with the address, key and protocol above, then tick what to enable.';
+
+  @override
+  String get providerModelsConfigFirst => 'Fill in the API Base Url first.';
+
+  @override
+  String get providerModelsKeyServer =>
+      'This provider\'s key lives on the server and cannot be read here; fetching may need a server sign-in.';
+
+  @override
+  String get providerModelsSelected => 'Selected';
+
+  @override
+  String get providerModelsAdd => 'Add';
+
+  @override
+  String get providerTemplateTitle => 'Choose a provider type';
+
+  @override
+  String get providerTemplateSubtitle =>
+      'Fills the name, address and protocol; every field stays editable.';
+
+  @override
+  String get providerTemplateOfficial => 'Official API';
+
+  @override
+  String get providerTemplateGateway => 'Aggregator';
+
+  @override
+  String get providerTemplateChina => 'China direct';
+
+  @override
+  String get providerTemplateCustom => 'Your own endpoint';
+
+  @override
+  String get providerTemplateCustomName => 'Custom provider';
+
+  @override
+  String get providerTestPickModel => 'Model to test';
 }

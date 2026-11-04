@@ -901,8 +901,11 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
         label: l10n.providerBalanceUrl,
         controller: _balanceUrl,
         kind: KitFieldKind.url,
-        hint: '{{baseUrl}}/user/balance',
-        helper: l10n.providerBalanceUrlHelper,
+        hint: '${ProviderBalance.baseUrlToken}/user/balance',
+        helper: l10n.providerBalanceUrlHelper(
+          ProviderBalance.baseUrlToken,
+          ProviderBalance.apiKeyToken,
+        ),
         onChanged: (_) => setState(() {}),
         fieldKey: const ValueKey('provider-balance-url'),
       ),

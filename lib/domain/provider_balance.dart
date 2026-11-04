@@ -23,6 +23,12 @@ class ProviderBalance {
     this.resultPath = '',
   });
 
+  /// The two things a balance address may leave the app to fill in. They are
+  /// constants rather than bare braces in the screen, so the helper text can
+  /// name them without the sentence hard-coding them twice.
+  static const String baseUrlToken = '{{baseUrl}}';
+  static const String apiKeyToken = '{{apiKey}}';
+
   final bool enabled;
 
   /// May contain `{{baseUrl}}` and `{{apiKey}}`.
@@ -120,8 +126,8 @@ class ProviderBalanceClient {
     final key = apiKey.trim();
     final raw = balance.url
         .trim()
-        .replaceAll('{{baseUrl}}', base)
-        .replaceAll('{{apiKey}}', Uri.encodeComponent(key));
+        .replaceAll(ProviderBalance.baseUrlToken, base)
+        .replaceAll(ProviderBalance.apiKeyToken, Uri.encodeComponent(key));
     final uri = Uri.tryParse(raw);
     if (uri == null || !uri.hasScheme || !uri.hasAuthority) {
       throw const ProviderBalanceFailure(

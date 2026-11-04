@@ -62,94 +62,6 @@ import 'app_localizations_zh.dart';
 /// be consistent with the languages listed in the AppLocalizations.supportedLocales
 /// property.
 abstract class AppLocalizations {
-  /// No description provided for @toolsDisableNamed.
-  String toolsDisableNamed(String name);
-
-  /// No description provided for @toolsEnableNamed.
-  String toolsEnableNamed(String name);
-
-  /// No description provided for @toolsDisabledNamed.
-  String toolsDisabledNamed(String name);
-
-  /// No description provided for @toolsEnabledNamed.
-  String toolsEnabledNamed(String name);
-
-  /// No description provided for @toolsConfigureUnavailable.
-  String get toolsConfigureUnavailable;
-
-  /// No description provided for @toolsConfigureFailed.
-  String toolsConfigureFailed(String message);
-  /// No description provided for @providerManageTitle.
-  String get providerManageTitle;
-
-  /// No description provided for @providerManageIntro.
-  String get providerManageIntro;
-
-  /// No description provided for @providerManageRefresh.
-  String get providerManageRefresh;
-
-  /// No description provided for @providerManageWorking.
-  String get providerManageWorking;
-
-  /// No description provided for @providerManageEmpty.
-  String get providerManageEmpty;
-
-  /// No description provided for @providerManageEmptyBody.
-  String get providerManageEmptyBody;
-
-  /// No description provided for @providerManageLoadFailed.
-  String get providerManageLoadFailed;
-
-  /// No description provided for @providerManageModels.
-  String providerManageModels(int count);
-
-  /// No description provided for @providerManageDeleteTitle.
-  String providerManageDeleteTitle(String name);
-
-  /// No description provided for @providerManageDeleteBody.
-  String get providerManageDeleteBody;
-
-  /// No description provided for @providerManageDeleted.
-  String providerManageDeleted(String name);
-
-  /// No description provided for @providerManageEdit.
-  String get providerManageEdit;
-
-  /// No description provided for @providerManageTest.
-  String get providerManageTest;
-
-  /// No description provided for @providerManageDelete.
-  String get providerManageDelete;
-
-  /// No description provided for @providerManageMenu.
-  String providerManageMenu(String name);
-
-  /// No description provided for @providerManageNoModel.
-  String get providerManageNoModel;
-
-  /// No description provided for @providerManageNoKey.
-  String get providerManageNoKey;
-
-  /// No description provided for @providerManageUnreadable.
-  String providerManageUnreadable(int count);
-
-  /// No description provided for @providerManageUnreadableBody.
-  String get providerManageUnreadableBody;
-
-  /// No description provided for @providerEditTitle.
-  String get providerEditTitle;
-
-  /// No description provided for @providerEditIdLocked.
-  String get providerEditIdLocked;
-
-  /// No description provided for @providerEditSaved.
-  String providerEditSaved(String name);
-
-  /// No description provided for @providerEditTest.
-  String get providerEditTest;
-
-  /// No description provided for @providerModelsCount.
-  String providerModelsCount(int on, int total);
   AppLocalizations(String locale)
     : localeName = intl.Intl.canonicalizedLocale(locale.toString());
 
@@ -18130,12 +18042,7 @@ abstract class AppLocalizations {
   /// **'The conversation is still too long for the model, so the next turn will try again.'**
   String get chatUiCompactionFailedHint;
 
-  /// Short chip label above the composer: the server will hand the agent new context at its next step
-  ///
-  /// In en, this message translates to:
-  /// **'Context pending'**
-  /// Chip above the composer: this conversation's token use so far, in input,
-  /// output and cache reads (hits). Values are already abbreviated, e.g. 12k.
+  /// Chip above the composer: this conversation's token use so far, in input, output and cache reads (hits). Values are already abbreviated, e.g. 12k.
   ///
   /// In en, this message translates to:
   /// **'In {input} · Out {output} · Cache {cached}'**
@@ -56723,14 +56630,6 @@ abstract class AppLocalizations {
   /// **'Restart the server so the new provider appears in the model list.'**
   String get providerAddRestartHint;
 
-  /// Title of the provider self-check screen; the model name follows Test
-  ///
-  /// In en, this message translates to:
-  /// **'Test {model}'**
-  /// Action on the custom provider's saved screen that opens the self-check for a selected model
-  ///
-  /// In en, this message translates to:
-  /// **'Test a model'**
   /// Title of the page that lists every provider and its models
   ///
   /// In en, this message translates to:
@@ -56755,8 +56654,16 @@ abstract class AppLocalizations {
   /// **'Test'**
   String get providerModelsTest;
 
+  /// Action on the custom provider's saved screen that opens the self-check for a selected model
+  ///
+  /// In en, this message translates to:
+  /// **'Test a model'**
   String get providerProbeOpen;
 
+  /// Title of the provider self-check screen; the model name follows Test
+  ///
+  /// In en, this message translates to:
+  /// **'Test {model}'**
   String providerProbeTitle(String model);
 
   /// Field label: the provider endpoint the checks send to
@@ -56837,118 +56744,412 @@ abstract class AppLocalizations {
   /// **'Finish condition'**
   String get providerProbeFinish;
 
+  /// Providers
+  ///
+  /// In en, this message translates to:
+  /// **'Providers'**
+  String get providerManageTitle;
+
+  /// The providers written into the server configuration. Tap a row to edit it; long-press for test and delete.
+  ///
+  /// In en, this message translates to:
+  /// **'The providers written into the server configuration. Tap a row to edit it; long-press for test and delete.'**
+  String get providerManageIntro;
+
+  /// Read again
+  ///
+  /// In en, this message translates to:
+  /// **'Read again'**
+  String get providerManageRefresh;
+
+  /// Writing the configuration…
+  ///
+  /// In en, this message translates to:
+  /// **'Writing the configuration…'**
+  String get providerManageWorking;
+
+  /// No custom providers yet
+  ///
+  /// In en, this message translates to:
+  /// **'No custom providers yet'**
+  String get providerManageEmpty;
+
+  /// Add an OpenAI-compatible or Anthropic-compatible endpoint; its models are read from the endpoint itself.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an OpenAI-compatible or Anthropic-compatible endpoint; its models are read from the endpoint itself.'**
+  String get providerManageEmptyBody;
+
+  /// Could not read the provider configuration
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the provider configuration'**
+  String get providerManageLoadFailed;
+
+  /// No description provided for @providerManageModels.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} models'**
+  String providerManageModels(int count);
+
+  /// No description provided for @providerManageDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the provider “{name}”?'**
+  String providerManageDeleteTitle(String name);
+
+  /// This removes the entry from the server configuration and keeps a backup. Conversations using this provider will need another model.
+  ///
+  /// In en, this message translates to:
+  /// **'This removes the entry from the server configuration and keeps a backup. Conversations using this provider will need another model.'**
+  String get providerManageDeleteBody;
+
+  /// No description provided for @providerManageDeleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Deleted “{name}”'**
+  String providerManageDeleted(String name);
+
+  /// Edit
+  ///
+  /// In en, this message translates to:
+  /// **'Edit'**
+  String get providerManageEdit;
+
+  /// Test connection
+  ///
+  /// In en, this message translates to:
+  /// **'Test connection'**
+  String get providerManageTest;
+
+  /// Delete
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get providerManageDelete;
+
+  /// No description provided for @providerManageMenu.
+  ///
+  /// In en, this message translates to:
+  /// **'Actions for “{name}”'**
+  String providerManageMenu(String name);
+
+  /// This provider has no saved models. Edit it and select one first.
+  ///
+  /// In en, this message translates to:
+  /// **'This provider has no saved models. Edit it and select one first.'**
+  String get providerManageNoModel;
+
+  /// The key for this provider could not be read. Edit it, enter the key, then test.
+  ///
+  /// In en, this message translates to:
+  /// **'The key for this provider could not be read. Edit it, enter the key, then test.'**
+  String get providerManageNoKey;
+
+  /// No description provided for @providerManageUnreadable.
+  ///
+  /// In en, this message translates to:
+  /// **'{count} entries cannot be edited here'**
+  String providerManageUnreadable(int count);
+
+  /// Their shape is not something this form can rewrite safely (an override of a built-in provider, for example). Edit them on the server.
+  ///
+  /// In en, this message translates to:
+  /// **'Their shape is not something this form can rewrite safely (an override of a built-in provider, for example). Edit them on the server.'**
+  String get providerManageUnreadableBody;
+
+  /// Edit provider
+  ///
+  /// In en, this message translates to:
+  /// **'Edit provider'**
+  String get providerEditTitle;
+
+  /// The id cannot change while editing: renaming means a new provider, and conversations pinned to this one lose their model.
+  ///
+  /// In en, this message translates to:
+  /// **'The id cannot change while editing: renaming means a new provider, and conversations pinned to this one lose their model.'**
+  String get providerEditIdLocked;
+
+  /// No description provided for @providerEditSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Saved “{name}”'**
+  String providerEditSaved(String name);
+
+  /// Test connection
+  ///
+  /// In en, this message translates to:
+  /// **'Test connection'**
+  String get providerEditTest;
+
+  /// No description provided for @providerModelsCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{on} of {total} shown'**
+  String providerModelsCount(int on, int total);
+
+  /// No description provided for @toolsDisableNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Disable {name}'**
+  String toolsDisableNamed(String name);
+
+  /// No description provided for @toolsEnableNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable {name}'**
+  String toolsEnableNamed(String name);
+
+  /// No description provided for @toolsDisabledNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Disabled {name}; it applies to new conversations.'**
+  String toolsDisabledNamed(String name);
+
+  /// No description provided for @toolsEnabledNamed.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled {name}; it applies to new conversations.'**
+  String toolsEnabledNamed(String name);
+
+  /// This server does not allow per-tool configuration.
+  ///
+  /// In en, this message translates to:
+  /// **'This server does not allow per-tool configuration.'**
+  String get toolsConfigureUnavailable;
+
+  /// No description provided for @toolsConfigureFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The change was not saved: {message}'**
+  String toolsConfigureFailed(String message);
+
   /// Detail tab: configuration
+  ///
+  /// In en, this message translates to:
+  /// **'Configuration'**
   String get providerTabConfig;
 
   /// Detail tab: models
+  ///
+  /// In en, this message translates to:
+  /// **'Models'**
   String get providerTabModels;
 
   /// Detail tab: advanced
+  ///
+  /// In en, this message translates to:
+  /// **'Advanced'**
   String get providerTabAdvanced;
 
   /// Provider-level switch
+  ///
+  /// In en, this message translates to:
+  /// **'Enable this provider'**
   String get providerEnable;
 
   /// Under the provider-level switch
+  ///
+  /// In en, this message translates to:
+  /// **'Off hides every model it serves from this phone\'s picker; the server configuration is unchanged.'**
   String get providerEnableHint;
 
   /// Restores a template's base URL
+  ///
+  /// In en, this message translates to:
+  /// **'Reset to the default address'**
   String get providerResetDefault;
 
   /// Read-only request path derived from the protocol
+  ///
+  /// In en, this message translates to:
+  /// **'Request path'**
   String get providerPath;
 
   /// Under the request path row
+  ///
+  /// In en, this message translates to:
+  /// **'Set by the protocol, read-only. Keep it out of the base URL; a pasted one is removed.'**
   String get providerPathHelper;
 
   /// Shown when Responses is chosen for a non-OpenAI host
+  ///
+  /// In en, this message translates to:
+  /// **'Most gateways do not serve the Responses API; switch only if this provider does.'**
   String get providerResponsesWarning;
 
   /// Balance section title
+  ///
+  /// In en, this message translates to:
+  /// **'Account balance'**
   String get providerBalanceSection;
 
   /// Enables the balance query
+  ///
+  /// In en, this message translates to:
+  /// **'Show account balance'**
   String get providerBalanceEnable;
 
   /// Balance endpoint field
+  ///
+  /// In en, this message translates to:
+  /// **'Balance URL'**
   String get providerBalanceUrl;
 
   /// Balance URL helper
-  String get providerBalanceUrlHelper;
+  ///
+  /// In en, this message translates to:
+  /// **'You may use {baseUrl} and {apiKey}; follow the provider\'s docs.'**
+  String providerBalanceUrlHelper(String baseUrl, String apiKey);
 
   /// JSON path field
+  ///
+  /// In en, this message translates to:
+  /// **'Balance field'**
   String get providerBalancePath;
 
   /// JSON path helper
+  ///
+  /// In en, this message translates to:
+  /// **'Where the balance sits in the answer, e.g. balance_infos[0].total_balance.'**
   String get providerBalancePathHelper;
 
   /// Runs the balance query
+  ///
+  /// In en, this message translates to:
+  /// **'Check balance'**
   String get providerBalanceQuery;
 
   /// Label of the balance value
+  ///
+  /// In en, this message translates to:
+  /// **'Balance'**
   String get providerBalanceValue;
 
   /// Balance failure prefix
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the balance'**
   String get providerBalanceFailed;
 
   /// Custom headers section title
+  ///
+  /// In en, this message translates to:
+  /// **'Custom headers'**
   String get providerHeadersSection;
 
   /// Custom headers helper
+  ///
+  /// In en, this message translates to:
+  /// **'Sent with every request; a row with an empty name or value is dropped on save.'**
   String get providerHeadersHint;
 
   /// Adds a header row
+  ///
+  /// In en, this message translates to:
+  /// **'Add header'**
   String get providerHeadersAdd;
 
   /// Header name field
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
   String get providerHeadersName;
 
   /// Header value field
+  ///
+  /// In en, this message translates to:
+  /// **'Value'**
   String get providerHeadersValue;
 
   /// Header name presets sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Common names'**
   String get providerHeadersPresets;
 
   /// Empty custom headers state
+  ///
+  /// In en, this message translates to:
+  /// **'No custom headers yet. Some gateways need HTTP-Referer or X-Title before they answer.'**
   String get providerHeadersEmpty;
 
   /// Models tab explanation
+  ///
+  /// In en, this message translates to:
+  /// **'Ask the provider for its own model list with the address, key and protocol above, then tick what to enable.'**
   String get providerDetailModelsHint;
 
   /// Models tab when no address
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the API Base Url first.'**
   String get providerModelsConfigFirst;
 
   /// Models tab when the key is server-side
+  ///
+  /// In en, this message translates to:
+  /// **'This provider\'s key lives on the server and cannot be read here; fetching may need a server sign-in.'**
   String get providerModelsKeyServer;
 
   /// Prefix of the selected model count
+  ///
+  /// In en, this message translates to:
+  /// **'Selected'**
   String get providerModelsSelected;
 
   /// Adds a manually typed model id
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
   String get providerModelsAdd;
 
   /// Template sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a provider type'**
   String get providerTemplateTitle;
 
   /// Template sheet subtitle
+  ///
+  /// In en, this message translates to:
+  /// **'Fills the name, address and protocol; every field stays editable.'**
   String get providerTemplateSubtitle;
 
   /// Template kind
+  ///
+  /// In en, this message translates to:
+  /// **'Official API'**
   String get providerTemplateOfficial;
 
   /// Template kind
+  ///
+  /// In en, this message translates to:
+  /// **'Aggregator'**
   String get providerTemplateGateway;
 
   /// Template kind
+  ///
+  /// In en, this message translates to:
+  /// **'China direct'**
   String get providerTemplateChina;
 
   /// Template kind
+  ///
+  /// In en, this message translates to:
+  /// **'Your own endpoint'**
   String get providerTemplateCustom;
 
   /// Custom template row
+  ///
+  /// In en, this message translates to:
+  /// **'Custom provider'**
   String get providerTemplateCustomName;
 
   /// Probe model picker
+  ///
+  /// In en, this message translates to:
+  /// **'Model to test'**
   String get providerTestPickModel;
 }
 
@@ -56982,5 +57183,6 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
     'AppLocalizations.delegate failed to load unsupported locale "$locale". This is likely '
     'an issue with the localizations generation tool. Please file an issue '
     'on GitHub with a reproducible sample app and the gen-l10n configuration '
+    'that was used.',
   );
 }

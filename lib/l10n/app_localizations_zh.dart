@@ -6,118 +6,6 @@ import 'app_localizations.dart';
 
 /// The translations for Chinese (`zh`).
 class AppLocalizationsZh extends AppLocalizations {
-  @override
-  String toolsDisableNamed(String name) {
-    return '禁用 $name';
-  }
-
-  @override
-  String toolsEnableNamed(String name) {
-    return '启用 $name';
-  }
-
-  @override
-  String toolsDisabledNamed(String name) {
-    return '已禁用 $name，从新会话开始生效。';
-  }
-
-  @override
-  String toolsEnabledNamed(String name) {
-    return '已启用 $name，从新会话开始生效。';
-  }
-
-  @override
-  String get toolsConfigureUnavailable => '这个服务器不支持单独配置工具。';
-
-  @override
-  String toolsConfigureFailed(String message) {
-    return '配置没有写入：$message';
-  }
-  @override
-  String get providerManageTitle => '供应商';
-
-  @override
-  String get providerManageIntro => '服务器配置里的自定义供应商。点一行编辑，长按可以测试或删除。';
-
-  @override
-  String get providerManageRefresh => '重新读取';
-
-  @override
-  String get providerManageWorking => '正在写入配置…';
-
-  @override
-  String get providerManageEmpty => '还没有自定义供应商';
-
-  @override
-  String get providerManageEmptyBody => '添加一个 OpenAI 兼容或 Anthropic 兼容的端点，模型从端点自己拉取。';
-
-  @override
-  String get providerManageLoadFailed => '读取供应商配置失败';
-
-  @override
-  String providerManageModels(int count) {
-    return '$count 个模型';
-  }
-
-  @override
-  String providerManageDeleteTitle(String name) {
-    return '删除供应商“$name”？';
-  }
-
-  @override
-  String get providerManageDeleteBody => '会从服务器配置里移除这一项，并保留一份备份。正在使用该供应商的会话需要换成别的模型。';
-
-  @override
-  String providerManageDeleted(String name) {
-    return '已删除“$name”';
-  }
-
-  @override
-  String get providerManageEdit => '编辑';
-
-  @override
-  String get providerManageTest => '测试连接';
-
-  @override
-  String get providerManageDelete => '删除';
-
-  @override
-  String providerManageMenu(String name) {
-    return '“$name”的操作';
-  }
-
-  @override
-  String get providerManageNoModel => '这个供应商没有已保存的模型，先编辑并勾选一个。';
-
-  @override
-  String get providerManageNoKey => '找不到这个供应商的密钥，先编辑并填入密钥再测试。';
-
-  @override
-  String providerManageUnreadable(int count) {
-    return '$count 个条目无法在这里编辑';
-  }
-
-  @override
-  String get providerManageUnreadableBody => '这些条目的结构不是这个表单能安全重写的（例如内置供应商的覆盖配置）。请在服务器上直接编辑。';
-
-  @override
-  String get providerEditTitle => '编辑供应商';
-
-  @override
-  String get providerEditIdLocked => '编辑时不能改 ID：改名等于删旧建新，正在使用它的会话会失去模型。';
-
-  @override
-  String providerEditSaved(String name) {
-    return '已保存“$name”';
-  }
-
-  @override
-  String get providerEditTest => '测试连接';
-
-  @override
-  String providerModelsCount(int on, int total) {
-    return '已启用 $on / $total';
-  }
   AppLocalizationsZh([String locale = 'zh']) : super(locale);
 
   @override
@@ -34140,7 +34028,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerModelsTitle => '模型与检查';
 
   @override
-  String get providerModelsHint => '服务器已知的全部供应商，以及它们提供的模型。点“测试”对某个模型运行三项检查。';
+  String get providerModelsHint => '服务器已知的全部供应商，以及它们提供的模型。点“测试”对某个模型运行五项检查。';
 
   @override
   String get providerModelsEmpty => '服务器还没有报告任何供应商。';
@@ -34169,13 +34057,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerProbeProtocol => '协议';
 
   @override
-  String get providerProbeRun => '运行三项检查';
+  String get providerProbeRun => '运行五项检查';
 
   @override
   String get providerProbeRunning => '正在运行…';
 
   @override
-  String get providerProbeNote => '每项只发一个短请求：非流式回复、流式增量、工具调用。';
+  String get providerProbeNote => '每项只发一个短请求：回复、流式、工具调用、系统提示词、完成原因。';
 
   @override
   String get providerProbeNeedBaseUrl => '请先填写供应商的基础地址。';
@@ -34195,155 +34083,240 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get providerProbeFinish => '完成条件';
 
-  /// Detail tab: configuration
   @override
-  String get providerTabConfig => "配置";
+  String get providerManageTitle => '供应商';
 
-  /// Detail tab: models
   @override
-  String get providerTabModels => "模型";
+  String get providerManageIntro => '服务器配置里的自定义供应商。点一行编辑，长按可以测试或删除。';
 
-  /// Detail tab: advanced
   @override
-  String get providerTabAdvanced => "高级";
+  String get providerManageRefresh => '重新读取';
 
-  /// Provider-level switch
   @override
-  String get providerEnable => "启用这个供应商";
+  String get providerManageWorking => '正在写入配置…';
 
-  /// Under the provider-level switch
   @override
-  String get providerEnableHint => "关闭后它提供的所有模型都不会出现在这台手机的选择器里；服务器配置不变。";
+  String get providerManageEmpty => '还没有自定义供应商';
 
-  /// Restores a template's base URL
   @override
-  String get providerResetDefault => "恢复默认地址";
+  String get providerManageEmptyBody =>
+      '添加一个 OpenAI 兼容或 Anthropic 兼容的端点，模型从端点自己拉取。';
 
-  /// Read-only request path derived from the protocol
   @override
-  String get providerPath => "接口路径";
+  String get providerManageLoadFailed => '读取供应商配置失败';
 
-  /// Under the request path row
   @override
-  String get providerPathHelper => "由协议决定，只读。Base URL 不要包含它；误粘贴会被自动去掉。";
+  String providerManageModels(int count) {
+    return '$count 个模型';
+  }
 
-  /// Shown when Responses is chosen for a non-OpenAI host
   @override
-  String get providerResponsesWarning => "Responses API 多数网关不支持，只有确认供应商支持时再切换。";
+  String providerManageDeleteTitle(String name) {
+    return '删除供应商“$name”？';
+  }
 
-  /// Balance section title
   @override
-  String get providerBalanceSection => "账户余额";
+  String get providerManageDeleteBody =>
+      '会从服务器配置里移除这一项，并保留一份备份。正在使用该供应商的会话需要换成别的模型。';
 
-  /// Enables the balance query
   @override
-  String get providerBalanceEnable => "获取账户余额";
+  String providerManageDeleted(String name) {
+    return '已删除“$name”';
+  }
 
-  /// Balance endpoint field
   @override
-  String get providerBalanceUrl => "余额接口";
+  String get providerManageEdit => '编辑';
 
-  /// Balance URL helper
   @override
-  String get providerBalanceUrlHelper => "可用 {{baseUrl}} 和 {{apiKey}} 占位，按供应商文档填写。";
+  String get providerManageTest => '测试连接';
 
-  /// JSON path field
   @override
-  String get providerBalancePath => "余额字段";
+  String get providerManageDelete => '删除';
 
-  /// JSON path helper
   @override
-  String get providerBalancePathHelper => "余额在答案 JSON 里的位置，例如 balance_infos[0].total_balance。";
+  String providerManageMenu(String name) {
+    return '“$name”的操作';
+  }
 
-  /// Runs the balance query
   @override
-  String get providerBalanceQuery => "查询余额";
+  String get providerManageNoModel => '这个供应商没有已保存的模型，先编辑并勾选一个。';
 
-  /// Label of the balance value
   @override
-  String get providerBalanceValue => "余额";
+  String get providerManageNoKey => '找不到这个供应商的密钥，先编辑并填入密钥再测试。';
 
-  /// Balance failure prefix
   @override
-  String get providerBalanceFailed => "余额读取失败";
+  String providerManageUnreadable(int count) {
+    return '$count 个条目无法在这里编辑';
+  }
 
-  /// Custom headers section title
   @override
-  String get providerHeadersSection => "自定义 Headers";
+  String get providerManageUnreadableBody =>
+      '这些条目的结构不是这个表单能安全重写的（例如内置供应商的覆盖配置）。请在服务器上直接编辑。';
 
-  /// Custom headers helper
   @override
-  String get providerHeadersHint => "每次请求都会带上；名称为空或值为空的行会在保存时丢掉。";
+  String get providerEditTitle => '编辑供应商';
 
-  /// Adds a header row
   @override
-  String get providerHeadersAdd => "添加 Header";
+  String get providerEditIdLocked => '编辑时不能改 ID：改名等于删旧建新，正在使用它的会话会失去模型。';
 
-  /// Header name field
   @override
-  String get providerHeadersName => "名称";
+  String providerEditSaved(String name) {
+    return '已保存“$name”';
+  }
 
-  /// Header value field
   @override
-  String get providerHeadersValue => "值";
+  String get providerEditTest => '测试连接';
 
-  /// Header name presets sheet title
   @override
-  String get providerHeadersPresets => "常用名称";
+  String providerModelsCount(int on, int total) {
+    return '已启用 $on / $total';
+  }
 
-  /// Empty custom headers state
   @override
-  String get providerHeadersEmpty => "还没有自定义 Header。有些网关需要 HTTP-Referer 或 X-Title 才允许访问。";
+  String toolsDisableNamed(String name) {
+    return '禁用 $name';
+  }
 
-  /// Models tab explanation
   @override
-  String get providerDetailModelsHint => "用上面填好的地址、密钥和协议，向供应商请求它自己的模型列表，再勾选要启用的。";
+  String toolsEnableNamed(String name) {
+    return '启用 $name';
+  }
 
-  /// Models tab when no address
   @override
-  String get providerModelsConfigFirst => "先填好 API Base Url。";
+  String toolsDisabledNamed(String name) {
+    return '已禁用 $name，从新会话开始生效。';
+  }
 
-  /// Models tab when the key is server-side
   @override
-  String get providerModelsKeyServer => "这个供应商的密钥保存在服务器上，应用读不到；拉取列表可能需要先在服务器登录。";
+  String toolsEnabledNamed(String name) {
+    return '已启用 $name，从新会话开始生效。';
+  }
 
-  /// Prefix of the selected model count
   @override
-  String get providerModelsSelected => "已选";
+  String get toolsConfigureUnavailable => '这个服务器不支持单独配置工具。';
 
-  /// Adds a manually typed model id
   @override
-  String get providerModelsAdd => "添加";
+  String toolsConfigureFailed(String message) {
+    return '配置没有写入：$message';
+  }
 
-  /// Template sheet title
   @override
-  String get providerTemplateTitle => "选择供应商类型";
+  String get providerTabConfig => '配置';
 
-  /// Template sheet subtitle
   @override
-  String get providerTemplateSubtitle => "选中后预填名称、地址和协议，所有字段之后都能改。";
+  String get providerTabModels => '模型';
 
-  /// Template kind
   @override
-  String get providerTemplateOfficial => "官方接口";
+  String get providerTabAdvanced => '高级';
 
-  /// Template kind
   @override
-  String get providerTemplateGateway => "聚合网关";
+  String get providerEnable => '启用这个供应商';
 
-  /// Template kind
   @override
-  String get providerTemplateChina => "国内直连";
+  String get providerEnableHint => '关闭后它提供的所有模型都不会出现在这台手机的选择器里；服务器配置不变。';
 
-  /// Template kind
   @override
-  String get providerTemplateCustom => "自己填地址和协议";
+  String get providerResetDefault => '恢复默认地址';
 
-  /// Custom template row
   @override
-  String get providerTemplateCustomName => "自定义供应商";
+  String get providerPath => '接口路径';
 
-  /// Probe model picker
   @override
-  String get providerTestPickModel => "测试用的模型";
+  String get providerPathHelper => '由协议决定，只读。Base URL 不要包含它；误粘贴会被自动去掉。';
+
+  @override
+  String get providerResponsesWarning => 'Responses API 多数网关不支持，只有确认供应商支持时再切换。';
+
+  @override
+  String get providerBalanceSection => '账户余额';
+
+  @override
+  String get providerBalanceEnable => '获取账户余额';
+
+  @override
+  String get providerBalanceUrl => '余额接口';
+
+  @override
+  String providerBalanceUrlHelper(String baseUrl, String apiKey) {
+    return '可用 $baseUrl 和 $apiKey 占位，按供应商文档填写。';
+  }
+
+  @override
+  String get providerBalancePath => '余额字段';
+
+  @override
+  String get providerBalancePathHelper =>
+      '余额在答案 JSON 里的位置，例如 balance_infos[0].total_balance。';
+
+  @override
+  String get providerBalanceQuery => '查询余额';
+
+  @override
+  String get providerBalanceValue => '余额';
+
+  @override
+  String get providerBalanceFailed => '余额读取失败';
+
+  @override
+  String get providerHeadersSection => '自定义 Headers';
+
+  @override
+  String get providerHeadersHint => '每次请求都会带上；名称为空或值为空的行会在保存时丢掉。';
+
+  @override
+  String get providerHeadersAdd => '添加 Header';
+
+  @override
+  String get providerHeadersName => '名称';
+
+  @override
+  String get providerHeadersValue => '值';
+
+  @override
+  String get providerHeadersPresets => '常用名称';
+
+  @override
+  String get providerHeadersEmpty =>
+      '还没有自定义 Header。有些网关需要 HTTP-Referer 或 X-Title 才允许访问。';
+
+  @override
+  String get providerDetailModelsHint =>
+      '用上面填好的地址、密钥和协议，向供应商请求它自己的模型列表，再勾选要启用的。';
+
+  @override
+  String get providerModelsConfigFirst => '先填好 API Base Url。';
+
+  @override
+  String get providerModelsKeyServer =>
+      '这个供应商的密钥保存在服务器上，应用读不到；拉取列表可能需要先在服务器登录。';
+
+  @override
+  String get providerModelsSelected => '已选';
+
+  @override
+  String get providerModelsAdd => '添加';
+
+  @override
+  String get providerTemplateTitle => '选择供应商类型';
+
+  @override
+  String get providerTemplateSubtitle => '选中后预填名称、地址和协议，所有字段之后都能改。';
+
+  @override
+  String get providerTemplateOfficial => '官方接口';
+
+  @override
+  String get providerTemplateGateway => '聚合网关';
+
+  @override
+  String get providerTemplateChina => '国内直连';
+
+  @override
+  String get providerTemplateCustom => '自己填地址和协议';
+
+  @override
+  String get providerTemplateCustomName => '自定义供应商';
+
+  @override
+  String get providerTestPickModel => '测试用的模型';
 }

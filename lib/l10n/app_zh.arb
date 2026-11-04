@@ -9518,8 +9518,14 @@
   "@providerBalanceEnable": {"description": "Enables the balance query"},
   "providerBalanceUrl": "余额接口",
   "@providerBalanceUrl": {"description": "Balance endpoint field"},
-  "providerBalanceUrlHelper": "可用 {{baseUrl}} 和 {{apiKey}} 占位，按供应商文档填写。",
-  "@providerBalanceUrlHelper": {"description": "Balance URL helper"},
+  "providerBalanceUrlHelper": "可用 {baseUrl} 和 {apiKey} 占位，按供应商文档填写。",
+  "@providerBalanceUrlHelper": {
+    "description": "Balance URL helper",
+    "placeholders": {
+      "baseUrl": {"type": "String"},
+      "apiKey": {"type": "String"}
+    }
+  },
   "providerBalancePath": "余额字段",
   "@providerBalancePath": {"description": "JSON path field"},
   "providerBalancePathHelper": "余额在答案 JSON 里的位置，例如 balance_infos[0].total_balance。",
