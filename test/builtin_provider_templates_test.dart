@@ -27,13 +27,6 @@ void main() {
     }
   });
 
-  test('Gemini uses the Google protocol', () {
-    final gemini = providerTemplateFor('gemini');
-    expect(gemini, isNotNull);
-    expect(gemini!.protocol, ProviderProtocol.google);
-    expect(gemini.baseUrl, endsWith('/v1beta'));
-  });
-
   test('the custom template starts empty', () {
     final custom = providerTemplateFor('custom');
     expect(custom, isNotNull);
@@ -45,6 +38,13 @@ void main() {
     expect(providerTemplateFor('nope'), isNull);
   });
 
+  test('the shipped set is the five documented providers', () {
+    expect(
+      offeredProviderTemplates.map((template) => template.id).toList(),
+      ['agentrouter', 'intern', 'modelscope', 'amd', 'openrouter'],
+    );
+  });
+
   test('ModelScope asks its OpenAI-compatible root', () {
     final modelscope = providerTemplateFor('modelscope');
     expect(modelscope, isNotNull);
@@ -52,11 +52,25 @@ void main() {
     expect(modelscope.baseUrl, 'https://api-inference.modelscope.cn/v1');
   });
 
+  test('AMD asks its Radeon token factory root', () {
+    final amd = providerTemplateFor('amd');
+    expect(amd, isNotNull);
+    expect(amd!.protocol, ProviderProtocol.chatCompletions);
+    expect(amd.baseUrl, 'https://developer.amd.com.cn/radeon/api/v1');
+  });
+
+  test('OpenRouter asks its OpenAI-compatible root', () {
+    final openrouter = providerTemplateFor('openrouter');
+    expect(openrouter, isNotNull);
+    expect(openrouter!.protocol, ProviderProtocol.chatCompletions);
+    expect(openrouter.baseUrl, 'https://openrouter.ai/api/v1');
+  });
+
   test('AgentRouter keeps one root for both protocols', () {
-    // The docs give two addresses — no `/v1` for the Anthropic SDK, `/v1` for
-    // OpenAI-compatible — because the Anthropic SDK adds `/v1` itself. The
-    // config carries what the app appends, so one root serves both: switching
-    // to Anthropic keeps `/v1` and the request lands on `/v1/messages`.
+    // The docs give two addresses — no `/v1` for Claude Code's official
+    // SDK, `/v1` for OpenAI-compatible. OpenCode's `@ai-sdk/anthropic`
+    // appends `/messages` to the base URL, so carrying `/v1` makes the
+    // request land on `/v1/messages`; switching protocol keeps that root.
     final agentRouter = providerTemplateFor('agentrouter');
     expect(agentRouter, isNotNull);
     expect(agentRouter!.baseUrl, 'https://agentrouter.org/v1');
@@ -70,10 +84,10 @@ void main() {
     );
   });
 
-  test('书生·端砚 is a Responses provider', () {
+  test('书生·端砚 speaks the Anthropic Messages protocol', () {
     final intern = providerTemplateFor('intern');
     expect(intern, isNotNull);
-    expect(intern!.protocol, ProviderProtocol.responses);
+    expect(intern!.protocol, ProviderProtocol.anthropic);
     expect(intern.baseUrl, 'https://discovery-api.intern-ai.org.cn/v1');
   });
 }

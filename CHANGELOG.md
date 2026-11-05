@@ -2,6 +2,26 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.3+7 — 2026-11-05
+
+The shipped catalogue is five providers now, not twenty-three. The entries
+that remain are the ones with current integration docs:
+
+  * **AgentRouter** — `https://agentrouter.org/v1`, OpenAI compatible. Its
+    Claude models can be reached by switching the protocol to Anthropic; the
+    `/v1` root stays, so the request lands on `/v1/messages`.
+  * **书生·端砚** — `https://discovery-api.intern-ai.org.cn/v1`, now the
+    Anthropic Messages protocol its Claude Code guide documents, rather than
+    Responses.
+  * **魔搭 ModelScope** — `https://api-inference.modelscope.cn/v1`.
+  * **AMD** — `https://developer.amd.com.cn/radeon/api/v1`, OpenAI compatible.
+  * **OpenRouter** — `https://openrouter.ai/api/v1`.
+
+The other eighteen shipped entries are gone. Existing saved entries keep
+their names, addresses, protocols and models, and nothing is removed from the
+server. Add still opens the blank form, and a shipped entry only prefills the
+form; nothing is written until Save. Builds are `0.3.3+7`.
+
 ## 0.3.2+6 — 2026-11-05
 
 Three more providers ship, taken from their own integration docs rather than

@@ -112,6 +112,8 @@ jobs:
             test/token_count_format_test.dart \
             test/provider_probe_test.dart \
             test/provider_parameter_test.dart \
+            test/builtin_provider_templates_test.dart \
+            test/provider_list_entries_test.dart \
             test/model_switch_fit_test.dart \
             test/mini_l10n_catalogue_test.dart
 
