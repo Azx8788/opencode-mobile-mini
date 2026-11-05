@@ -38,24 +38,22 @@ void main() {
       CustomProviderCatalogue(
         records: [
           _record(
-            id: 'agentrouter',
-            name: 'AgentRouter 代理',
+            id: 'openai',
+            name: 'OpenAI 代理',
             baseUrl: 'https://proxy.example.com/v1',
-            protocol: ProviderProtocol.anthropic,
+            protocol: ProviderProtocol.responses,
           ),
         ],
         unreadable: 0,
       ),
     );
-    final agentrouter = entries.firstWhere(
-      (entry) => entry.id == 'agentrouter',
-    );
-    expect(agentrouter.configured, isTrue);
-    expect(agentrouter.name, 'AgentRouter 代理');
-    expect(agentrouter.baseUrl, 'https://proxy.example.com/v1');
-    expect(agentrouter.protocol, ProviderProtocol.anthropic);
+    final openai = entries.firstWhere((entry) => entry.id == 'openai');
+    expect(openai.configured, isTrue);
+    expect(openai.name, 'OpenAI 代理');
+    expect(openai.baseUrl, 'https://proxy.example.com/v1');
+    expect(openai.protocol, ProviderProtocol.responses);
     // Still one row per provider: the shipped entry is not shown twice.
-    expect(entries.where((entry) => entry.id == 'agentrouter').length, 1);
+    expect(entries.where((entry) => entry.id == 'openai').length, 1);
   });
 
   test('a provider the app did not ship is appended, not dropped', () {
@@ -75,31 +73,46 @@ void main() {
       const CustomProviderCatalogue(
         records: <CustomProviderRecord>[],
         unreadable: 1,
-        unreadableIDs: {'agentrouter'},
+        unreadableIDs: {'openai'},
       ),
     );
-    final agentrouter = entries.firstWhere(
-      (entry) => entry.id == 'agentrouter',
-    );
-    expect(agentrouter.blocked, isTrue);
-    expect(agentrouter.configured, isFalse);
+    final openai = entries.firstWhere((entry) => entry.id == 'openai');
+    expect(openai.blocked, isTrue);
+    expect(openai.configured, isFalse);
     // The rest of the list is unaffected.
-    final modelscope = entries.firstWhere((entry) => entry.id == 'modelscope');
-    expect(modelscope.blocked, isFalse);
+    final gemini = entries.firstWhere((entry) => entry.id == 'gemini');
+    expect(gemini.blocked, isFalse);
   });
 
-  test('the shipped list carries only the five documented providers', () {
+  test('the shipped list carries rikkahub’s providers', () {
     final ids = {for (final template in offeredProviderTemplates) template.id};
     expect(
       ids,
-      equals(<String>{
-        'agentrouter',
-        'intern',
-        'modelscope',
-        'amd',
+      containsAll(<String>[
+        'openai',
+        'gemini',
+        'aihubmix',
+        'apimart',
+        'siliconflow',
+        'deepseek',
+        'moonshot',
         'openrouter',
-      }),
+        'vercel',
+        'dashscope',
+        'volcengine',
+        'zhipu',
+        'stepfun',
+        'ai302',
+        'hunyuan',
+        'xai',
+        'suixiang',
+        'marucode',
+        'minimax',
+        'mimo',
+      ]),
     );
+    // Ours, from the providers' own docs.
+    expect(ids, containsAll(<String>['modelscope', 'agentrouter', 'intern']));
     // The blank template is an action, not a row.
     expect(ids, isNot(contains('custom')));
   });

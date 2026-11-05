@@ -7,9 +7,13 @@
 /// endpoint's own list is more reliable than any documented list.
 ///
 /// Gateways built on NewAPI and OneAPI answer `GET {base}/models` in the
-/// OpenAI shape (`{"data":[{"id":...}]}`); a few deployments put it under
-/// `/v1` while the person typed the bare host, so that spelling is tried
-/// second. Anthropic's list is its own shape but the same envelope.
+/// OpenAI shape (`{"data":[{"id":...}]}`), some put it under `/v1` while the
+/// person typed the bare host, and Gemini puts it under `/v1beta`. All three
+/// spellings are tried, because the cost of a wrong guess is one cheap
+/// request and the cost of not guessing is a person staring at "no models".
+///
+/// Every attempt is recorded, so a failure can say *where* it asked and
+/// *what came back* instead of one sentence that fits every cause.
 library;
 
 import 'dart:async';
@@ -18,23 +22,87 @@ import 'dart:io';
 
 import 'custom_provider.dart';
 
+/// Why a model list could not be read. The message is an English fallback;
+/// the form translates the kind, so the person reads a sentence in their own
+/// language rather than a debug string.
+enum ProviderModelFetchKind {
+  /// The address is not a usable http(s) URL.
+  badUrl,
+
+  /// The endpoint wants a key and none was given.
+  missingKey,
+
+  /// The endpoint answered 401/403.
+  refusedKey,
+
+  /// No `/models` path answered at any spelling of the base URL.
+  notFound,
+
+  /// A 200 whose body is a web page, not JSON — a login wall or a firewall.
+  notJson,
+
+  /// A 200 that parsed but named no models.
+  emptyList,
+
+  /// The endpoint did not answer in time.
+  timeout,
+
+  /// DNS, TCP or TLS did not get as far as an answer.
+  network,
+
+  /// The certificate could not be verified.
+  tls,
+
+  /// The endpoint answered, but with a status that is not a model list.
+  serverError,
+
+  /// Anything else, reported with its text.
+  unknown,
+}
+
 /// A model list that could not be read, in words the form can show.
 class ProviderModelFetchFailure implements Exception {
   const ProviderModelFetchFailure(
     this.message, {
+    this.kind = ProviderModelFetchKind.unknown,
     this.statusCode,
     this.canRetryWithoutKey = false,
+    this.trace = const <String>[],
+    this.path,
   });
 
+  /// English fallback, for logs and for a kind this build has no wording for.
   final String message;
+
+  final ProviderModelFetchKind kind;
   final int? statusCode;
 
   /// The endpoint answered 401/403: worth letting the person fix the key
   /// without leaving the form.
   final bool canRetryWithoutKey;
 
+  /// What was asked, in order: `host/path · status`.
+  final List<String> trace;
+
+  /// The last path tried, for a message that can point at it.
+  final String? path;
+
   @override
   String toString() => message;
+}
+
+/// One successful read: the models, and where they came from — the form says
+/// so, because "2 models" with no address is not proof of anything.
+class ProviderModelListing {
+  const ProviderModelListing({
+    required this.models,
+    required this.url,
+    required this.statusCode,
+  });
+
+  final List<CustomProviderModel> models;
+  final Uri url;
+  final int statusCode;
 }
 
 /// One HTTP answer, reduced to what parsing needs.
@@ -54,136 +122,299 @@ typedef ProviderHttpGet =
     );
 
 class ProviderModelSource {
-  ProviderModelSource({ProviderHttpGet? get}) : _get = get ?? _defaultGet;
+  ProviderModelSource({
+    ProviderHttpGet? get,
+    this.overallBudget = const Duration(seconds: 50),
+  }) : _get = get ?? _defaultGet;
 
   final ProviderHttpGet _get;
 
+  /// The whole read, not one request. A gateway that hangs on the first
+  /// spelling must not keep the button spinning for a minute.
+  final Duration overallBudget;
+
   /// Reads the endpoint's models. Throws [ProviderModelFetchFailure].
-  Future<List<CustomProviderModel>> fetch({
+  ///
+  /// [onTrace] is called after every answer, so a slow endpoint shows its
+  /// progress instead of a dead button.
+  Future<ProviderModelListing> fetch({
     required String baseUrl,
     required ProviderProtocol protocol,
     String? apiKey,
     Map<String, String> headers = const {},
     Duration timeout = const Duration(seconds: 20),
+    void Function(List<String> trace)? onTrace,
   }) async {
-    final base = baseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
-    if (base.isEmpty) {
-      throw const ProviderModelFetchFailure('Enter the base URL first');
+    final base = _cleanBase(baseUrl);
+    if (base == null) {
+      throw const ProviderModelFetchFailure(
+        'The base URL is not a valid address',
+        kind: ProviderModelFetchKind.badUrl,
+      );
     }
-    final key = apiKey?.trim() ?? '';
-    final candidates = <Uri>[
-      if (protocol == ProviderProtocol.google)
-        Uri.parse('$base/models?pageSize=100')
-      else ...[
-        Uri.parse('$base/models'),
-        if (!base.toLowerCase().endsWith('/v1')) Uri.parse('$base/v1/models'),
-      ],
-    ];
-    ProviderModelFetchFailure? lastFailure;
-    for (final url in candidates) {
-      final attempts = <Map<String, String>>[
-        if (key.isNotEmpty) {..._headers(protocol, key, anthropicStyle: true), ...headers},
-        if (key.isNotEmpty && protocol != ProviderProtocol.google)
-          {..._headers(protocol, key, anthropicStyle: false), ...headers},
-        <String, String>{'Accept': 'application/json', ...headers},
-      ];
-      for (final headers in attempts) {
+    final key = cleanKey(apiKey);
+    final extra = cleanHeaders(headers);
+    final urls = candidateUrls(base, protocol);
+    final attempts = _attempts(protocol, key, extra.headers);
+    final trace = <String>[];
+    final clock = Stopwatch()..start();
+    ProviderModelFetchFailure? best;
+
+    for (final url in urls) {
+      for (final sent in attempts) {
+        if (clock.elapsed > overallBudget) {
+          throw best ??
+              ProviderModelFetchFailure(
+                'The endpoint did not answer in time',
+                kind: ProviderModelFetchKind.timeout,
+                trace: List.unmodifiable(trace),
+              );
+        }
         try {
-          final answer = await _get(url, headers, timeout);
-          if (answer.statusCode == 401 || answer.statusCode == 403) {
-            lastFailure = ProviderModelFetchFailure(
+          final answer = await _get(url, sent, timeout);
+          final code = answer.statusCode;
+          trace.add('${_short(url)} · $code');
+          onTrace?.call(List.unmodifiable(trace));
+
+          if (code == 200) {
+            final models = parseModelList(answer.body);
+            if (models.isNotEmpty) {
+              return ProviderModelListing(
+                models: models,
+                url: url,
+                statusCode: code,
+              );
+            }
+            // A 200 that names nothing: a login page served by a catch-all
+            // route, or a real list that is empty. Either way another
+            // spelling of the path may still answer.
+            final html = looksLikeHtml(answer.body);
+            best = ProviderModelFetchFailure(
+              html
+                  ? 'The endpoint returned a web page, not a model list'
+                  : 'The endpoint listed no models',
+              kind: html
+                  ? ProviderModelFetchKind.notJson
+                  : ProviderModelFetchKind.emptyList,
+              statusCode: code,
+              trace: List.unmodifiable(trace),
+              path: url.path,
+            );
+            break;
+          }
+          if (code == 401 || code == 403) {
+            best = ProviderModelFetchFailure(
               key.isEmpty
                   ? 'This endpoint needs an API key to list its models'
-                  : 'The API key was refused (${answer.statusCode})',
-              statusCode: answer.statusCode,
+                  : 'The API key was refused ($code)',
+              kind: key.isEmpty
+                  ? ProviderModelFetchKind.missingKey
+                  : ProviderModelFetchKind.refusedKey,
+              statusCode: code,
               canRetryWithoutKey: true,
+              trace: List.unmodifiable(trace),
+              path: url.path,
             );
+            // Another auth scheme may be the one this gateway reads.
             continue;
           }
-          if (answer.statusCode == 404) {
-            lastFailure = ProviderModelFetchFailure(
+          if (code == 404 || code == 405) {
+            best ??= ProviderModelFetchFailure(
               'No model list at ${url.path}',
-              statusCode: 404,
+              kind: ProviderModelFetchKind.notFound,
+              statusCode: code,
+              trace: List.unmodifiable(trace),
+              path: url.path,
             );
-            // The other spelling of the base URL may still answer.
+            // The path is wrong; a different header will not fix it.
             break;
           }
-          if (answer.statusCode != 200) {
-            lastFailure = ProviderModelFetchFailure(
-              'The endpoint answered ${answer.statusCode}',
-              statusCode: answer.statusCode,
-            );
-            break;
-          }
-          final models = parseModelList(answer.body);
-          if (models.isEmpty) {
-            lastFailure = ProviderModelFetchFailure(
-              'The endpoint listed no models',
-              statusCode: 200,
-            );
-            break;
-          }
-          return models;
+          best = ProviderModelFetchFailure(
+            'The endpoint answered $code',
+            kind: ProviderModelFetchKind.serverError,
+            statusCode: code,
+            trace: List.unmodifiable(trace),
+            path: url.path,
+          );
         } on TimeoutException {
-          lastFailure = const ProviderModelFetchFailure(
+          trace.add('${_short(url)} · timeout');
+          onTrace?.call(List.unmodifiable(trace));
+          throw ProviderModelFetchFailure(
             'The endpoint did not answer in time',
+            kind: ProviderModelFetchKind.timeout,
+            trace: List.unmodifiable(trace),
+            path: url.path,
           );
-          break;
-        } on SocketException {
-          lastFailure = const ProviderModelFetchFailure(
-            'Could not reach the endpoint. Check the address and the network.',
-          );
-          break;
         } on HandshakeException {
-          lastFailure = const ProviderModelFetchFailure(
+          throw ProviderModelFetchFailure(
             'The endpoint\u2019s certificate could not be verified',
+            kind: ProviderModelFetchKind.tls,
+            trace: List.unmodifiable(trace),
+            path: url.path,
           );
-          break;
+        } on SocketException {
+          throw ProviderModelFetchFailure(
+            'Could not reach the endpoint. Check the address and the network.',
+            kind: ProviderModelFetchKind.network,
+            trace: List.unmodifiable(trace),
+            path: url.path,
+          );
         } on FormatException {
-          lastFailure = const ProviderModelFetchFailure(
+          throw ProviderModelFetchFailure(
             'The base URL is not a valid address',
+            kind: ProviderModelFetchKind.badUrl,
+            trace: List.unmodifiable(trace),
+            path: url.path,
           );
-          break;
+        } catch (error) {
+          best = ProviderModelFetchFailure(
+            '$error',
+            trace: List.unmodifiable(trace),
+            path: url.path,
+          );
         }
       }
+      // Every header has been tried for this path; move to the next spelling.
+      onTrace?.call(List.unmodifiable(trace));
     }
-    throw lastFailure ??
-        const ProviderModelFetchFailure('Could not read the model list');
+    if (best != null) {
+      // The trace is only complete now: every spelling has been asked. A
+      // failure captured mid-loop would report the first 404 as if it were
+      // the last word.
+      throw ProviderModelFetchFailure(
+        best.message,
+        kind: best.kind,
+        statusCode: best.statusCode,
+        canRetryWithoutKey: best.canRetryWithoutKey,
+        trace: List.unmodifiable(trace),
+        path: best.path,
+      );
+    }
+    throw ProviderModelFetchFailure(
+      'Could not read the model list',
+      trace: List.unmodifiable(trace),
+    );
   }
 
-  static Map<String, String> _headers(
-    ProviderProtocol protocol,
-    String key, {
-    required bool anthropicStyle,
-  }) {
+  /// The spellings of `{base}/models` worth asking, nearest first.
+  ///
+  /// A bare host is the common case: people paste `https://gw.example.com`
+  /// and the list lives at `/v1/models`, while a NewAPI deployment answers
+  /// the bare `/models` too.
+  static List<Uri> candidateUrls(String base, ProviderProtocol protocol) {
+    final trimmed = base.endsWith('/')
+        ? base.substring(0, base.length - 1)
+        : base;
+    final lower = trimmed.toLowerCase();
+    final paths = <String>[];
+    void add(String value) {
+      if (!paths.contains(value)) paths.add(value);
+    }
+
+    add('$trimmed/models');
+    if (!lower.endsWith('/v1')) add('$trimmed/v1/models');
     if (protocol == ProviderProtocol.google) {
-      return {
-        'x-goog-api-key': key,
-        'Accept': 'application/json',
-      };
+      if (!lower.endsWith('/v1beta')) add('$trimmed/v1beta/models?pageSize=100');
+      add('$trimmed/models?pageSize=100');
     }
-    // Anthropic's own hosts read `x-api-key`, while the many gateways that
-    // translate Messages read the usual bearer token. Sending the native
-    // header first and falling back covers both without asking the person
-    // which kind of endpoint they have.
-    if (protocol == ProviderProtocol.anthropic && anthropicStyle) {
-      return {
-        'x-api-key': key,
-        'anthropic-version': '2023-06-01',
-        'Accept': 'application/json',
-      };
+    return [for (final path in paths) Uri.parse(path)];
+  }
+
+  /// Header sets to try for one URL, most likely first. A 401 moves to the
+  /// next set; a 404 does not.
+  static List<Map<String, String>> _attempts(
+    ProviderProtocol protocol,
+    String key,
+    Map<String, String> extra,
+  ) {
+    final out = <Map<String, String>>[];
+    void add(Map<String, String> auth) {
+      final map = <String, String>{...auth, ...extra};
+      final duplicate = out.any(
+        (existing) =>
+            existing.length == map.length &&
+            map.entries.every((entry) => existing[entry.key] == entry.value),
+      );
+      if (!duplicate) out.add(map);
     }
-    return {'Authorization': 'Bearer $key', 'Accept': 'application/json'};
+
+    if (key.isNotEmpty) {
+      if (protocol == ProviderProtocol.anthropic) {
+        add({
+          'x-api-key': key,
+          'anthropic-version': '2023-06-01',
+          'Accept': 'application/json',
+        });
+      } else if (protocol == ProviderProtocol.google) {
+        add({'x-goog-api-key': key, 'Accept': 'application/json'});
+      }
+      // Anthropic's own hosts read `x-api-key`; the many gateways that
+      // translate Messages read the usual bearer token. Trying both covers
+      // either without asking the person which kind of endpoint they have.
+      add({'Authorization': 'Bearer $key', 'Accept': 'application/json'});
+    }
+    add({'Accept': 'application/json'});
+    return out;
+  }
+
+  /// The base URL, with a scheme if it was typed without one. Null when
+  /// nothing usable is left.
+  static String? _cleanBase(String raw) {
+    var value = raw.trim();
+    if (value.isEmpty) return null;
+    if (!value.contains('://')) value = 'https://$value';
+    final uri = Uri.tryParse(value);
+    if (uri == null || !uri.hasAuthority || uri.host.isEmpty) return null;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return null;
+    var path = uri.path;
+    while (path.endsWith('/') && path.length > 1) {
+      path = path.substring(0, path.length - 1);
+    }
+    return Uri(
+      scheme: uri.scheme,
+      userInfo: uri.userInfo.isEmpty ? null : uri.userInfo,
+      host: uri.host,
+      port: uri.hasPort ? uri.port : null,
+      path: path,
+    ).toString();
+  }
+
+  /// Keys are pasted, and pasting wraps. A key never contains whitespace, so
+  /// every kind of it is removed rather than only the ends: a newline inside
+  /// the value makes `HttpClient` reject the request as a format error, which
+  /// used to surface as "the base URL is not a valid address".
+  static String cleanKey(String? raw) => normalizeProviderKey(raw);
+
+  /// Custom headers, minus the ones `HttpClient` cannot send. The rule is
+  /// the config layer's, so the form and this read drop the same rows.
+  static ({Map<String, String> headers, List<String> dropped}) cleanHeaders(
+    Map<String, String> raw,
+  ) => sanitizeRequestHeaders(raw);
+
+  /// True when a body is a web page rather than an API answer: a login wall,
+  /// a captive portal or a firewall that answers 200 with HTML.
+  static bool looksLikeHtml(String body) {
+    final head = body.trimLeft();
+    if (head.isEmpty) return false;
+    if (head.startsWith('<')) return true;
+    return head.toLowerCase().contains('<!doctype html');
+  }
+
+  static String _short(Uri url) {
+    final path = url.path.isEmpty ? '/' : url.path;
+    final query = url.hasQuery ? '?${url.query}' : '';
+    return '${url.host}$path$query';
   }
 
   /// Reads the model list out of the shapes gateways actually return.
   ///
   /// OpenAI and NewAPI: `{"object":"list","data":[{"id":...}]}`. Some
   /// gateways: a bare array, or `{"models":[...]}`. Their entries vary too:
-  /// `id`, `model`, or a plain string.
+  /// `id`, `model`, or a plain string; the label is `display_name`,
+  /// `displayName` or `label`.
   static List<CustomProviderModel> parseModelList(String body) {
     final trimmed = body.trim();
-    if (trimmed.isEmpty) return const [];
+    if (trimmed.isEmpty || looksLikeHtml(trimmed)) return const [];
     Object? decoded;
     try {
       decoded = jsonDecode(trimmed);
@@ -212,7 +443,7 @@ class ProviderModelSource {
       if (id.startsWith('models/')) id = id.substring('models/'.length);
       if (id.isEmpty) continue;
       final name = entry is Map<String, Object?>
-          ? entry['display_name'] ?? entry['displayName']
+          ? entry['display_name'] ?? entry['displayName'] ?? entry['label']
           : null;
       models.add(
         CustomProviderModel(id: id, name: name is String ? name : null),
@@ -238,11 +469,15 @@ class ProviderModelSource {
       headers.forEach(request.headers.set);
       request.headers.set(HttpHeaders.acceptEncodingHeader, 'identity');
       final response = await request.close().timeout(timeout);
-      final body = await response
-          .transform(utf8.decoder)
-          .join()
+      final bytes = await response
+          .fold<List<int>>(<int>[], (all, chunk) => all..addAll(chunk))
           .timeout(timeout);
-      return ProviderHttpAnswer(statusCode: response.statusCode, body: body);
+      // `allowMalformed`: a gateway that answers in GBK, or an HTML error
+      // page, must not turn into "the base URL is not a valid address".
+      return ProviderHttpAnswer(
+        statusCode: response.statusCode,
+        body: utf8.decode(bytes, allowMalformed: true),
+      );
     } finally {
       client.close(force: true);
     }

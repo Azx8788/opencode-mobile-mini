@@ -1,10 +1,16 @@
 /// The providers the app itself ships.
 ///
-/// Five entries, each taken from the provider's own integration docs:
-/// AgentRouter, 书生·端砚, 魔搭 ModelScope, AMD and OpenRouter. The rest of the
-/// catalogue the app used to carry is gone; these are ordinary entries, and
-/// nothing is written until one is filled in and saved. Every field — name,
-/// address, protocol, key, models — stays the person's.
+/// This is the whole list a person chooses from. The app no longer asks the
+/// server which providers it knows: that list is the server's own, and its
+/// entries could not be edited here — an OpenAI row you could not point at a
+/// proxy was a dead end. Ours are ordinary entries: nothing is written until
+/// one is filled in and saved, and every field — name, address, protocol,
+/// key, models — stays the person's.
+///
+/// The order and the addresses follow rikkahub's `DEFAULT_PROVIDERS`, so the
+/// list a person sees here is the one the reference app shows. Three entries
+/// are ours, from the providers' own integration docs: ModelScope, AgentRouter
+/// and 书生·端砚, which rikkahub does not ship.
 library;
 
 import '../domain/custom_provider.dart';
@@ -38,17 +44,38 @@ class BuiltinProviderTemplate {
 
 const builtinProviderTemplates = <BuiltinProviderTemplate>[
   BuiltinProviderTemplate(
-    id: 'agentrouter',
-    name: 'AgentRouter',
-    baseUrl: 'https://agentrouter.org/v1',
+    id: 'openai',
+    name: 'OpenAI',
+    baseUrl: 'https://api.openai.com/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.official,
+  ),
+  BuiltinProviderTemplate(
+    id: 'gemini',
+    name: 'Gemini',
+    baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
+    protocol: ProviderProtocol.google,
+    kind: ProviderTemplateKind.official,
+  ),
+  BuiltinProviderTemplate(
+    id: 'aihubmix',
+    name: 'AiHubMix',
+    baseUrl: 'https://aihubmix.com/v1',
     protocol: ProviderProtocol.chatCompletions,
     kind: ProviderTemplateKind.gateway,
   ),
   BuiltinProviderTemplate(
-    id: 'intern',
-    name: '书生·端砚',
-    baseUrl: 'https://discovery-api.intern-ai.org.cn/v1',
-    protocol: ProviderProtocol.anthropic,
+    id: 'apimart',
+    name: 'APIMart',
+    baseUrl: 'https://api.apimart.ai/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.gateway,
+  ),
+  BuiltinProviderTemplate(
+    id: 'siliconflow',
+    name: '硅基流动',
+    baseUrl: 'https://api.siliconflow.cn/v1',
+    protocol: ProviderProtocol.chatCompletions,
     kind: ProviderTemplateKind.china,
   ),
   BuiltinProviderTemplate(
@@ -59,11 +86,26 @@ const builtinProviderTemplates = <BuiltinProviderTemplate>[
     kind: ProviderTemplateKind.china,
   ),
   BuiltinProviderTemplate(
-    id: 'amd',
-    name: 'AMD',
-    baseUrl: 'https://developer.amd.com.cn/radeon/api/v1',
+    id: 'deepseek',
+    name: 'DeepSeek',
+    baseUrl: 'https://api.deepseek.com/v1',
     protocol: ProviderProtocol.chatCompletions,
-    kind: ProviderTemplateKind.official,
+    kind: ProviderTemplateKind.china,
+    balance: ProviderBalance(
+      url: '{{baseUrl}}/user/balance',
+      resultPath: 'balance_infos[0].total_balance',
+    ),
+  ),
+  BuiltinProviderTemplate(
+    id: 'moonshot',
+    name: '月之暗面',
+    baseUrl: 'https://api.moonshot.cn/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.china,
+    balance: ProviderBalance(
+      url: '{{baseUrl}}/users/me/balance',
+      resultPath: 'data.available_balance',
+    ),
   ),
   BuiltinProviderTemplate(
     id: 'openrouter',
@@ -71,6 +113,108 @@ const builtinProviderTemplates = <BuiltinProviderTemplate>[
     baseUrl: 'https://openrouter.ai/api/v1',
     protocol: ProviderProtocol.chatCompletions,
     kind: ProviderTemplateKind.gateway,
+  ),
+  BuiltinProviderTemplate(
+    id: 'agentrouter',
+    name: 'AgentRouter',
+    baseUrl: 'https://agentrouter.org/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.gateway,
+  ),
+  BuiltinProviderTemplate(
+    id: 'vercel',
+    name: 'Vercel AI Gateway',
+    baseUrl: 'https://ai-gateway.vercel.sh/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.gateway,
+    balance: ProviderBalance(
+      url: '{{baseUrl}}/credits',
+      resultPath: 'balance',
+    ),
+  ),
+  BuiltinProviderTemplate(
+    id: 'dashscope',
+    name: '阿里云百炼',
+    baseUrl: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.china,
+  ),
+  BuiltinProviderTemplate(
+    id: 'volcengine',
+    name: '火山引擎',
+    baseUrl: 'https://ark.cn-beijing.volces.com/api/v3',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.china,
+  ),
+  BuiltinProviderTemplate(
+    id: 'zhipu',
+    name: '智谱AI开放平台',
+    baseUrl: 'https://open.bigmodel.cn/api/paas/v4',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.china,
+  ),
+  BuiltinProviderTemplate(
+    id: 'intern',
+    name: '书生·端砚',
+    baseUrl: 'https://discovery-api.intern-ai.org.cn/v1',
+    protocol: ProviderProtocol.responses,
+    kind: ProviderTemplateKind.china,
+  ),
+  BuiltinProviderTemplate(
+    id: 'stepfun',
+    name: '阶跃星辰',
+    baseUrl: 'https://api.stepfun.com/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.china,
+  ),
+  BuiltinProviderTemplate(
+    id: 'ai302',
+    name: '302.AI',
+    baseUrl: 'https://api.302.ai/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.gateway,
+  ),
+  BuiltinProviderTemplate(
+    id: 'hunyuan',
+    name: '腾讯混元',
+    baseUrl: 'https://tokenhub.tencentmaas.com/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.china,
+  ),
+  BuiltinProviderTemplate(
+    id: 'xai',
+    name: 'xAI',
+    baseUrl: 'https://api.x.ai/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.official,
+  ),
+  BuiltinProviderTemplate(
+    id: 'suixiang',
+    name: '随想AI网关',
+    baseUrl: 'https://sui-xiang.com/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.gateway,
+  ),
+  BuiltinProviderTemplate(
+    id: 'marucode',
+    name: 'MaruCode',
+    baseUrl: 'https://api.muteki.site/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.gateway,
+  ),
+  BuiltinProviderTemplate(
+    id: 'minimax',
+    name: 'MiniMax',
+    baseUrl: 'https://api.minimaxi.com/anthropic/v1',
+    protocol: ProviderProtocol.anthropic,
+    kind: ProviderTemplateKind.china,
+  ),
+  BuiltinProviderTemplate(
+    id: 'mimo',
+    name: 'MIMO',
+    baseUrl: 'https://api.xiaomimimo.com/v1',
+    protocol: ProviderProtocol.chatCompletions,
+    kind: ProviderTemplateKind.china,
   ),
   BuiltinProviderTemplate(
     id: 'custom',

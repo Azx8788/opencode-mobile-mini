@@ -300,6 +300,35 @@ class CustomProviderDraft {
     ).toString();
   }
 
+  /// The base URL a model list proves is the right one, or null when the one
+  /// typed already is.
+  ///
+  /// A person types `https://gw.example.com`, the list answers at
+  /// `/v1/models`, and the chat request appends to this field — so keeping
+  /// the bare host would save a provider whose models list works and whose
+  /// messages 404. Only a root that differs from the typed one is returned;
+  /// a deliberate path that answered is left alone.
+  static String? adoptModelRoot(
+    String typedBase,
+    Uri listed,
+    ProviderProtocol protocol,
+  ) {
+    const suffix = '/models';
+    if (!listed.path.endsWith(suffix)) return null;
+    final root = listed.path.substring(0, listed.path.length - suffix.length);
+    final typed = normalizeBaseUrl(typedBase, protocol);
+    final typedUri = Uri.tryParse(typed);
+    if (typedUri == null) return null;
+    final typedPath = typedUri.path == '/' ? '' : typedUri.path;
+    if (root == typedPath) return null;
+    return Uri(
+      scheme: listed.scheme,
+      host: listed.host,
+      port: listed.hasPort ? listed.port : null,
+      path: root.isEmpty ? null : root,
+    ).toString();
+  }
+
   /// Deduplicated in the order the endpoint listed them; blanks dropped.
   static List<CustomProviderModel> normalizeModels(
     List<CustomProviderModel> models,
@@ -335,6 +364,16 @@ class CustomProviderDraft {
     }
     return map;
   }
+
+  /// [headerMap] minus the rows an HTTP client cannot send.
+  ///
+  /// A header name is a token and a value is Latin-1; a Chinese `X-Title` or
+  /// a newline pasted into a value makes `HttpClient` throw a format error,
+  /// which used to read as "the base URL is not a valid address". This map
+  /// is for the app's own requests only — the config still gets [headerMap]
+  /// verbatim, because the server may accept more than the phone can send.
+  Map<String, String> get requestHeaderMap =>
+      sanitizeRequestHeaders(headerMap).headers;
 
   /// The same provider under another wire protocol: the key, models and
   /// headers carry over; only the package and a `/v1` ↔ `/v1beta` root
@@ -551,3 +590,38 @@ class CustomProviderDraft {
     ProviderConfigFormat.v2 => 'providers',
   };
 }
+
+/// Custom headers, minus the rows an HTTP client cannot send.
+///
+/// A name must be an RFC 7230 token and a value Latin-1; anything else makes
+/// `HttpClient` reject the whole request with a format error. Dropping one
+/// row is better than failing the call, and the caller can say which rows
+/// were dropped.
+({Map<String, String> headers, List<String> dropped}) sanitizeRequestHeaders(
+  Map<String, String> raw,
+) {
+  final headers = <String, String>{};
+  final dropped = <String>[];
+  for (final entry in raw.entries) {
+    final name = entry.key.trim();
+    final value = entry.value.trim();
+    if (name.isEmpty) continue;
+    if (!_httpHeaderName.hasMatch(name) || !_httpHeaderValue.hasMatch(value)) {
+      dropped.add(name);
+      continue;
+    }
+    headers[name] = value;
+  }
+  return (headers: headers, dropped: dropped);
+}
+
+final RegExp _httpHeaderName = RegExp(r"^[A-Za-z0-9!#$%&'*+.^_`|~-]+$");
+final RegExp _httpHeaderValue = RegExp(r'^[\x20-\x7E\xA0-\xFF]*$');
+
+/// A pasted key, with every kind of whitespace removed.
+///
+/// A key never contains whitespace, but a paste often wraps: a newline in
+/// the middle of the value makes `HttpClient` reject the request as a format
+/// error, which is impossible to read as "the key has a line break in it".
+String normalizeProviderKey(String? raw) =>
+    (raw ?? '').replaceAll(RegExp(r'\s+'), '');

@@ -36355,4 +36355,60 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get providerManageOneWindow =>
       'Providers are configured in one window now — the ones the app ships and the ones you add. Address, protocol, key and models live together, and the server list is no longer a separate place to edit.';
+
+  @override
+  String providerModelsFrom(String url, int count) {
+    return 'Read $count models from $url';
+  }
+
+  @override
+  String get providerModelsAttempts => 'Requests made';
+
+  @override
+  String get providerModelsFetchBadUrl =>
+      'That is not a usable http(s) address.';
+
+  @override
+  String get providerModelsFetchNoKey =>
+      'This address will not list its models without an API key.';
+
+  @override
+  String providerModelsFetchRefused(int status) {
+    return 'The API key was refused ($status). Check it, or whether this address allows listing models.';
+  }
+
+  @override
+  String providerModelsFetchNotFound(String path) {
+    return 'Nothing answered at $path. The address may need a path such as /v1.';
+  }
+
+  @override
+  String get providerModelsFetchNotJson =>
+      'The address returned a web page, not a model list. It may be behind a login or a firewall.';
+
+  @override
+  String get providerModelsFetchEmpty =>
+      'The address answered, but listed no models.';
+
+  @override
+  String get providerModelsFetchTimeout =>
+      'The address did not answer in time.';
+
+  @override
+  String get providerModelsFetchNetwork =>
+      'Could not reach the address. Check it and the network.';
+
+  @override
+  String get providerModelsFetchTls =>
+      'The certificate of this address could not be verified.';
+
+  @override
+  String providerModelsFetchServer(int status) {
+    return 'The address answered $status.';
+  }
+
+  @override
+  String providerModelsRootAdopted(String url) {
+    return 'The address was changed to $url, where the models answer. Messages are sent to this same root.';
+  }
 }

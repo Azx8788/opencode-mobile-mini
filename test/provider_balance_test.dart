@@ -142,4 +142,35 @@ void main() {
       );
     });
   });
+
+  group('what the request carries', () {
+    test('a wrapped key is cleaned and a Chinese header is dropped', () async {
+      Uri? seen;
+      Map<String, String>? sent;
+      final client = ProviderBalanceClient(
+        get: (url, headers, timeout) async {
+          seen = url;
+          sent = headers;
+          return const ProviderBalanceAnswer(
+            statusCode: 200,
+            body: '{"balance":1}',
+          );
+        },
+      );
+      await client.fetch(
+        balance: const ProviderBalance(
+          enabled: true,
+          url: '{{baseUrl}}/user/balance',
+          resultPath: 'balance',
+        ),
+        baseUrl: 'https://dp.example.com',
+        apiKey: ' sk-abc\n123 ',
+        headers: {'X-Title': '我的应用', 'X-Team': 'core'},
+      );
+      expect(seen.toString(), 'https://dp.example.com/user/balance');
+      expect(sent!['authorization'], 'Bearer sk-abc123');
+      expect(sent!.containsKey('X-Title'), isFalse);
+      expect(sent!['X-Team'], 'core');
+    });
+  });
 }

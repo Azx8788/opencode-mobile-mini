@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -87,6 +88,21 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
   String _query = '';
   bool _fetching = false;
   String? _fetchError;
+
+  /// Where the last successful read came from, and how many models it named.
+  String? _fetchInfo;
+
+  /// Set when the base URL was rewritten to the root the model list actually
+  /// answered on, so the form can say so instead of changing a field quietly.
+  String? _adoptedRoot;
+
+  /// Every request the last read made: `host/path · status`.
+  List<String> _fetchTrace = const [];
+
+  /// The models tab fetches once on its own the first time it is opened, so
+  /// "I typed the address and key and saw nothing" cannot happen. A retry
+  /// stays manual.
+  bool _autoFetched = false;
   bool _saving = false;
   String? _saveError;
   ProviderWriteReceipt? _receipt;
@@ -266,7 +282,10 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
     );
   }
 
-  Map<String, String> _headerMap() => _draft().headerMap;
+  /// Headers for the app's own requests (model list, probes, balance). The
+  /// sanitised map, not the raw one: a value this platform cannot send must
+  /// not turn every call into a format error.
+  Map<String, String> _headerMap() => _draft().requestHeaderMap;
 
   /// The key for the app's own requests: what was just typed, else what the
   /// entry already has (a value in the config, or a file this app can read).
@@ -305,32 +324,50 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
 
   Future<void> _fetchModels() async {
     if (_fetching) return;
+    final typed = _baseUrl.text.trim();
+    if (typed.isEmpty) {
+      setState(() => _fetchError = _l10nOf(context).providerModelsConfigFirst);
+      return;
+    }
     setState(() {
       _fetching = true;
       _fetchError = null;
+      _fetchInfo = null;
+      _adoptedRoot = null;
+      _fetchTrace = const [];
     });
     try {
       final key = await _resolveKey();
-      final models = await _models.fetch(
+      final listing = await _models.fetch(
         baseUrl: CustomProviderDraft.normalizeBaseUrl(_baseUrl.text, _protocol),
         protocol: _protocol,
         apiKey: key,
         headers: _headerMap(),
+        onTrace: (trace) {
+          if (!mounted) return;
+          setState(() => _fetchTrace = trace);
+        },
       );
       if (!mounted) return;
+      final adopted = _adoptListedRoot(listing.url);
       setState(() {
-        _listed = models;
+        _listed = listing.models;
         _fetching = false;
+        _adoptedRoot = adopted;
+        _fetchInfo = _l10nOf(
+          context,
+        ).providerModelsFrom(listing.url.toString(), listing.models.length);
         // A first fetch selects everything: the common case is "all of this
         // gateway", and unticking a few is less work than ticking many.
         if (_selected.isEmpty) {
-          _selected.addAll(models.map((model) => model.id));
+          _selected.addAll(listing.models.map((model) => model.id));
         }
       });
     } on ProviderModelFetchFailure catch (error) {
       if (!mounted) return;
       setState(() {
-        _fetchError = error.message;
+        _fetchError = _describeFailure(error);
+        _fetchTrace = error.trace;
         _fetching = false;
       });
     } catch (error) {
@@ -340,6 +377,66 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
         _fetching = false;
       });
     }
+  }
+
+  /// The failure in the form's language, not the domain's English fallback.
+  String _describeFailure(ProviderModelFetchFailure error) {
+    final l10n = _l10nOf(context);
+    final status = error.statusCode ?? 0;
+    return switch (error.kind) {
+      ProviderModelFetchKind.badUrl => l10n.providerModelsFetchBadUrl,
+      ProviderModelFetchKind.missingKey => l10n.providerModelsFetchNoKey,
+      ProviderModelFetchKind.refusedKey => l10n.providerModelsFetchRefused(
+        status,
+      ),
+      ProviderModelFetchKind.notFound => l10n.providerModelsFetchNotFound(
+        error.path ?? '',
+      ),
+      ProviderModelFetchKind.notJson => l10n.providerModelsFetchNotJson,
+      ProviderModelFetchKind.emptyList => l10n.providerModelsFetchEmpty,
+      ProviderModelFetchKind.timeout => l10n.providerModelsFetchTimeout,
+      ProviderModelFetchKind.network => l10n.providerModelsFetchNetwork,
+      ProviderModelFetchKind.tls => l10n.providerModelsFetchTls,
+      ProviderModelFetchKind.serverError => l10n.providerModelsFetchServer(
+        status,
+      ),
+      ProviderModelFetchKind.unknown => error.message,
+    };
+  }
+
+  /// The models tab is where a list belongs, so the action on the
+  /// configuration tab only opens it and starts the read: the same request,
+  /// in the place a person looks first.
+  void _fetchFromConfigTab() {
+    setState(() {
+      _tab = _Tab.models;
+      _visited.add(_Tab.models);
+    });
+    unawaited(_fetchModels());
+  }
+
+  /// Fires once, when the models tab is first opened and there is enough on
+  /// the form to ask. Never with an empty key: that would only ever produce
+  /// "this endpoint needs an API key" on a page the person just arrived at.
+  void _autoFetchIfPossible() {
+    if (_autoFetched || _fetching || _listed.isNotEmpty) return;
+    if (_baseUrl.text.trim().isEmpty) return;
+    if (_apiKey.text.trim().isEmpty && !_hasStoredKey) return;
+    _autoFetched = true;
+    unawaited(_fetchModels());
+  }
+
+  /// The base URL the model list proved is the right one. The chat request
+  /// appends to this field, so the address a list answered on is the address
+  /// to send messages to.
+  String? _adoptListedRoot(Uri listed) {
+    final adopted = CustomProviderDraft.adoptModelRoot(
+      _baseUrl.text,
+      listed,
+      _protocol,
+    );
+    if (adopted != null) _baseUrl.text = adopted;
+    return adopted;
   }
 
   Future<void> _save() async {
@@ -762,10 +859,17 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
         ],
         selected: _tab,
         semanticsLabel: l10n.providerAddTitle,
-        onChanged: (value) => setState(() {
-          _tab = value;
-          _visited.add(value);
-        }),
+        onChanged: (value) {
+          setState(() {
+            _tab = value;
+            _visited.add(value);
+          });
+          if (value == _Tab.models) {
+            WidgetsBinding.instance.addPostFrameCallback(
+              (_) => _autoFetchIfPossible(),
+            );
+          }
+        },
       );
 
   // ---------------- Configuration ----------------
@@ -820,6 +924,20 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
           : null,
       onChanged: (_) => setState(() {}),
       fieldKey: const ValueKey('custom-provider-base-url'),
+    ),
+    Padding(
+      padding: EdgeInsetsDirectional.only(top: _space(context) / 2),
+      child: Align(
+        alignment: AlignmentDirectional.centerStart,
+        child: KitButton.tertiary(
+          key: const ValueKey('custom-provider-fetch-from-config'),
+          label: _fetching ? l10n.providerAddFetching : l10n.providerAddFetch,
+          icon: AppIconography.retry,
+          onPressed: _fetching || _baseUrl.text.trim().isEmpty
+              ? null
+              : _fetchFromConfigTab,
+        ),
+      ),
     ),
     KitSectionLabel(l10n.providerAddProtocol, gapBefore: _space(context)),
     KitSegmented<ProviderProtocol>(
@@ -1015,6 +1133,27 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
           key: const ValueKey('custom-provider-fetch-failed'),
           message: '${l10n.providerAddFetchFailed}: $_fetchError',
           retry: KitAction(label: l10n.commonRetry, onPressed: _fetchModels),
+        ),
+        if (_fetchTrace.isNotEmpty) ...[
+          SizedBox(height: _space(context) / 2),
+          _traceLines(context, l10n, _fetchTrace),
+        ],
+      ],
+      if (_fetchInfo != null) ...[
+        _gap(context),
+        KitNotice(
+          key: const ValueKey('custom-provider-fetch-ok'),
+          tone: AppStatusTone.ok,
+          icon: AppIconography.check,
+          message: _fetchInfo!,
+        ),
+      ],
+      if (_adoptedRoot != null) ...[
+        SizedBox(height: _space(context) / 2),
+        KitNotice(
+          key: const ValueKey('custom-provider-root-adopted'),
+          icon: AppIconography.info,
+          message: l10n.providerModelsRootAdopted(_adoptedRoot!),
         ),
       ],
       if (_listed.isEmpty) ...[
@@ -1225,6 +1364,36 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
   double _space(BuildContext context) => KitTokens.of(context).space3;
 
   Widget _gap(BuildContext context) => SizedBox(height: _space(context));
+
+  /// What the read asked and what came back, one line per request. Shown
+  /// only when it failed: "401" on its own leaves a person guessing which
+  /// address was even tried.
+  Widget _traceLines(
+    BuildContext context,
+    AppLocalizations l10n,
+    List<String> trace,
+  ) {
+    final shown = trace.length > 6 ? trace.sublist(trace.length - 6) : trace;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          l10n.providerModelsAttempts,
+          style: KitText.styleOf(context, KitTextRole.caption),
+        ),
+        for (final line in shown)
+          Padding(
+            padding: EdgeInsetsDirectional.only(top: 2),
+            child: Text(
+              line,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: KitText.styleOf(context, KitTextRole.mono),
+            ),
+          ),
+      ],
+    );
+  }
 
   static bool _isOfficialOpenAIHost(String baseUrl) {
     final uri = Uri.tryParse(baseUrl.trim());

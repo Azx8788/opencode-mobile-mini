@@ -15,6 +15,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'custom_provider.dart';
+
 /// Where to ask, and which value in the answer is the balance.
 class ProviderBalance {
   const ProviderBalance({
@@ -123,7 +125,7 @@ class ProviderBalanceClient {
       );
     }
     final base = baseUrl.trim().replaceFirst(RegExp(r'/+$'), '');
-    final key = apiKey.trim();
+    final key = normalizeProviderKey(apiKey);
     final raw = balance.url
         .trim()
         .replaceAll(ProviderBalance.baseUrlToken, base)
@@ -138,7 +140,7 @@ class ProviderBalanceClient {
     // Custom headers first, then the bearer the gateways expect: a header the
     // person added must not silently break authentication.
     final requestHeaders = <String, String>{
-      ...headers,
+      ...sanitizeRequestHeaders(headers).headers,
       'accept': 'application/json',
       if (key.isNotEmpty) 'authorization': 'Bearer $key',
     };

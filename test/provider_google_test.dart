@@ -18,13 +18,13 @@ void main() {
               '"displayName":"Gemini 2.5 Pro"}]}',
         ),
       );
-      final models = await source.fetch(
+      final listing = await source.fetch(
         baseUrl: 'https://generativelanguage.googleapis.com/v1beta',
         protocol: ProviderProtocol.google,
         apiKey: 'k',
       );
-      expect(models.single.id, 'gemini-2.5-pro');
-      expect(models.single.label, 'Gemini 2.5 Pro');
+      expect(listing.models.single.id, 'gemini-2.5-pro');
+      expect(listing.models.single.label, 'Gemini 2.5 Pro');
     });
 
     test('asks for a page and sends the key plus custom headers', () async {

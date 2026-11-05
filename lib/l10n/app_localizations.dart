@@ -57187,6 +57187,84 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Providers are configured in one window now — the ones the app ships and the ones you add. Address, protocol, key and models live together, and the server list is no longer a separate place to edit.'**
   String get providerManageOneWindow;
+
+  /// Model list read successfully
+  ///
+  /// In en, this message translates to:
+  /// **'Read {count} models from {url}'**
+  String providerModelsFrom(String url, int count);
+
+  /// Label above the list of attempted URLs after a failed read
+  ///
+  /// In en, this message translates to:
+  /// **'Requests made'**
+  String get providerModelsAttempts;
+
+  /// Model list failure: bad base URL
+  ///
+  /// In en, this message translates to:
+  /// **'That is not a usable http(s) address.'**
+  String get providerModelsFetchBadUrl;
+
+  /// Model list failure: no API key given
+  ///
+  /// In en, this message translates to:
+  /// **'This address will not list its models without an API key.'**
+  String get providerModelsFetchNoKey;
+
+  /// Model list failure: key refused
+  ///
+  /// In en, this message translates to:
+  /// **'The API key was refused ({status}). Check it, or whether this address allows listing models.'**
+  String providerModelsFetchRefused(int status);
+
+  /// Model list failure: no model endpoint
+  ///
+  /// In en, this message translates to:
+  /// **'Nothing answered at {path}. The address may need a path such as /v1.'**
+  String providerModelsFetchNotFound(String path);
+
+  /// Model list failure: HTML instead of JSON
+  ///
+  /// In en, this message translates to:
+  /// **'The address returned a web page, not a model list. It may be behind a login or a firewall.'**
+  String get providerModelsFetchNotJson;
+
+  /// Model list failure: empty list
+  ///
+  /// In en, this message translates to:
+  /// **'The address answered, but listed no models.'**
+  String get providerModelsFetchEmpty;
+
+  /// Model list failure: timeout
+  ///
+  /// In en, this message translates to:
+  /// **'The address did not answer in time.'**
+  String get providerModelsFetchTimeout;
+
+  /// Model list failure: network
+  ///
+  /// In en, this message translates to:
+  /// **'Could not reach the address. Check it and the network.'**
+  String get providerModelsFetchNetwork;
+
+  /// Model list failure: TLS
+  ///
+  /// In en, this message translates to:
+  /// **'The certificate of this address could not be verified.'**
+  String get providerModelsFetchTls;
+
+  /// Model list failure: other status
+  ///
+  /// In en, this message translates to:
+  /// **'The address answered {status}.'**
+  String providerModelsFetchServer(int status);
+
+  /// Base URL rewritten after a successful model read
+  ///
+  /// In en, this message translates to:
+  /// **'The address was changed to {url}, where the models answer. Messages are sent to this same root.'**
+  String providerModelsRootAdopted(String url);
 }
 
 class _AppLocalizationsDelegate

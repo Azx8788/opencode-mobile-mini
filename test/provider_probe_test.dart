@@ -64,6 +64,9 @@ void main() {
         ),
       );
       expect((chat['tools'] as List).first['type'], 'function');
+      // Required, not auto: a model that chats instead of calling would fail
+      // the probe for a reason that has nothing to do with the endpoint.
+      expect(chat['tool_choice'], 'required');
       expect(
         ((chat['tools'] as List).first as Map)['function']['name'],
         'get_weather',
@@ -325,6 +328,37 @@ void main() {
         ),
         throwsA(isA<FormatException>()),
       );
+    });
+  });
+
+  group('headers a phone cannot send', () {
+    test('a value that is not Latin-1 is dropped, not thrown on', () {
+      final probe = ProviderProbe(send: (request) async => _json({}));
+      final request = probe.buildRequest(
+        kind: ProviderProbeKind.nonStreaming,
+        protocol: ProviderProtocol.chatCompletions,
+        baseUrl: 'https://api.example.com/v1',
+        model: 'demo',
+        apiKey: 'sk-test',
+        headers: {
+          'HTTP-Referer': 'https://app.example',
+          'X-Title': '我的应用',
+        },
+      );
+      expect(request.headers['HTTP-Referer'], 'https://app.example');
+      expect(request.headers.containsKey('X-Title'), isFalse);
+    });
+
+    test('a key pasted with a line break still becomes one token', () {
+      final probe = ProviderProbe(send: (request) async => _json({}));
+      final request = probe.buildRequest(
+        kind: ProviderProbeKind.nonStreaming,
+        protocol: ProviderProtocol.chatCompletions,
+        baseUrl: 'https://api.example.com/v1',
+        model: 'demo',
+        apiKey: ' sk-abc\n123 ',
+      );
+      expect(request.headers['authorization'], 'Bearer sk-abc123');
     });
   });
 }

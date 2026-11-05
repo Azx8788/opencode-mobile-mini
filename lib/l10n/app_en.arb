@@ -44419,5 +44419,85 @@
   "providerManageOneWindow": "Providers are configured in one window now — the ones the app ships and the ones you add. Address, protocol, key and models live together, and the server list is no longer a separate place to edit.",
   "@providerManageOneWindow": {
     "description": "Integrations provider section notice"
+  },
+  "providerModelsFrom": "Read {count} models from {url}",
+  "@providerModelsFrom": {
+    "description": "Model list read successfully",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "providerModelsAttempts": "Requests made",
+  "@providerModelsAttempts": {
+    "description": "Label above the list of attempted URLs after a failed read"
+  },
+  "providerModelsFetchBadUrl": "That is not a usable http(s) address.",
+  "@providerModelsFetchBadUrl": {
+    "description": "Model list failure: bad base URL"
+  },
+  "providerModelsFetchNoKey": "This address will not list its models without an API key.",
+  "@providerModelsFetchNoKey": {
+    "description": "Model list failure: no API key given"
+  },
+  "providerModelsFetchRefused": "The API key was refused ({status}). Check it, or whether this address allows listing models.",
+  "@providerModelsFetchRefused": {
+    "description": "Model list failure: key refused",
+    "placeholders": {
+      "status": {
+        "type": "int"
+      }
+    }
+  },
+  "providerModelsFetchNotFound": "Nothing answered at {path}. The address may need a path such as /v1.",
+  "@providerModelsFetchNotFound": {
+    "description": "Model list failure: no model endpoint",
+    "placeholders": {
+      "path": {
+        "type": "String"
+      }
+    }
+  },
+  "providerModelsFetchNotJson": "The address returned a web page, not a model list. It may be behind a login or a firewall.",
+  "@providerModelsFetchNotJson": {
+    "description": "Model list failure: HTML instead of JSON"
+  },
+  "providerModelsFetchEmpty": "The address answered, but listed no models.",
+  "@providerModelsFetchEmpty": {
+    "description": "Model list failure: empty list"
+  },
+  "providerModelsFetchTimeout": "The address did not answer in time.",
+  "@providerModelsFetchTimeout": {
+    "description": "Model list failure: timeout"
+  },
+  "providerModelsFetchNetwork": "Could not reach the address. Check it and the network.",
+  "@providerModelsFetchNetwork": {
+    "description": "Model list failure: network"
+  },
+  "providerModelsFetchTls": "The certificate of this address could not be verified.",
+  "@providerModelsFetchTls": {
+    "description": "Model list failure: TLS"
+  },
+  "providerModelsFetchServer": "The address answered {status}.",
+  "@providerModelsFetchServer": {
+    "description": "Model list failure: other status",
+    "placeholders": {
+      "status": {
+        "type": "int"
+      }
+    }
+  },
+  "providerModelsRootAdopted": "The address was changed to {url}, where the models answer. Messages are sent to this same root.",
+  "@providerModelsRootAdopted": {
+    "description": "Base URL rewritten after a successful model read",
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
   }
 }

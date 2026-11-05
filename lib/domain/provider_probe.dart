@@ -180,7 +180,7 @@ class ProviderProbe {
     if (base.isEmpty) {
       throw const FormatException('Enter the base URL first');
     }
-    final key = apiKey?.trim() ?? '';
+    final key = normalizeProviderKey(apiKey);
     final streaming = kind == ProviderProbeKind.streaming;
     final requestHeaders = <String, String>{
       'content-type': 'application/json',
@@ -188,7 +188,7 @@ class ProviderProbe {
       // The person's own headers win: a gateway that needs a particular
       // origin or title must also get it on the probe.
       ..._authHeaders(protocol, key),
-      ...headers,
+      ...sanitizeRequestHeaders(headers).headers,
     };
     final url = Uri.parse(
       protocol == ProviderProtocol.google
@@ -265,7 +265,10 @@ class ProviderProbe {
           },
         ];
         body['tools'] = [_chatTool];
-        body['tool_choice'] = 'auto';
+        // `required`, not `auto`: the question is whether this endpoint can
+        // carry a tool call at all, and a model that chats instead of calling
+        // would fail the probe for the wrong reason.
+        body['tool_choice'] = 'required';
     }
     return body;
   }

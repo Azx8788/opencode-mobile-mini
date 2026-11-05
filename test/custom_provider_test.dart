@@ -388,12 +388,13 @@ void main() {
           );
         },
       );
-      final models = await source.fetch(
+      final listing = await source.fetch(
         baseUrl: 'https://gw.example.com',
         protocol: ProviderProtocol.chatCompletions,
         apiKey: 'k',
       );
-      expect(models.single.id, 'm');
+      expect(listing.models.single.id, 'm');
+      expect(listing.url.path, '/v1/models');
       expect(asked, [
         'https://gw.example.com/models',
         'https://gw.example.com/v1/models',

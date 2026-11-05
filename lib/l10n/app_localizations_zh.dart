@@ -34338,4 +34338,53 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String get providerManageOneWindow =>
       '供应商现在只在一个窗口里配置：内置的和自己加的都在那里，地址、协议、密钥、模型放在一起；服务器那份列表不再单独编辑。';
+
+  @override
+  String providerModelsFrom(String url, int count) {
+    return '已从 $url 读到 $count 个模型';
+  }
+
+  @override
+  String get providerModelsAttempts => '尝试记录';
+
+  @override
+  String get providerModelsFetchBadUrl => '这不是一个可用的 http(s) 地址。';
+
+  @override
+  String get providerModelsFetchNoKey => '这个地址需要 API 密钥才能列出模型。';
+
+  @override
+  String providerModelsFetchRefused(int status) {
+    return 'API 密钥被拒绝（$status）。检查密钥，或确认该地址允许列出模型。';
+  }
+
+  @override
+  String providerModelsFetchNotFound(String path) {
+    return '$path 没有响应。地址可能需要带 /v1 这样的路径。';
+  }
+
+  @override
+  String get providerModelsFetchNotJson => '这个地址返回的是网页，不是模型列表。它可能在登录页或防火墙后面。';
+
+  @override
+  String get providerModelsFetchEmpty => '地址有响应，但没有列出任何模型。';
+
+  @override
+  String get providerModelsFetchTimeout => '地址在规定时间内没有响应。';
+
+  @override
+  String get providerModelsFetchNetwork => '连不上这个地址。检查地址和网络。';
+
+  @override
+  String get providerModelsFetchTls => '这个地址的证书无法验证。';
+
+  @override
+  String providerModelsFetchServer(int status) {
+    return '地址返回了 $status。';
+  }
+
+  @override
+  String providerModelsRootAdopted(String url) {
+    return '接口地址已改为 $url，模型接口在这里。对话也会发到这个根路径。';
+  }
 }

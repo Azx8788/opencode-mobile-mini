@@ -4,23 +4,45 @@ This project is in public alpha. Only the newest preview is supported.
 
 ## 0.3.3+7 — 2026-11-05
 
-The shipped catalogue is five providers now, not twenty-three. The entries
-that remain are the ones with current integration docs:
+Fetching a model list is rebuilt around the ways it actually failed on real
+gateways, so "I typed the address and the key and got nothing" has an answer
+in every case:
 
-  * **AgentRouter** — `https://agentrouter.org/v1`, OpenAI compatible. Its
-    Claude models can be reached by switching the protocol to Anthropic; the
-    `/v1` root stays, so the request lands on `/v1/messages`.
-  * **书生·端砚** — `https://discovery-api.intern-ai.org.cn/v1`, now the
-    Anthropic Messages protocol its Claude Code guide documents, rather than
-    Responses.
-  * **魔搭 ModelScope** — `https://api-inference.modelscope.cn/v1`.
-  * **AMD** — `https://developer.amd.com.cn/radeon/api/v1`, OpenAI compatible.
-  * **OpenRouter** — `https://openrouter.ai/api/v1`.
+  * **More than one spelling is tried.** A bare host asks `/models` first
+    (NewAPI and OneAPI answer there), then `/v1/models`; Gemini adds
+    `/v1beta/models?pageSize=100`. A 404 at one path moves to the next
+    instead of ending the read.
+  * **More than one auth scheme is tried.** Bearer first, then `x-api-key`
+    with `anthropic-version`, then `x-goog-api-key`, then no key at all. A
+    401 moves to the next scheme; a 404 does not.
+  * **The key is cleaned before it is sent.** A paste that wraps a key over
+    two lines used to make `HttpClient` reject the request as a format error
+    and report "the base URL is not a valid address". Every kind of
+    whitespace is removed instead.
+  * **Custom headers that the platform cannot send are dropped, not fatal.**
+    A Chinese `X-Title` or a newline in a value used to break the model list,
+    the probes and the balance query alike; the config still keeps the header
+    verbatim, because the server may accept more than the phone can.
+  * **The failure names the cause and shows the requests.** Timeout, TLS,
+    DNS, 401, 404, a web page served with 200 (a login wall or a firewall),
+    an empty list — each has its own sentence in the app's language, and the
+    attempted URLs with their status codes are listed under it.
+  * **A successful read says where it read.** The models tab shows the URL
+    and the count. If the list answered on a deeper root than the one typed
+    (`https://gw.example.com` → `/v1/models`), the base URL is changed to that
+    root and the form says so — otherwise the saved provider would list
+    models and 404 on every message.
+  * **The models tab reads on arrival** when the address and a key are
+    already there, and the configuration tab has its own "fetch" action, so
+    the list is reachable without discovering the tab first.
 
-The other eighteen shipped entries are gone. Existing saved entries keep
-their names, addresses, protocols and models, and nothing is removed from the
-server. Add still opens the blank form, and a shipped entry only prefills the
-form; nothing is written until Save. Builds are `0.3.3+7`.
+The connection probe now asks for a tool call with `tool_choice: required`
+rather than `auto`: a model that answers in prose instead of calling the tool
+was failing the check for a reason that has nothing to do with the endpoint.
+Verified end to end against a live NewAPI-style gateway: two models listed,
+all three probes green.
+
+Builds are `0.3.3+7`.
 
 ## 0.3.2+6 — 2026-11-05
 
