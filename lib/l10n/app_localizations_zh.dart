@@ -34281,7 +34281,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerDetailModelsHint =>
-      '用上面填好的地址、密钥和协议，向供应商请求它自己的模型列表，再勾选要启用的。';
+      '用上面填好的地址、密钥和协议，向供应商请求它自己的模型列表，再勾选要保留的。没勾选的模型会在保存时于服务器上停用——供应商自带的那些也一样。';
 
   @override
   String get providerModelsConfigFirst => '先填好 API Base Url。';

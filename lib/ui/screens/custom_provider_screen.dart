@@ -176,7 +176,13 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       _id.text = editing.id;
       _baseUrl.text = editing.baseUrl;
       _protocol = editing.protocol;
-      _listed = editing.models;
+      _listed = [
+        ...editing.models,
+        // The ones the entry turned off stay in the list, unticked: they are
+        // what a save has to keep off, and hiding them would make the list
+        // look like the provider only ever had the ticked few.
+        for (final id in editing.disabledModels) CustomProviderModel(id: id),
+      ];
       _selected.addAll(editing.models.map((model) => model.id));
       _autoID = false;
       for (final header in editing.headers) {
@@ -252,12 +258,25 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
   CustomProviderDraft _draft() {
     final typedKey = _apiKey.text.trim();
     final editing = widget.editing;
+    final id = CustomProviderDraft.normalizeProviderId(
+      _id.text.isEmpty ? _name.text : _id.text,
+    );
     final keyMode = typedKey.isNotEmpty
         ? ProviderKeyMode.secretFile
         : editing?.keyMode ?? ProviderKeyMode.secretFile;
+    // What the server currently serves for this id, plus whatever this form
+    // has listed. The ticked set alone is not enough: a provider saved
+    // before this rule existed has two entries in its config and eighty
+    // models on the server, so the other seventy-eight are only known from
+    // the catalogue.
+    final known = <String>{
+      for (final model in _listed) model.id,
+      for (final model in widget.controller.catalog?.models ?? const [])
+        if (model.providerID == id) model.id,
+    };
     return CustomProviderDraft(
       name: _name.text,
-      id: _id.text.isEmpty ? _name.text : _id.text,
+      id: id,
       protocol: _protocol,
       baseUrl: _baseUrl.text,
       apiKey: typedKey.isNotEmpty
@@ -269,11 +288,19 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       keyPlaceholder: editing?.keyPlaceholder,
       keyFile: editing?.secretPath,
       models: [
-        for (final id in _selected)
+        for (final modelID in _selected)
           _listed.firstWhere(
-            (model) => model.id == id,
-            orElse: () => CustomProviderModel(id: id),
+            (model) => model.id == modelID,
+            orElse: () => CustomProviderModel(id: modelID),
           ),
+      ],
+      // Everything the server knows and the person did not tick. The config
+      // merges onto the server's own catalogue, so leaving these out of the
+      // entry would leave them enabled on the server — the "I saved two
+      // models and still see eighty" that made this form look broken.
+      disabledModelIDs: [
+        for (final modelID in known)
+          if (!_selected.contains(modelID)) modelID,
       ],
       headers: [
         for (final row in _headers)
@@ -467,6 +494,10 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       );
       final reloaded = await _tryReload();
       if (!mounted) return;
+      // The reload re-reads the config, but the catalogue the app shows is
+      // its own snapshot: without this the picker keeps the pre-save list
+      // until it goes stale, which reads as "the change did nothing".
+      if (reloaded) unawaited(widget.controller.refreshCatalog());
       setState(() {
         _receipt = receipt;
         _reloaded = reloaded;

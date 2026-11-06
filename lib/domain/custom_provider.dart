@@ -208,6 +208,7 @@ class CustomProviderDraft {
     this.keyMode = ProviderKeyMode.secretFile,
     List<CustomProviderModel> models = const [],
     List<CustomProviderHeader> headers = const [],
+    List<String> disabledModelIDs = const [],
     this.timeoutMs = 600000,
     String? keyFile,
     this.keyPlaceholder,
@@ -215,6 +216,7 @@ class CustomProviderDraft {
        baseUrl = normalizeBaseUrl(baseUrl, protocol),
        models = normalizeModels(models),
        headers = normalizeHeaders(headers),
+       disabledModelIDs = List.unmodifiable(disabledModelIDs),
        _keyFile = keyFile;
 
   final String name;
@@ -225,6 +227,18 @@ class CustomProviderDraft {
   final ProviderKeyMode keyMode;
   final List<CustomProviderModel> models;
   final List<CustomProviderHeader> headers;
+
+  /// Models the endpoint offers that the person did not tick.
+  ///
+  /// A provider's `models` map in the config is *merged* onto the catalogue
+  /// the server already knows (models.dev for the built-in providers): adding
+  /// an entry adds a model, but leaving one out never removes it. So "I only
+  /// want these two" cannot be expressed by writing two entries — the other
+  /// seventy keep coming back. OpenCode 2 has a per-model `disabled` flag for
+  /// exactly this, and OpenCode 1 has a provider-level `blacklist`; this list
+  /// is what both are built from.
+  final List<String> disabledModelIDs;
+
   final int timeoutMs;
 
   /// Where an existing entry keeps its key. Null for a new provider, which
@@ -246,6 +260,22 @@ class CustomProviderDraft {
   /// True when this draft carries a key to write. An edit that leaves the
   /// key box empty keeps the file the config already points at.
   bool get hasKey => apiKey?.trim().isNotEmpty ?? false;
+
+  /// [disabledModelIDs] without blanks, duplicates or anything also selected.
+  ///
+  /// A model cannot be both: the tick wins, because the form's selected set
+  /// is what the person just confirmed on screen.
+  List<String> get effectiveDisabledModelIDs {
+    final selected = models.map((model) => model.id).toSet();
+    final seen = <String>{};
+    return [
+      for (final raw in disabledModelIDs)
+        if (raw.trim().isNotEmpty &&
+            !selected.contains(raw.trim()) &&
+            seen.add(raw.trim()))
+          raw.trim(),
+    ];
+  }
 
   /// The provider id as a file name would hold it: lowercase, no spaces and
   /// nothing a config key or a shell path would need quoted.
@@ -389,6 +419,7 @@ class CustomProviderDraft {
       keyMode: keyMode,
       models: models,
       headers: headers,
+      disabledModelIDs: disabledModelIDs,
       timeoutMs: timeoutMs,
       keyFile: _keyFile,
       keyPlaceholder: keyPlaceholder,
@@ -474,6 +505,11 @@ class CustomProviderDraft {
   Map<String, Object?> _v1Entry() => {
     'npm': protocol.npm,
     'name': name.trim(),
+    // v1 has no per-model switch, so the models left out are named here.
+    // Its schema rejects unknown model keys, which is why `disabled` must
+    // never be written into a v1 model entry.
+    if (effectiveDisabledModelIDs.isNotEmpty)
+      'blacklist': effectiveDisabledModelIDs,
     'options': {
       'baseURL': baseUrl,
       if (keyMode == ProviderKeyMode.secretFile) 'apiKey': '{file:$secretPath}',
@@ -534,6 +570,10 @@ class CustomProviderDraft {
             if (protocol != ProviderProtocol.responses) 'temperature': true,
           },
         },
+      // The built-in catalogue is merged, never replaced: a model that is
+      // already there and left out of the map above stays visible. Turning
+      // it off is an explicit entry of its own.
+      for (final id in effectiveDisabledModelIDs) id: const {'disabled': true},
     },
   };
 

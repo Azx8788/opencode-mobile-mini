@@ -2,6 +2,33 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.4+8 — 2026-11-06
+
+Cutting a provider down to a few models now works. A config entry's `models`
+map is merged onto the catalogue the server already has, so leaving a model
+out never removed it: tick three of ninety, save, and all ninety stayed. That
+is not a form bug — the entry was correct and the server had no instruction
+to drop the rest.
+
+  * **Unticked models are written as off.** OpenCode 2 entries get
+    `models.<id>.disabled: true`; an OpenCode 1 (v1) entry gets a
+    provider-level `blacklist`, because its model schema rejects unknown keys
+    and a `disabled` field there would invalidate the whole file.
+  * **The whole known catalogue is covered**, not only what the form happened
+    to list: the server's current models for that provider are merged in, so
+    an entry saved before this rule existed loses its extra models on the next
+    save instead of keeping them forever.
+  * **Reading the config back keeps the split.** A `disabled` entry is shown
+    unticked, never as a model the person picked, and saving writes it back
+    off instead of quietly turning it on again.
+  * **The catalogue is reloaded after a save**, so the picker shows the new
+    list at once rather than the pre-save snapshot until it goes stale.
+
+Checked against the real `@opencode/cli` 2.1.1 binary: a provider with 79
+catalogue models, 2 ticked, reloaded to exactly those 2 through `/api/model`.
+
+Builds are `0.3.4+8`.
+
 ## 0.3.3+7 — 2026-11-05
 
 Fetching a model list is rebuilt around the ways it actually failed on real

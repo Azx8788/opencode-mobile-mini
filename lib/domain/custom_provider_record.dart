@@ -29,6 +29,7 @@ class CustomProviderRecord {
     this.secretPath,
     this.keyPlaceholder,
     this.models = const [],
+    this.disabledModels = const [],
     this.headers = const [],
   });
 
@@ -56,6 +57,11 @@ class CustomProviderRecord {
 
   final List<CustomProviderModel> models;
 
+  /// Models the entry carries as `disabled: true` — the ones the person
+  /// unticked. Kept apart from [models] because the form must show them as
+  /// unticked, and a save must write them back as off again.
+  final List<String> disabledModels;
+
   /// Extra headers the entry sends with every request.
   final List<CustomProviderHeader> headers;
 
@@ -71,6 +77,7 @@ class CustomProviderRecord {
     keyMode: keyMode,
     keyPlaceholder: keyPlaceholder,
     models: models,
+    disabledModelIDs: disabledModels,
     headers: headers,
   );
 
@@ -169,7 +176,18 @@ CustomProviderRecord? _recordFrom(
 
   final models = _modelsFrom(entry['models']);
   if (models == null) return null;
-
+  // v1 has no per-model flag: the models the entry hides are named at the
+  // provider level. Read back so a save does not quietly re-enable them.
+  final disabled = <String>[...models.disabled];
+  if (format == ProviderConfigFormat.v1) {
+    final blacklist = entry['blacklist'];
+    if (blacklist is List) {
+      for (final item in blacklist) {
+        final id = item is String ? item.trim() : '';
+        if (id.isNotEmpty && !disabled.contains(id)) disabled.add(id);
+      }
+    }
+  }
   final package = format == ProviderConfigFormat.v1
       ? entry['npm']
       : entry['package'];
@@ -189,20 +207,36 @@ CustomProviderRecord? _recordFrom(
     apiKey: key.plaintext,
     secretPath: key.path,
     keyPlaceholder: key.placeholder,
-    models: models,
+    models: models.models,
+    disabledModels: disabled,
     headers: readProviderHeaders(settings['headers']),
   );
 }
 
+/// The model map split in two: the ones that are on, and the ones the entry
+/// marks `disabled: true`.
+///
 /// Null when `models` is present but not a map of models; empty when absent.
-List<CustomProviderModel>? _modelsFrom(Object? raw) {
-  if (raw == null) return const [];
+({List<CustomProviderModel> models, List<String> disabled})? _modelsFrom(
+  Object? raw,
+) {
+  if (raw == null) {
+    return (models: const <CustomProviderModel>[], disabled: const <String>[]);
+  }
   if (raw is! Map) return null;
   final models = <CustomProviderModel>[];
+  final disabled = <String>[];
   for (final entry in raw.entries) {
     final id = '${entry.key}'.trim();
     if (id.isEmpty) continue;
     final data = entry.value;
+    // An entry that only says "off" is not a model this app added: it is a
+    // built-in one the person unticked. Showing it as selected would make
+    // the next save turn it back on.
+    if (data is Map && data['disabled'] == true) {
+      disabled.add(id);
+      continue;
+    }
     final name = data is Map ? data['name'] : null;
     models.add(
       CustomProviderModel(
@@ -211,7 +245,7 @@ List<CustomProviderModel>? _modelsFrom(Object? raw) {
       ),
     );
   }
-  return models;
+  return (models: models, disabled: disabled);
 }
 
 ({

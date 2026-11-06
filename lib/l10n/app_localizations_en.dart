@@ -36296,7 +36296,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerDetailModelsHint =>
-      'Ask the provider for its own model list with the address, key and protocol above, then tick what to enable.';
+      'Ask the provider for its own model list with the address, key and protocol above, then tick what to keep. Unticked models are turned off on the server when you save — including the ones it ships with.';
 
   @override
   String get providerModelsConfigFirst => 'Fill in the API Base Url first.';

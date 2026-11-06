@@ -57077,7 +57077,7 @@ abstract class AppLocalizations {
   /// Models tab explanation
   ///
   /// In en, this message translates to:
-  /// **'Ask the provider for its own model list with the address, key and protocol above, then tick what to enable.'**
+  /// **'Ask the provider for its own model list with the address, key and protocol above, then tick what to keep. Unticked models are turned off on the server when you save — including the ones it ships with.'**
   String get providerDetailModelsHint;
 
   /// Models tab when no address

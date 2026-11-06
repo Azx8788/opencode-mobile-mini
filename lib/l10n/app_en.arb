@@ -44344,7 +44344,7 @@
   "@providerHeadersEmpty": {
     "description": "Empty custom headers state"
   },
-  "providerDetailModelsHint": "Ask the provider for its own model list with the address, key and protocol above, then tick what to enable.",
+  "providerDetailModelsHint": "Ask the provider for its own model list with the address, key and protocol above, then tick what to keep. Unticked models are turned off on the server when you save — including the ones it ships with.",
   "@providerDetailModelsHint": {
     "description": "Models tab explanation"
   },
