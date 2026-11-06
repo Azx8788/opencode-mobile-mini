@@ -9773,6 +9773,34 @@
   "@providerGroupAvailable": {
     "description": "供应商列表分组：内置但还没配置的"
   },
+  "providerGroupBuiltin": "内置供应商",
+  "@providerGroupBuiltin": {
+    "description": "供应商列表板块：App 自带的供应商模板"
+  },
+  "providerGroupBuiltinHint": "App 自带。模型来自服务器的目录，勾选即保留，没勾选的保存后会停用。",
+  "@providerGroupBuiltinHint": {
+    "description": "内置供应商板块说明"
+  },
+  "providerGroupCustom": "自定义供应商",
+  "@providerGroupCustom": {
+    "description": "供应商列表板块：自己添加的通道"
+  },
+  "providerGroupCustomHint": "自己加的通道：地址、协议、密钥和模型都由你决定。",
+  "@providerGroupCustomHint": {
+    "description": "自定义供应商板块说明"
+  },
+  "agentsToolsTitle": "Agent 工具",
+  "@agentsToolsTitle": {
+    "description": "智能体板块里的工具清单入口"
+  },
+  "agentsToolsInstalled": "{installed} 个已安装 · {total} 个可安装",
+  "@agentsToolsInstalled": {
+    "description": "工具入口的计数",
+    "placeholders": {
+      "installed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
   "providerNotConfigured": "未配置",
   "@providerNotConfigured": {
     "description": "还没填密钥或选模型时的行说明"

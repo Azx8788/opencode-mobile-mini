@@ -34327,6 +34327,26 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerGroupAvailable => '可选供应商';
 
   @override
+  String get providerGroupBuiltin => '内置供应商';
+
+  @override
+  String get providerGroupBuiltinHint => 'App 自带。模型来自服务器的目录，勾选即保留，没勾选的保存后会停用。';
+
+  @override
+  String get providerGroupCustom => '自定义供应商';
+
+  @override
+  String get providerGroupCustomHint => '自己加的通道：地址、协议、密钥和模型都由你决定。';
+
+  @override
+  String get agentsToolsTitle => 'Agent 工具';
+
+  @override
+  String agentsToolsInstalled(int installed, int total) {
+    return '$installed 个已安装 · $total 个可安装';
+  }
+
+  @override
   String get providerNotConfigured => '未配置';
 
   @override

@@ -44404,6 +44404,34 @@
   "@providerGroupAvailable": {
     "description": "Providers list group: shipped entries not set up yet"
   },
+  "providerGroupBuiltin": "Built-in providers",
+  "@providerGroupBuiltin": {
+    "description": "Providers list section: shipped templates"
+  },
+  "providerGroupBuiltinHint": "Shipped with the app. Their models come from the server's catalogue; ticked models stay, unticked ones are turned off when you save.",
+  "@providerGroupBuiltinHint": {
+    "description": "Built-in providers section explanation"
+  },
+  "providerGroupCustom": "Custom providers",
+  "@providerGroupCustom": {
+    "description": "Providers list section: channels the person added"
+  },
+  "providerGroupCustomHint": "Channels you added: address, protocol, key and models are all yours.",
+  "@providerGroupCustomHint": {
+    "description": "Custom providers section explanation"
+  },
+  "agentsToolsTitle": "Agent tools",
+  "@agentsToolsTitle": {
+    "description": "Tools entry in the agents section"
+  },
+  "agentsToolsInstalled": "{installed} installed · {total} available",
+  "@agentsToolsInstalled": {
+    "description": "Tool entry count",
+    "placeholders": {
+      "installed": {"type": "int"},
+      "total": {"type": "int"}
+    }
+  },
   "providerNotConfigured": "Not configured",
   "@providerNotConfigured": {
     "description": "Provider row subtitle when the entry has no key or models yet"

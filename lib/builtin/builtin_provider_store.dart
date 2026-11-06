@@ -69,10 +69,16 @@ class ProviderWriteReceipt {
 
 /// Which file this server actually reads.
 ///
-/// OpenCode 2 keeps its config under `.oc-opencode2`, but a server upgraded
-/// in place may still own `.config/opencode` — and writing the directory the
-/// running server ignores looks like "saved" while nothing changes. So the
-/// existing file decides; a server with neither gets OpenCode 2's path.
+/// OpenCode 2 keeps its config under `.oc-opencode2`. Its start script pins
+/// `XDG_CONFIG_HOME` there, so that is the only path it reads — a file left
+/// in the OpenCode 1 location (`.config/opencode`) is invisible to it.
+///
+/// This used to prefer whichever file existed, which quietly wrote every
+/// save into the v1 location on a server upgraded from OpenCode 1: the file
+/// was there, the save said "saved", and the running server never read it.
+/// The v1 file is now left untouched and the v2 path is written instead; a
+/// person whose old entry lived in v1 sees an empty form once and saves it
+/// again into the file that is actually read.
 class ResolvedProviderConfig {
   const ResolvedProviderConfig({
     required this.format,
@@ -134,16 +140,16 @@ class BuiltinProviderStore {
   String _absolute(String relative) => '$_home/$relative';
 
   /// Finds the file the server would read.
+  ///
+  /// Only the v2 location: the start script pins `XDG_CONFIG_HOME` at
+  /// `.oc-opencode2/config`, and OpenCode 1's directory is not on that path.
+  /// A `.jsonc` beside it is refused rather than shadowed.
   Future<ResolvedProviderConfig> resolve() async {
     final script =
         '''
 set -u
-for f in '$_home/$_v2Path' '$_home/$_v1Path'; do
-  if [ -f "\$f" ]; then printf 'JSON:%s' "\$f"; exit 0; fi
-done
-for f in '$_home/$_v2Path' '$_home/$_v1Path'; do
-  if [ -f "\${f}c" ]; then printf 'JSONC:%s' "\${f}c"; exit 0; fi
-done
+if [ -f '$_home/$_v2Path' ]; then printf 'JSON:%s' '$_home/$_v2Path'; exit 0; fi
+if [ -f '$_home/${_v2Path}c' ]; then printf 'JSONC:%s' '$_home/${_v2Path}c'; exit 0; fi
 printf 'NEW:$_home/$_v2Path'
 ''';
     final result = await _run(script, const Duration(seconds: 30));

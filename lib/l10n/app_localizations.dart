@@ -57164,6 +57164,42 @@ abstract class AppLocalizations {
   /// **'Available'**
   String get providerGroupAvailable;
 
+  /// Providers list section: shipped templates
+  ///
+  /// In en, this message translates to:
+  /// **'Built-in providers'**
+  String get providerGroupBuiltin;
+
+  /// Built-in providers section explanation
+  ///
+  /// In en, this message translates to:
+  /// **'Shipped with the app. Their models come from the server\'s catalogue; ticked models stay, unticked ones are turned off when you save.'**
+  String get providerGroupBuiltinHint;
+
+  /// Providers list section: channels the person added
+  ///
+  /// In en, this message translates to:
+  /// **'Custom providers'**
+  String get providerGroupCustom;
+
+  /// Custom providers section explanation
+  ///
+  /// In en, this message translates to:
+  /// **'Channels you added: address, protocol, key and models are all yours.'**
+  String get providerGroupCustomHint;
+
+  /// Tools entry in the agents section
+  ///
+  /// In en, this message translates to:
+  /// **'Agent tools'**
+  String get agentsToolsTitle;
+
+  /// Tool entry count
+  ///
+  /// In en, this message translates to:
+  /// **'{installed} installed · {total} available'**
+  String agentsToolsInstalled(int installed, int total);
+
   /// Provider row subtitle when the entry has no key or models yet
   ///
   /// In en, this message translates to:

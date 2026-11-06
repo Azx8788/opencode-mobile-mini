@@ -36343,6 +36343,28 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerGroupAvailable => 'Available';
 
   @override
+  String get providerGroupBuiltin => 'Built-in providers';
+
+  @override
+  String get providerGroupBuiltinHint =>
+      'Shipped with the app. Their models come from the server\'s catalogue; ticked models stay, unticked ones are turned off when you save.';
+
+  @override
+  String get providerGroupCustom => 'Custom providers';
+
+  @override
+  String get providerGroupCustomHint =>
+      'Channels you added: address, protocol, key and models are all yours.';
+
+  @override
+  String get agentsToolsTitle => 'Agent tools';
+
+  @override
+  String agentsToolsInstalled(int installed, int total) {
+    return '$installed installed · $total available';
+  }
+
+  @override
   String get providerNotConfigured => 'Not configured';
 
   @override

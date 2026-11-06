@@ -2,6 +2,34 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.5+9 — 2026-11-07
+
+Three answers to "I changed a provider and nothing happened":
+
+  * **The server now receives the provider file at start-up as well as on
+    disk.** `OPENCODE_CONFIG_CONTENT` has the highest precedence of any
+    config source, so the entries the app writes still apply if the server's
+    own path resolution looks somewhere else after an update. The start
+    script reads `opencode.json` (up to 64 KiB) and exports it before
+    `exec`; nothing else about the file changed.
+  * **Only the path OpenCode 2 actually reads is written.** The store used
+    to prefer whichever config existed, so a server upgraded from OpenCode 1
+    kept every save in `.config/opencode` — a directory the running server
+    never reads. It now always writes `.oc-opencode2/config/opencode`;
+    `XDG_CONFIG_HOME` is pinned there by the start script.
+  * **The provider list is split by where a provider comes from.** Built-in
+    templates and custom channels are separate sections, each with a line
+    saying how saving differs: a built-in entry is merged onto the server's
+    catalogue (so unticked models are written as off), a custom one is the
+    whole catalogue. Previously both were mixed into "configured" and
+    "available", which hid exactly that difference.
+
+The agents section also gains an **Agent tools** row: it counts the optional
+tools this phone can install and already has, using the same engine the
+"Add tools" sheet runs, and opens that sheet.
+
+Builds are `0.3.5+9`.
+
 ## 0.3.4+8 — 2026-11-06
 
 Cutting a provider down to a few models now works. A config entry's `models`

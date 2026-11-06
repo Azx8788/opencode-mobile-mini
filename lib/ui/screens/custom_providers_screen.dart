@@ -266,45 +266,83 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
     }
     if (catalogue == null) return const [];
     final entries = providerListEntries(catalogue);
-    final configured = [for (final entry in entries) if (entry.configured) entry];
-    final available = [
+    // Two sources, two sections: a shipped template is a provider whose
+    // models come from the server's own catalogue, and a custom one is a
+    // channel the person declared. They behave differently on save (one is
+    // merged onto a catalogue, the other *is* the catalogue), so a single
+    // "configured / available" split hid the difference that matters.
+    final builtin = [
       for (final entry in entries)
+        if (entry.template != null) entry,
+    ];
+    final custom = [
+      for (final entry in entries)
+        if (entry.template == null) entry,
+    ];
+    List<ProviderListEntry> ordered(List<ProviderListEntry> list) => [
+      for (final entry in list)
+        if (entry.configured) entry,
+      for (final entry in list)
         if (!entry.configured) entry,
     ];
+    final configuredCount = entries.where((entry) => entry.configured).length;
     return [
       gap,
-      if (configured.isNotEmpty) ...[
+      if (builtin.isNotEmpty) ...[
         KitRowGroup(
           margin: EdgeInsets.zero,
-          label: l10n.providerGroupConfigured,
+          label: l10n.providerGroupBuiltin,
           children: [
-            for (final entry in configured) _row(context, l10n, entry),
+            for (final entry in ordered(builtin)) _row(context, l10n, entry),
           ],
         ),
-        if (catalogue.unreadable > 0) ...[
-          SizedBox(height: tokens.space3),
-          KitRowGroup(
-            margin: EdgeInsets.zero,
-            children: [
-              KitRow(
-                key: const ValueKey('providers-unreadable'),
-                title: l10n.providerManageUnreadable(catalogue.unreadable),
-                supporting: TextSpan(text: l10n.providerManageUnreadableBody),
-                supportingMaxLines: 3,
-                enabled: false,
-                disabledReason: l10n.providerManageUnreadableBody,
-              ),
-            ],
-          ),
-        ],
+        SizedBox(height: tokens.space2),
+        KitText(
+          l10n.providerGroupBuiltinHint,
+          key: const ValueKey('providers-builtin-hint'),
+          role: KitTextRole.caption,
+          tone: KitTextTone.secondary,
+        ),
       ],
-      if (available.isNotEmpty) ...[
+      if (custom.isNotEmpty) ...[
         SizedBox(height: tokens.space4),
         KitRowGroup(
           margin: EdgeInsets.zero,
-          label: l10n.providerGroupAvailable,
+          label: l10n.providerGroupCustom,
           children: [
-            for (final entry in available) _row(context, l10n, entry),
+            for (final entry in ordered(custom)) _row(context, l10n, entry),
+          ],
+        ),
+        SizedBox(height: tokens.space2),
+        KitText(
+          l10n.providerGroupCustomHint,
+          key: const ValueKey('providers-custom-hint'),
+          role: KitTextRole.caption,
+          tone: KitTextTone.secondary,
+        ),
+      ],
+      if (configuredCount == 0) ...[
+        SizedBox(height: tokens.space3),
+        KitText(
+          l10n.providerGroupAvailable,
+          key: const ValueKey('providers-available-hint'),
+          role: KitTextRole.caption,
+          tone: KitTextTone.secondary,
+        ),
+      ],
+      if (catalogue.unreadable > 0) ...[
+        SizedBox(height: tokens.space3),
+        KitRowGroup(
+          margin: EdgeInsets.zero,
+          children: [
+            KitRow(
+              key: const ValueKey('providers-unreadable'),
+              title: l10n.providerManageUnreadable(catalogue.unreadable),
+              supporting: TextSpan(text: l10n.providerManageUnreadableBody),
+              supportingMaxLines: 3,
+              enabled: false,
+              disabledReason: l10n.providerManageUnreadableBody,
+            ),
           ],
         ),
       ],

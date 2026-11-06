@@ -1485,6 +1485,22 @@ fi
         'export XDG_CONFIG_HOME=/root/.oc-opencode2/config\n'
         'export OPENCODE_CONFIG_DIR=/root/.oc-opencode2/config/opencode\n'
         'export OPENCODE_DB=/root/.oc-opencode2/data/opencode/opencode.db\n'
+        // Hand the provider file to the server as OPENCODE_CONFIG_CONTENT,
+        // the highest-precedence source. The file is still written and read
+        // as before; this makes the same entry apply even when the server's
+        // own path resolution would look somewhere else after an update.
+        // Bounded: a document past 64 KiB stays file-only, because a single
+        // environment string that large makes `exec` fail with E2BIG.
+        'if [ -f "\$OPENCODE_CONFIG_DIR/opencode.json" ]; then\n'
+        '  __cfg_bytes=\$(wc -c < "\$OPENCODE_CONFIG_DIR/opencode.json" '
+        "| tr -d '[:space:]')\n"
+        '  if [ "\$__cfg_bytes" -le 65536 ]; then\n'
+        '    OPENCODE_CONFIG_CONTENT=\$(cat '
+        '"\$OPENCODE_CONFIG_DIR/opencode.json")\n'
+        '    export OPENCODE_CONFIG_CONTENT\n'
+        '  fi\n'
+        '  unset __cfg_bytes\n'
+        'fi\n'
         // OpenCode 1 chats come along before the first start.
         '(\n$openCode1HistoryCopyScript) || exit 74\n';
     return 'set -eu\n'

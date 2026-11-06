@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../builtin/setup/phone_setup.dart';
+import '../../../builtin/setup/setup_contract.dart';
 import '../../../domain/agent_auth_probe.dart';
 import '../../../domain/phone_agents.dart';
 import '../../../domain/phone_agents_source.dart';
@@ -11,6 +13,8 @@ import '../../app_iconography.dart';
 import '../../kit/kit.dart';
 import '../chats/chats_host.dart';
 import '../chats/new_chat_screen.dart' show showNewChat;
+import '../phone_setup/phone_setup_routes.dart';
+import '../phone_setup/phone_setup_selection.dart';
 import 'agent_error_notice.dart';
 import 'agent_sheet.dart';
 import 'agents_text.dart';
@@ -34,6 +38,12 @@ class _AgentsSectionState extends ConsumerState<AgentsSection> {
   String? _running;
   AgentFailure? _failure;
 
+  /// Optional tools the setup engine reports as installed, and how many it
+  /// offers. Null until the first probe answers: a failed probe leaves the
+  /// row out rather than claiming "0 installed".
+  int? _toolsInstalled;
+  int? _toolsTotal;
+
   /// Agents that were checked in this view, in order, with the name to show.
   final _checked = <String, String>{};
 
@@ -44,8 +54,37 @@ class _AgentsSectionState extends ConsumerState<AgentsSection> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         unawaited(ref.read(chatsHostProvider).agents?.refreshAgentRows());
+        unawaited(_readTools());
       }
     });
+  }
+
+  /// Counts the optional tools this phone can have and already has. The same
+  /// engine "Add tools" runs, so the numbers cannot drift from the sheet.
+  Future<void> _readTools() async {
+    try {
+      final engine = PhoneSetup.of(SetupHostKind.builtin);
+      final optional = [
+        for (final component in installableComponents(engine.registry))
+          if (!component.required) component,
+      ];
+      final installed = await engine.installedOptional();
+      if (!mounted) return;
+      setState(() {
+        _toolsTotal = optional.length;
+        _toolsInstalled = installed.length;
+      });
+    } catch (_) {
+      // A probe that cannot answer keeps the row out; the agent rows above
+      // still say what they know.
+    }
+  }
+
+  Future<void> _openTools() async {
+    await showPhoneSetupCustomize(context, addMode: true);
+    if (!mounted) return;
+    await ref.read(chatsHostProvider).agents?.refreshAgentRows();
+    if (mounted) await _readTools();
   }
 
   bool _installed(AgentRow row) =>
@@ -214,6 +253,22 @@ class _AgentsSectionState extends ConsumerState<AgentsSection> {
                     row,
                     account: accounts?.agentAccount(row.id),
                     removing: removing == row.id,
+                  ),
+                // What an agent can use beyond its own binary: the optional
+                // tools this phone can install, and which are already here.
+                if (_toolsTotal != null)
+                  KitRow(
+                    key: const ValueKey('agents-tools-row'),
+                    title: l10n.agentsToolsTitle,
+                    leading: KitRow.icon(context, AppIconography.tools),
+                    supporting: TextSpan(
+                      text: l10n.agentsToolsInstalled(
+                        _toolsInstalled ?? 0,
+                        _toolsTotal!,
+                      ),
+                    ),
+                    trailing: const KitChevron(),
+                    onTap: () => unawaited(_openTools()),
                   ),
                 if (rows.any(_installed))
                   KitRow(

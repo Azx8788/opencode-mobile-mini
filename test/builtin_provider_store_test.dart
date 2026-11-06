@@ -84,14 +84,19 @@ void main() {
       expect(resolved.commentFile, false);
     });
 
-    test('reads the OpenCode 1 path as v1 when that is what exists', () async {
-      final fake = _FakeServer(
-        resolveAnswer: 'JSON:/root/.config/opencode/opencode.json',
-      );
-      final resolved = await BuiltinProviderStore(run: fake.run).resolve();
-      expect(resolved.format, ProviderConfigFormat.v1);
-      expect(resolved.relativePath, '.config/opencode/opencode.json');
-    });
+    test(
+      'always writes the OpenCode 2 path, even with a v1 file left',
+      () async {
+        // The start script pins XDG_CONFIG_HOME at .oc-opencode2, so a file in
+        // the OpenCode 1 directory is invisible to the server. Preferring it
+        // used to write every save into a file nothing read.
+        final fake = _FakeServer();
+        await BuiltinProviderStore(run: fake.run).resolve();
+        final script = fake.scripts.last;
+        expect(script, contains('.oc-opencode2/config/opencode/opencode.json'));
+        expect(script, isNot(contains('/root/.config/opencode')));
+      },
+    );
 
     test(
       'a jsonc file is flagged instead of being treated as missing',
@@ -120,6 +125,15 @@ void main() {
   });
 
   group('scripts', () {
+    test('the start script hands the provider file to the server', () async {
+      // OPENCODE_CONFIG_CONTENT has the highest precedence, so the entry the
+      // app writes still applies if the server's own path resolution moves.
+      final script = BuiltinLinux.serverScript();
+      expect(script, contains(r'OPENCODE_CONFIG_CONTENT=$(cat'));
+      expect(script, contains('65536'));
+      expect(await _syntaxError(script), isNull);
+    });
+
     test('resolve, read, write and key scripts are valid shell', () async {
       final fake = _FakeServer();
       final store = BuiltinProviderStore(run: fake.run);
