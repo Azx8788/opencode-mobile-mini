@@ -2,6 +2,45 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.7+11 — 2026-11-07
+
+Two dead ends, both in the keyboard-to-endpoint path.
+
+  * **A certificate the device cannot chain no longer stops the model
+    list.** The read failed with "the certificate of this address could not
+    be verified" and offered nothing to do about it — a self-signed gateway,
+    an incomplete chain, or a proxy that signs with its own CA all land
+    there. The transport now keeps the certificate the endpoint actually
+    presented, names the reason (self-signed, unknown issuer, expired, wrong
+    host), and the form shows its SHA-256 fingerprint with one explicit
+    action: trust that certificate for that origin and retry. Nothing is
+    accepted silently, an expired certificate is never offered, and a
+    different certificate is refused again — including when a previously
+    trusted one changed, which is reported as a change rather than a
+    first-time question.
+  * **The same trust covers the other two provider reads.** The three
+    connection checks and the balance lookup used their own clients with no
+    trust and, for the checks, no proxy setting; they now share the model
+    list's client. Trusts are stored per profile with the rest of the local
+    provider preferences, and Advanced shows the fingerprint with a way to
+    revoke it.
+  * **A provider save's config reload now uses the server's own trust.**
+    It built a bare `HttpClient`, so a remote server whose certificate the
+    person had already verified failed the reload and was told to restart
+    for nothing.
+  * **The key field no longer asks for a secure keyboard.** Its keyboard
+    type was `visiblePassword`, which Android classifies as a password field
+    even though it shows what is typed — the exact signal Chinese ROMs use
+    to swap in their secure keyboard. The dots were already drawn by the
+    controller; the field is now plain text with suggestions off.
+
+Verified against a real HTTPS server with a self-signed certificate: the
+read is refused with the certificate attached, the same read with its
+fingerprint returns the models, a wrong fingerprint is refused, and the
+probe and balance clients reach the same server only with the trust.
+
+Builds are `0.3.7+11`.
+
 ## 0.3.6+10 — 2026-11-07
 
 Providers is the app's own window now. The server's provider list is hidden:

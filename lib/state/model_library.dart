@@ -1,5 +1,6 @@
 import '../domain/models.dart' show ModelRef;
 import '../domain/provider_balance.dart';
+import '../domain/server_trust.dart' show normalizeCertificateFingerprint;
 
 /// Personal model shortcuts for one server. These never choose a model for
 /// another session; selection remains the connection controller's job.
@@ -22,12 +23,22 @@ class ModelLibrary {
   final Set<String> hiddenProviders;
   final Map<String, ProviderBalance> balances;
 
+  /// Certificates the person checked and accepted, keyed by origin
+  /// (`https://gw.example.com:443`) and stored as a SHA-256 fingerprint.
+  ///
+  /// A provider endpoint with a self-signed certificate or an incomplete
+  /// chain cannot be verified, so the model list used to stop there. Trust
+  /// is per origin and per certificate: a different certificate is refused
+  /// again, which is what makes this a check rather than a switch.
+  final Map<String, String> trustedOrigins;
+
   const ModelLibrary({
     this.favorites = const [],
     this.recent = const [],
     this.disabled = const [],
     this.hiddenProviders = const {},
     this.balances = const {},
+    this.trustedOrigins = const {},
   });
 
   static bool sameModel(ModelRef? a, ModelRef? b) =>
@@ -53,6 +64,7 @@ class ModelLibrary {
     disabled: disabled,
     hiddenProviders: hiddenProviders,
     balances: balances,
+    trustedOrigins: trustedOrigins,
   );
 
   /// Turns a model on or off in this phone's picker. This does not touch the
@@ -67,6 +79,7 @@ class ModelLibrary {
     ),
     hiddenProviders: hiddenProviders,
     balances: balances,
+    trustedOrigins: trustedOrigins,
   );
 
   /// One provider's tick set in a single step: [enabled] is shown, [disabled]
@@ -123,6 +136,7 @@ class ModelLibrary {
       disabled: disabled,
       hiddenProviders: Set.unmodifiable(next),
       balances: balances,
+      trustedOrigins: trustedOrigins,
     );
   }
 
@@ -143,6 +157,32 @@ class ModelLibrary {
       disabled: disabled,
       hiddenProviders: hiddenProviders,
       balances: Map.unmodifiable(next),
+      trustedOrigins: trustedOrigins,
+    );
+  }
+
+  /// The certificate fingerprint this origin was trusted with, or null.
+  String? providerTrustFor(String origin) => trustedOrigins[origin.trim()];
+
+  /// Trusts one certificate for one origin, or forgets it when
+  /// [fingerprintSha256] is null.
+  ModelLibrary withProviderTrust(String origin, String? fingerprintSha256) {
+    final key = origin.trim();
+    if (key.isEmpty) return this;
+    final next = {...trustedOrigins};
+    final value = fingerprintSha256?.trim() ?? '';
+    if (value.isEmpty) {
+      next.remove(key);
+    } else {
+      next[key] = normalizeCertificateFingerprint(value);
+    }
+    return ModelLibrary(
+      favorites: favorites,
+      recent: recent,
+      disabled: disabled,
+      hiddenProviders: hiddenProviders,
+      balances: balances,
+      trustedOrigins: Map.unmodifiable(next),
     );
   }
 
@@ -157,6 +197,7 @@ class ModelLibrary {
     disabled: disabled,
     hiddenProviders: hiddenProviders,
     balances: balances,
+    trustedOrigins: trustedOrigins,
   );
 
   /// Only call after a successful catalog refresh. A failed request must
@@ -167,6 +208,7 @@ class ModelLibrary {
     disabled: List.unmodifiable(disabled.where(available)),
     hiddenProviders: hiddenProviders,
     balances: balances,
+    trustedOrigins: trustedOrigins,
   );
 
   ModelRef? next(
@@ -200,6 +242,7 @@ class ModelLibrary {
           if (entry.value.enabled || entry.value.isConfigured)
             entry.key: entry.value.toJson(),
       },
+    if (trustedOrigins.isNotEmpty) 'trustedOrigins': trustedOrigins,
   };
 
   factory ModelLibrary.fromJson(Object? value) {
@@ -238,6 +281,21 @@ class ModelLibrary {
         if (balance.enabled || balance.isConfigured) balances[id] = balance;
       }
     }
+    final trustedOrigins = <String, String>{};
+    final rawTrust = value['trustedOrigins'];
+    if (rawTrust is Map) {
+      for (final entry in rawTrust.entries) {
+        final origin = '${entry.key}'.trim();
+        final fingerprint = entry.value;
+        if (origin.isEmpty || fingerprint is! String) continue;
+        try {
+          trustedOrigins[origin] = normalizeCertificateFingerprint(fingerprint);
+        } on FormatException {
+          // A malformed pin is dropped rather than allowed to make every
+          // handshake fail: the person is asked once more instead.
+        }
+      }
+    }
 
     return ModelLibrary(
       favorites: read(value['favorites']),
@@ -245,6 +303,7 @@ class ModelLibrary {
       disabled: read(value['disabled']),
       hiddenProviders: Set.unmodifiable(hidden),
       balances: Map.unmodifiable(balances),
+      trustedOrigins: Map.unmodifiable(trustedOrigins),
     );
   }
 }

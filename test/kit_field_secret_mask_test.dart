@@ -104,6 +104,10 @@ void main() {
       ),
     );
     expect(field.obscureText, isFalse);
+    // `visiblePassword` is still a password input type to Android, and the
+    // ROMs this field exists for switch keyboards on it. Plain text keeps
+    // the plain keyboard; the dots come from the controller.
+    expect(field.keyboardType, TextInputType.text);
     expect(find.byKey(const ValueKey('reveal')), findsOneWidget);
   });
 }

@@ -9879,6 +9879,94 @@
   "@providerModelsFetchTls": {
     "description": "模型列表失败：证书"
   },
+  "providerTlsSelfSigned": "这个地址用的是自签名证书，本设备无法验证它的签发者。",
+  "@providerTlsSelfSigned": {
+    "description": "供应商证书信任：providerTlsSelfSigned"
+  },
+  "providerTlsUnknownIssuer": "无法验证证书的签发者，证书链可能不完整。",
+  "@providerTlsUnknownIssuer": {
+    "description": "供应商证书信任：providerTlsUnknownIssuer"
+  },
+  "providerTlsExpired": "证书已过期。请先检查手机的日期和时间；时间正确时，需要供应商更换证书。",
+  "@providerTlsExpired": {
+    "description": "供应商证书信任：providerTlsExpired"
+  },
+  "providerTlsNotYetValid": "证书尚未生效。请检查手机的日期和时间。",
+  "@providerTlsNotYetValid": {
+    "description": "供应商证书信任：providerTlsNotYetValid"
+  },
+  "providerTlsHostname": "证书上的名称与这个地址不一致。",
+  "@providerTlsHostname": {
+    "description": "供应商证书信任：providerTlsHostname"
+  },
+  "providerTlsOther": "无法与这个地址建立加密连接。",
+  "@providerTlsOther": {
+    "description": "供应商证书信任：providerTlsOther"
+  },
+  "providerTlsChanged": "证书和你上次信任的不一致。",
+  "@providerTlsChanged": {
+    "description": "供应商证书信任：providerTlsChanged"
+  },
+  "providerTlsTrustTitle": "信任这个地址的证书？",
+  "@providerTlsTrustTitle": {
+    "description": "供应商证书信任：providerTlsTrustTitle"
+  },
+  "providerTlsTrustBody": "只有在你能通过另一个渠道核对下面的指纹时，才应信任它。信任后，读取模型、连接检查和余额查询会接受这份证书；其他地址不受影响。",
+  "@providerTlsTrustBody": {
+    "description": "供应商证书信任：providerTlsTrustBody"
+  },
+  "providerTlsTrustChangedBody": "这个地址出示的证书与上次信任的不一致，可能是供应商更换了证书，也可能是连接被拦截。请重新核对指纹，再决定是否信任。",
+  "@providerTlsTrustChangedBody": {
+    "description": "供应商证书信任：providerTlsTrustChangedBody"
+  },
+  "providerTlsTrustAction": "信任并重试",
+  "@providerTlsTrustAction": {
+    "description": "供应商证书信任：providerTlsTrustAction"
+  },
+  "providerTlsTrustCancel": "取消",
+  "@providerTlsTrustCancel": {
+    "description": "供应商证书信任：providerTlsTrustCancel"
+  },
+  "providerTlsOrigin": "地址",
+  "@providerTlsOrigin": {
+    "description": "供应商证书信任：providerTlsOrigin"
+  },
+  "providerTlsIssuer": "签发者",
+  "@providerTlsIssuer": {
+    "description": "供应商证书信任：providerTlsIssuer"
+  },
+  "providerTlsValidTo": "有效期至",
+  "@providerTlsValidTo": {
+    "description": "供应商证书信任：providerTlsValidTo"
+  },
+  "providerTlsFingerprint": "SHA-256 指纹",
+  "@providerTlsFingerprint": {
+    "description": "供应商证书信任：providerTlsFingerprint"
+  },
+  "providerTlsSection": "证书",
+  "@providerTlsSection": {
+    "description": "供应商证书信任：providerTlsSection"
+  },
+  "providerTlsTrusted": "已信任这个地址的证书",
+  "@providerTlsTrusted": {
+    "description": "供应商证书信任：providerTlsTrusted"
+  },
+  "providerTlsTrustedBody": "读取模型、连接检查和余额查询会接受这份证书。",
+  "@providerTlsTrustedBody": {
+    "description": "供应商证书信任：providerTlsTrustedBody"
+  },
+  "providerTlsRevoke": "撤销信任",
+  "@providerTlsRevoke": {
+    "description": "供应商证书信任：providerTlsRevoke"
+  },
+  "providerTlsRevoked": "已撤销信任。下次读取会重新要求确认。",
+  "@providerTlsRevoked": {
+    "description": "供应商证书信任：providerTlsRevoked"
+  },
+  "providerTlsNotTrusted": "尚未信任任何证书。证书无法验证时会先询问你，不会直接连接。",
+  "@providerTlsNotTrusted": {
+    "description": "供应商证书信任：providerTlsNotTrusted"
+  },
   "providerModelsFetchServer": "地址返回了 {status}。",
   "@providerModelsFetchServer": {
     "description": "模型列表失败：其他状态码",

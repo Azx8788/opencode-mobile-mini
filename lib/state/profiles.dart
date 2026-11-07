@@ -1027,7 +1027,8 @@ class ProfileStore {
         library.favorites.isEmpty &&
         library.recent.isEmpty &&
         library.hiddenProviders.isEmpty &&
-        library.balances.isEmpty;
+        library.balances.isEmpty &&
+        library.trustedOrigins.isEmpty;
     final saved = empty
         ? await prefs.remove(key)
         : await prefs.setString(key, jsonEncode(library.toJson()));

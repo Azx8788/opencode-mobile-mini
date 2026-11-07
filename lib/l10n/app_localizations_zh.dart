@@ -34399,6 +34399,74 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerModelsFetchTls => '这个地址的证书无法验证。';
 
   @override
+  String get providerTlsSelfSigned => '这个地址用的是自签名证书，本设备无法验证它的签发者。';
+
+  @override
+  String get providerTlsUnknownIssuer => '无法验证证书的签发者，证书链可能不完整。';
+
+  @override
+  String get providerTlsExpired => '证书已过期。请先检查手机的日期和时间；时间正确时，需要供应商更换证书。';
+
+  @override
+  String get providerTlsNotYetValid => '证书尚未生效。请检查手机的日期和时间。';
+
+  @override
+  String get providerTlsHostname => '证书上的名称与这个地址不一致。';
+
+  @override
+  String get providerTlsOther => '无法与这个地址建立加密连接。';
+
+  @override
+  String get providerTlsChanged => '证书和你上次信任的不一致。';
+
+  @override
+  String get providerTlsTrustTitle => '信任这个地址的证书？';
+
+  @override
+  String get providerTlsTrustBody =>
+      '只有在你能通过另一个渠道核对下面的指纹时，才应信任它。信任后，读取模型、连接检查和余额查询会接受这份证书；其他地址不受影响。';
+
+  @override
+  String get providerTlsTrustChangedBody =>
+      '这个地址出示的证书与上次信任的不一致，可能是供应商更换了证书，也可能是连接被拦截。请重新核对指纹，再决定是否信任。';
+
+  @override
+  String get providerTlsTrustAction => '信任并重试';
+
+  @override
+  String get providerTlsTrustCancel => '取消';
+
+  @override
+  String get providerTlsOrigin => '地址';
+
+  @override
+  String get providerTlsIssuer => '签发者';
+
+  @override
+  String get providerTlsValidTo => '有效期至';
+
+  @override
+  String get providerTlsFingerprint => 'SHA-256 指纹';
+
+  @override
+  String get providerTlsSection => '证书';
+
+  @override
+  String get providerTlsTrusted => '已信任这个地址的证书';
+
+  @override
+  String get providerTlsTrustedBody => '读取模型、连接检查和余额查询会接受这份证书。';
+
+  @override
+  String get providerTlsRevoke => '撤销信任';
+
+  @override
+  String get providerTlsRevoked => '已撤销信任。下次读取会重新要求确认。';
+
+  @override
+  String get providerTlsNotTrusted => '尚未信任任何证书。证书无法验证时会先询问你，不会直接连接。';
+
+  @override
   String providerModelsFetchServer(int status) {
     return '地址返回了 $status。';
   }

@@ -16,6 +16,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'custom_provider.dart';
+import 'provider_tls.dart';
 
 /// Where to ask, and which value in the answer is the balance.
 class ProviderBalance {
@@ -107,9 +108,11 @@ typedef ProviderBalanceGet =
     );
 
 class ProviderBalanceClient {
-  ProviderBalanceClient({ProviderBalanceGet? get}) : _get = get ?? _defaultGet;
+  ProviderBalanceClient({ProviderBalanceGet? get}) : _get = get;
 
-  final ProviderBalanceGet _get;
+  /// A test transport; null means the real one, built per call so it can
+  /// carry the trust the read was given.
+  final ProviderBalanceGet? _get;
 
   static const timeout = Duration(seconds: 20);
 
@@ -118,6 +121,7 @@ class ProviderBalanceClient {
     required String baseUrl,
     String apiKey = '',
     Map<String, String> headers = const {},
+    String? trustedFingerprint,
   }) async {
     if (!balance.isConfigured) {
       throw const ProviderBalanceFailure(
@@ -145,12 +149,22 @@ class ProviderBalanceClient {
       if (key.isNotEmpty) 'authorization': 'Bearer $key',
     };
     final ProviderBalanceAnswer answer;
+    final get =
+        _get ??
+        (url, requestHeaders, requestTimeout) => _defaultGet(
+          url,
+          requestHeaders,
+          requestTimeout,
+          trustedFingerprint: trustedFingerprint,
+        );
     try {
-      answer = await _get(uri, requestHeaders, timeout);
+      answer = await get(uri, requestHeaders, timeout);
     } on TimeoutException {
       throw const ProviderBalanceFailure('The balance endpoint did not answer');
     } on SocketException {
-      throw const ProviderBalanceFailure('Could not reach the balance endpoint');
+      throw const ProviderBalanceFailure(
+        'Could not reach the balance endpoint',
+      );
     } on HandshakeException {
       throw const ProviderBalanceFailure(
         'The balance endpoint\u2019s certificate could not be verified',
@@ -238,11 +252,15 @@ class ProviderBalanceClient {
   static Future<ProviderBalanceAnswer> _defaultGet(
     Uri url,
     Map<String, String> headers,
-    Duration timeout,
-  ) async {
-    final client = HttpClient()
-      ..connectionTimeout = timeout
-      ..findProxy = HttpClient.findProxyFromEnvironment;
+    Duration timeout, {
+    String? trustedFingerprint,
+  }) async {
+    X509Certificate? rejected;
+    final client = createProviderHttpClient(
+      trustedFingerprint: trustedFingerprint,
+      connectionTimeout: timeout,
+      onUntrustedCertificate: (certificate) => rejected = certificate,
+    );
     try {
       final request = await client.getUrl(url).timeout(timeout);
       request.followRedirects = true;
@@ -253,10 +271,16 @@ class ProviderBalanceClient {
           .transform(utf8.decoder)
           .join()
           .timeout(timeout);
-      return ProviderBalanceAnswer(
-        statusCode: response.statusCode,
-        body: body,
-      );
+      return ProviderBalanceAnswer(statusCode: response.statusCode, body: body);
+    } on HandshakeException catch (error) {
+      if (rejected != null) {
+        throw ProviderTlsException(
+          error.message,
+          certificate: rejected!,
+          problem: classifyProviderTlsFailure(error),
+        );
+      }
+      rethrow;
     } finally {
       client.close(force: true);
     }

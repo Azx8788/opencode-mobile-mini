@@ -116,6 +116,24 @@ mixin _ConnectionControllerModels on ChangeNotifier {
     return _self._persistModelLibrary();
   }
 
+  /// The certificate fingerprint this provider origin was trusted with, or
+  /// null. Keyed by origin, not by provider: a certificate belongs to an
+  /// address, and two entries on the same gateway share it.
+  String? providerTrustFor(String origin) =>
+      _modelLibrary.providerTrustFor(origin);
+
+  /// Remembers one certificate for one origin; a null [fingerprintSha256]
+  /// forgets it, and the next read asks again.
+  Future<void> setProviderTrust(String origin, String? fingerprintSha256) {
+    final key = origin.trim();
+    if (key.isEmpty) return Future<void>.value();
+    final next = _modelLibrary.withProviderTrust(key, fingerprintSha256);
+    if (identical(next, _modelLibrary)) return Future<void>.value();
+    _modelLibrary = next;
+    _self._notifyListeners();
+    return _self._persistModelLibrary();
+  }
+
   /// Turns one model on or off for the picker, and remembers it per server.
   Future<void> setModelEnabled(ModelRef model, bool enabled) {
     var next = _modelLibrary;

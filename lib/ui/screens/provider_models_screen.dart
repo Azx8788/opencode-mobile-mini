@@ -44,7 +44,10 @@ class ProviderModelsScreen extends StatelessWidget {
             return Center(
               child: Padding(
                 padding: const EdgeInsets.all(24),
-                child: Text(l10n.providerModelsEmpty, textAlign: TextAlign.center),
+                child: Text(
+                  l10n.providerModelsEmpty,
+                  textAlign: TextAlign.center,
+                ),
               ),
             );
           }
@@ -65,7 +68,8 @@ class ProviderModelsScreen extends StatelessWidget {
                   provider: provider,
                   models: [
                     for (final model in catalog.models)
-                      if (model.providerID == provider.id && model.enabled) model,
+                      if (model.providerID == provider.id && model.enabled)
+                        model,
                   ],
                 ),
             ],
@@ -103,10 +107,7 @@ class _ProviderSection extends StatelessWidget {
       key: PageStorageKey('provider-section-${provider.id}'),
       title: Text(provider.name.isEmpty ? provider.id : provider.name),
       subtitle: Text(l10n.providerModelsCount(shown, models.length)),
-      children: [
-        for (final model in models)
-          _modelRow(context, l10n, model),
-      ],
+      children: [for (final model in models) _modelRow(context, l10n, model)],
     );
   }
 
@@ -128,20 +129,18 @@ class _ProviderSection extends StatelessWidget {
           TextButton(
             onPressed: () => openProviderProbe(
               context,
-              providerName: provider.name.isEmpty
-                  ? provider.id
-                  : provider.name,
+              providerName: provider.name.isEmpty ? provider.id : provider.name,
               model: model.id,
               providerID: provider.id,
+              trustFor: controller.providerTrustFor,
             ),
             child: Text(l10n.providerModelsTest),
           ),
           Switch(
             key: ValueKey('provider-model-switch-${provider.id}-${model.id}'),
             value: enabled,
-            onChanged: (value) => unawaited(
-              controller.setModelEnabled(ref, value),
-            ),
+            onChanged: (value) =>
+                unawaited(controller.setModelEnabled(ref, value)),
           ),
         ],
       ),
@@ -160,6 +159,7 @@ Future<void> openProviderProbe(
   required String providerName,
   required String model,
   required String providerID,
+  String? Function(String origin)? trustFor,
 }) {
   return Navigator.of(context).push(
     MaterialPageRoute(
@@ -168,6 +168,7 @@ Future<void> openProviderProbe(
         model: model,
         baseUrl: providerProbeBaseUrl(providerID),
         protocol: providerProbeProtocol(providerID),
+        trustFor: trustFor,
       ),
     ),
   );

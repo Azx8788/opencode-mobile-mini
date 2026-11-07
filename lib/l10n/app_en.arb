@@ -44510,6 +44510,94 @@
   "@providerModelsFetchTls": {
     "description": "Model list failure: TLS"
   },
+  "providerTlsSelfSigned": "This address uses a self-signed certificate, so this device cannot verify who issued it.",
+  "@providerTlsSelfSigned": {
+    "description": "供应商证书信任：providerTlsSelfSigned"
+  },
+  "providerTlsUnknownIssuer": "The certificate's issuer cannot be verified. Its chain may be incomplete.",
+  "@providerTlsUnknownIssuer": {
+    "description": "供应商证书信任：providerTlsUnknownIssuer"
+  },
+  "providerTlsExpired": "The certificate has expired. Check the phone's date and time first; if those are right, the provider needs to renew it.",
+  "@providerTlsExpired": {
+    "description": "供应商证书信任：providerTlsExpired"
+  },
+  "providerTlsNotYetValid": "The certificate is not valid yet. Check the phone's date and time.",
+  "@providerTlsNotYetValid": {
+    "description": "供应商证书信任：providerTlsNotYetValid"
+  },
+  "providerTlsHostname": "The name on the certificate does not match this address.",
+  "@providerTlsHostname": {
+    "description": "供应商证书信任：providerTlsHostname"
+  },
+  "providerTlsOther": "Could not establish an encrypted connection to this address.",
+  "@providerTlsOther": {
+    "description": "供应商证书信任：providerTlsOther"
+  },
+  "providerTlsChanged": "The certificate is not the one you trusted before.",
+  "@providerTlsChanged": {
+    "description": "供应商证书信任：providerTlsChanged"
+  },
+  "providerTlsTrustTitle": "Trust the certificate of this address?",
+  "@providerTlsTrustTitle": {
+    "description": "供应商证书信任：providerTlsTrustTitle"
+  },
+  "providerTlsTrustBody": "Only trust it if you can compare the fingerprint below through another channel. After that, reading models, connection checks and balance lookups accept this certificate; no other address is affected.",
+  "@providerTlsTrustBody": {
+    "description": "供应商证书信任：providerTlsTrustBody"
+  },
+  "providerTlsTrustChangedBody": "This address now presents a different certificate from the one you trusted. The provider may have renewed it, or the connection may be intercepted. Check the fingerprint again before trusting it.",
+  "@providerTlsTrustChangedBody": {
+    "description": "供应商证书信任：providerTlsTrustChangedBody"
+  },
+  "providerTlsTrustAction": "Trust and retry",
+  "@providerTlsTrustAction": {
+    "description": "供应商证书信任：providerTlsTrustAction"
+  },
+  "providerTlsTrustCancel": "Cancel",
+  "@providerTlsTrustCancel": {
+    "description": "供应商证书信任：providerTlsTrustCancel"
+  },
+  "providerTlsOrigin": "Address",
+  "@providerTlsOrigin": {
+    "description": "供应商证书信任：providerTlsOrigin"
+  },
+  "providerTlsIssuer": "Issuer",
+  "@providerTlsIssuer": {
+    "description": "供应商证书信任：providerTlsIssuer"
+  },
+  "providerTlsValidTo": "Valid until",
+  "@providerTlsValidTo": {
+    "description": "供应商证书信任：providerTlsValidTo"
+  },
+  "providerTlsFingerprint": "SHA-256 fingerprint",
+  "@providerTlsFingerprint": {
+    "description": "供应商证书信任：providerTlsFingerprint"
+  },
+  "providerTlsSection": "Certificate",
+  "@providerTlsSection": {
+    "description": "供应商证书信任：providerTlsSection"
+  },
+  "providerTlsTrusted": "This address's certificate is trusted",
+  "@providerTlsTrusted": {
+    "description": "供应商证书信任：providerTlsTrusted"
+  },
+  "providerTlsTrustedBody": "Reading models, connection checks and balance lookups accept this certificate.",
+  "@providerTlsTrustedBody": {
+    "description": "供应商证书信任：providerTlsTrustedBody"
+  },
+  "providerTlsRevoke": "Revoke trust",
+  "@providerTlsRevoke": {
+    "description": "供应商证书信任：providerTlsRevoke"
+  },
+  "providerTlsRevoked": "Trust revoked. The next read asks again.",
+  "@providerTlsRevoked": {
+    "description": "供应商证书信任：providerTlsRevoked"
+  },
+  "providerTlsNotTrusted": "No certificate is trusted. When one cannot be verified, the app asks before connecting.",
+  "@providerTlsNotTrusted": {
+    "description": "供应商证书信任：providerTlsNotTrusted"
+  },
   "providerModelsFetchServer": "The address answered {status}.",
   "@providerModelsFetchServer": {
     "description": "Model list failure: other status",

@@ -36425,6 +36425,83 @@ class AppLocalizationsEn extends AppLocalizations {
       'The certificate of this address could not be verified.';
 
   @override
+  String get providerTlsSelfSigned =>
+      'This address uses a self-signed certificate, so this device cannot verify who issued it.';
+
+  @override
+  String get providerTlsUnknownIssuer =>
+      'The certificate\'s issuer cannot be verified. Its chain may be incomplete.';
+
+  @override
+  String get providerTlsExpired =>
+      'The certificate has expired. Check the phone\'s date and time first; if those are right, the provider needs to renew it.';
+
+  @override
+  String get providerTlsNotYetValid =>
+      'The certificate is not valid yet. Check the phone\'s date and time.';
+
+  @override
+  String get providerTlsHostname =>
+      'The name on the certificate does not match this address.';
+
+  @override
+  String get providerTlsOther =>
+      'Could not establish an encrypted connection to this address.';
+
+  @override
+  String get providerTlsChanged =>
+      'The certificate is not the one you trusted before.';
+
+  @override
+  String get providerTlsTrustTitle => 'Trust the certificate of this address?';
+
+  @override
+  String get providerTlsTrustBody =>
+      'Only trust it if you can compare the fingerprint below through another channel. After that, reading models, connection checks and balance lookups accept this certificate; no other address is affected.';
+
+  @override
+  String get providerTlsTrustChangedBody =>
+      'This address now presents a different certificate from the one you trusted. The provider may have renewed it, or the connection may be intercepted. Check the fingerprint again before trusting it.';
+
+  @override
+  String get providerTlsTrustAction => 'Trust and retry';
+
+  @override
+  String get providerTlsTrustCancel => 'Cancel';
+
+  @override
+  String get providerTlsOrigin => 'Address';
+
+  @override
+  String get providerTlsIssuer => 'Issuer';
+
+  @override
+  String get providerTlsValidTo => 'Valid until';
+
+  @override
+  String get providerTlsFingerprint => 'SHA-256 fingerprint';
+
+  @override
+  String get providerTlsSection => 'Certificate';
+
+  @override
+  String get providerTlsTrusted => 'This address\'s certificate is trusted';
+
+  @override
+  String get providerTlsTrustedBody =>
+      'Reading models, connection checks and balance lookups accept this certificate.';
+
+  @override
+  String get providerTlsRevoke => 'Revoke trust';
+
+  @override
+  String get providerTlsRevoked => 'Trust revoked. The next read asks again.';
+
+  @override
+  String get providerTlsNotTrusted =>
+      'No certificate is trusted. When one cannot be verified, the app asks before connecting.';
+
+  @override
   String providerModelsFetchServer(int status) {
     return 'The address answered $status.';
   }

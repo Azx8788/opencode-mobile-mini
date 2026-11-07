@@ -19,6 +19,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'custom_provider.dart';
+import 'provider_tls.dart';
 
 /// What a probe checks. The order is the order they run in.
 enum ProviderProbeKind { nonStreaming, streaming, toolCall }
@@ -82,9 +83,19 @@ typedef ProviderProbeSend =
 
 /// The five probes for one provider and one model.
 class ProviderProbe {
-  ProviderProbe({ProviderProbeSend? send}) : _send = send ?? _defaultSend;
+  /// [trustedFingerprint] is a certificate the person already checked for this
+  /// endpoint's origin. Probes use it for the same reason the model list does:
+  /// a gateway with a self-signed certificate would fail every check with a
+  /// handshake error that says nothing about the provider.
+  ProviderProbe({ProviderProbeSend? send, this.trustedFingerprint})
+    : _send = send;
 
-  final ProviderProbeSend _send;
+  final ProviderProbeSend? _send;
+  final String? trustedFingerprint;
+
+  Future<ProviderProbeAnswer> _dispatch(ProviderProbeRequest request) =>
+      _send?.call(request) ??
+      _defaultSend(request, trustedFingerprint: trustedFingerprint);
 
   static const _timeout = Duration(seconds: 45);
 
@@ -140,7 +151,7 @@ class ProviderProbe {
         apiKey: apiKey,
         headers: headers,
       );
-      final answer = await _send(request);
+      final answer = await _dispatch(request);
       final verdict = _judge(kind, protocol, answer);
       return ProviderProbeResult(
         kind: kind,
@@ -154,6 +165,18 @@ class ProviderProbe {
         kind: kind,
         passed: false,
         detail: 'Timed out after ${_timeout.inSeconds}s',
+        elapsed: DateTime.now().difference(started),
+      );
+    } on HandshakeException catch (error) {
+      final problem = error is ProviderTlsException
+          ? error.problem
+          : classifyProviderTlsFailure(error);
+      return ProviderProbeResult(
+        kind: kind,
+        passed: false,
+        detail:
+            'The certificate could not be verified: '
+            '${describeProviderTlsProblem(problem)}',
         elapsed: DateTime.now().difference(started),
       );
     } catch (error) {
@@ -254,7 +277,10 @@ class ProviderProbe {
       case ProviderProbeKind.streaming:
         body['max_tokens'] = 32;
         body['messages'] = [
-          {'role': 'user', 'content': 'Count from 1 to 5, one number per line.'},
+          {
+            'role': 'user',
+            'content': 'Count from 1 to 5, one number per line.',
+          },
         ];
       case ProviderProbeKind.toolCall:
         body['max_tokens'] = 64;
@@ -336,7 +362,8 @@ class ProviderProbe {
     final prompt = switch (kind) {
       ProviderProbeKind.nonStreaming => 'Reply with the single word OK.',
       ProviderProbeKind.streaming => 'Count from 1 to 5, one number per line.',
-      ProviderProbeKind.toolCall => 'What is the weather in Berlin? Use the tool.',
+      ProviderProbeKind.toolCall =>
+        'What is the weather in Berlin? Use the tool.',
     };
     return <String, Object?>{
       // Google takes the model in the URL, not the body.
@@ -571,9 +598,7 @@ class ProviderProbe {
   static bool _responseToolCalls(Map body) {
     final output = body['output'];
     if (output is! List) return false;
-    return output.any(
-      (item) => item is Map && item['type'] == 'function_call',
-    );
+    return output.any((item) => item is Map && item['type'] == 'function_call');
   }
 
   static bool _anthropicToolUses(Map body) {
@@ -660,21 +685,34 @@ class ProviderProbe {
   }
 
   static Future<ProviderProbeAnswer> _defaultSend(
-    ProviderProbeRequest request,
-  ) async {
-    final client = HttpClient()
-      ..connectionTimeout = const Duration(seconds: 20);
+    ProviderProbeRequest request, {
+    String? trustedFingerprint,
+  }) async {
+    X509Certificate? rejected;
+    final client = createProviderHttpClient(
+      trustedFingerprint: trustedFingerprint,
+      connectionTimeout: const Duration(seconds: 20),
+      onUntrustedCertificate: (certificate) => rejected = certificate,
+    );
     try {
       final http = await client.postUrl(request.url).timeout(request.timeout);
       request.headers.forEach(http.headers.set);
       http.add(utf8.encode(request.body));
       final response = await http.close().timeout(request.timeout);
-      final text = await utf8
-          .decoder
+      final text = await utf8.decoder
           .bind(response)
           .join()
           .timeout(request.timeout);
       return ProviderProbeAnswer(statusCode: response.statusCode, body: text);
+    } on HandshakeException catch (error) {
+      if (rejected != null) {
+        throw ProviderTlsException(
+          error.message,
+          certificate: rejected!,
+          problem: classifyProviderTlsFailure(error),
+        );
+      }
+      rethrow;
     } finally {
       client.close(force: true);
     }

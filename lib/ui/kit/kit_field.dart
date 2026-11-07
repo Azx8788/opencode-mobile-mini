@@ -661,7 +661,13 @@ class _KitFieldState extends State<KitField> {
     KitFieldKind.number => TextInputType.numberWithOptions(
       decimal: widget.decimal,
     ),
-    KitFieldKind.secret => TextInputType.visiblePassword,
+    // Plain text, NOT `visiblePassword`. Android classifies
+    // `TYPE_TEXT_VARIATION_VISIBLE_PASSWORD` as a password field even though
+    // it shows what is typed, and several Chinese ROMs swap in their "secure
+    // keyboard" for any password field — which is exactly what this kind is
+    // avoiding by drawing its own dots. The value is a key, not prose, so a
+    // normal keyboard with suggestions off is the right one anyway.
+    KitFieldKind.secret => TextInputType.text,
     _ => TextInputType.text,
   };
 

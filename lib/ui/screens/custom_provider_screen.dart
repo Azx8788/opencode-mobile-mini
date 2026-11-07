@@ -13,6 +13,8 @@ import '../../domain/custom_provider.dart';
 import '../../domain/custom_provider_record.dart';
 import '../../domain/provider_balance.dart';
 import '../../domain/provider_model_source.dart';
+import '../../domain/provider_tls.dart';
+import '../../domain/server_trust.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import 'provider_probe_screen.dart';
@@ -356,6 +358,7 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       setState(() => _fetchError = _l10nOf(context).providerModelsConfigFirst);
       return;
     }
+    final base = CustomProviderDraft.normalizeBaseUrl(typed, _protocol);
     setState(() {
       _fetching = true;
       _fetchError = null;
@@ -366,10 +369,11 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
     try {
       final key = await _resolveKey();
       final listing = await _models.fetch(
-        baseUrl: CustomProviderDraft.normalizeBaseUrl(_baseUrl.text, _protocol),
+        baseUrl: base,
         protocol: _protocol,
         apiKey: key,
         headers: _headerMap(),
+        trustedFingerprint: _trustedFingerprintFor(base),
         onTrace: (trace) {
           if (!mounted) return;
           setState(() => _fetchTrace = trace);
@@ -397,6 +401,13 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
         _fetchTrace = error.trace;
         _fetching = false;
       });
+      if (error.kind == ProviderModelFetchKind.tls) {
+        // The list is not the only thing blocked by an unverifiable
+        // certificate: the checks and the balance read use the same address.
+        // Asking once here, with the fingerprint, is the one thing a person
+        // can act on — a red message is not.
+        unawaited(_offerTrust(base, error));
+      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -423,12 +434,107 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       ProviderModelFetchKind.emptyList => l10n.providerModelsFetchEmpty,
       ProviderModelFetchKind.timeout => l10n.providerModelsFetchTimeout,
       ProviderModelFetchKind.network => l10n.providerModelsFetchNetwork,
-      ProviderModelFetchKind.tls => l10n.providerModelsFetchTls,
+      ProviderModelFetchKind.tls => [
+        l10n.providerModelsFetchTls,
+        if (error.trustWasPinned) l10n.providerTlsChanged,
+        _tlsReason(l10n, error.tlsProblem),
+      ].join(' '),
       ProviderModelFetchKind.serverError => l10n.providerModelsFetchServer(
         status,
       ),
       ProviderModelFetchKind.unknown => error.message,
     };
+  }
+
+  String _tlsReason(AppLocalizations l10n, ProviderTlsProblem? problem) =>
+      switch (problem) {
+        ProviderTlsProblem.selfSigned => l10n.providerTlsSelfSigned,
+        ProviderTlsProblem.unknownIssuer => l10n.providerTlsUnknownIssuer,
+        ProviderTlsProblem.expired => l10n.providerTlsExpired,
+        ProviderTlsProblem.notYetValid => l10n.providerTlsNotYetValid,
+        ProviderTlsProblem.hostnameMismatch => l10n.providerTlsHostname,
+        ProviderTlsProblem.other || null => l10n.providerTlsOther,
+      };
+
+  /// The fingerprint this address was trusted with, if any.
+  String? _trustedFingerprintFor(String baseUrl) =>
+      widget.controller.providerTrustFor(providerOrigin(baseUrl));
+
+  /// A stored fingerprint in the same readable grouping the trust sheet uses.
+  String _displayFingerprint(String fingerprint) => RegExp(r'.{2}')
+      .allMatches(fingerprint.toUpperCase())
+      .map((match) => match.group(0))
+      .join(':');
+
+  Future<void> _revokeTrust() async {
+    final base = CustomProviderDraft.normalizeBaseUrl(_baseUrl.text, _protocol);
+    await widget.controller.setProviderTrust(providerOrigin(base), null);
+    if (!mounted) return;
+    setState(() {});
+    ScaffoldMessenger.maybeOf(context)?.showSnackBar(
+      SnackBar(content: Text(_l10nOf(context).providerTlsRevoked)),
+    );
+  }
+
+  /// Shows the certificate and lets the person accept exactly it.
+  ///
+  /// Nothing is accepted by closing: only the explicit action stores the
+  /// fingerprint, and only for this origin. An expired certificate is never
+  /// offered — the pin check would refuse it again, turning the dialog into
+  /// a loop.
+  Future<void> _offerTrust(
+    String baseUrl,
+    ProviderModelFetchFailure failure,
+  ) async {
+    final certificate = failure.certificate;
+    if (certificate == null || !mounted) return;
+    final problem = failure.tlsProblem;
+    if (problem != null && !providerTlsProblemCanBeTrusted(problem)) return;
+    final now = DateTime.now();
+    if (now.isBefore(certificate.startValidity) ||
+        now.isAfter(certificate.endValidity)) {
+      return;
+    }
+    final l10n = _l10nOf(context);
+    final origin = providerOrigin(baseUrl);
+    final changed = failure.trustWasPinned;
+    final accepted = await showKitConfirm(
+      context,
+      title: l10n.providerTlsTrustTitle,
+      body: changed
+          ? l10n.providerTlsTrustChangedBody
+          : l10n.providerTlsTrustBody,
+      confirmLabel: l10n.providerTlsTrustAction,
+      cancelLabel: l10n.providerTlsTrustCancel,
+      icon: AppIconography.warning,
+      details: [
+        KitTechnicalValue(l10n.providerTlsOrigin, origin, copyable: false),
+        KitTechnicalValue(
+          l10n.providerTlsIssuer,
+          certificate.issuer,
+          copyable: false,
+        ),
+        KitTechnicalValue(
+          l10n.providerTlsValidTo,
+          MaterialLocalizations.of(
+            context,
+          ).formatFullDate(certificate.endValidity.toLocal()),
+          copyable: false,
+        ),
+        KitTechnicalValue(
+          l10n.providerTlsFingerprint,
+          certificate.displayFingerprint,
+        ),
+      ],
+      confirmKey: const ValueKey('provider-tls-trust'),
+    );
+    if (!accepted || !mounted) return;
+    await widget.controller.setProviderTrust(
+      origin,
+      certificate.fingerprintSha256,
+    );
+    if (!mounted) return;
+    await _fetchModels();
   }
 
   /// The models tab is where a list belongs, so the action on the
@@ -564,7 +670,19 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
   Future<bool> _tryReload() async {
     final profile = widget.controller.profile;
     if (profile == null) return false;
-    final client = HttpClient()..connectionTimeout = const Duration(seconds: 5);
+    // The server's own trust rules, not a bare client: a remote server with a
+    // certificate the person verified would otherwise fail here and turn a
+    // working reload into "restart the server".
+    final HttpClient client;
+    try {
+      client = createServerHttpClient(
+        baseUrl: profile.baseUrl,
+        cleartextConfirmedOrigin: profile.cleartextConfirmedOrigin,
+        certificatePinSha256: profile.certificatePinSha256,
+      )..connectionTimeout = const Duration(seconds: 5);
+    } catch (_) {
+      return false;
+    }
     try {
       final url = Uri.parse('${profile.baseUrl}/api/location/reload');
       final request = await client
@@ -677,15 +795,20 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
     });
     try {
       final key = await _resolveKey();
+      final base = CustomProviderDraft.normalizeBaseUrl(
+        _baseUrl.text,
+        _protocol,
+      );
       final reading = await _balanceClient.fetch(
         balance: ProviderBalance(
           enabled: true,
           url: _balanceUrl.text,
           resultPath: _balancePath.text,
         ),
-        baseUrl: CustomProviderDraft.normalizeBaseUrl(_baseUrl.text, _protocol),
+        baseUrl: base,
         apiKey: key,
         headers: _headerMap(),
+        trustedFingerprint: _trustedFingerprintFor(base),
       );
       if (!mounted) return;
       setState(() {
@@ -727,6 +850,7 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
           resolveKey: _resolveKey,
           headers: _headerMap(),
           autoRun: true,
+          trustFor: widget.controller.providerTrustFor,
         ),
       ),
     );
@@ -1281,72 +1405,104 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
 
   // ---------------- Advanced ----------------
 
-  List<Widget> _advancedTab(BuildContext context, AppLocalizations l10n) => [
-    KitSectionLabel(l10n.providerHeadersSection),
-    Text(
-      l10n.providerHeadersHint,
-      style: KitText.styleOf(context, KitTextRole.caption),
-    ),
-    if (_headers.isEmpty) ...[
-      _gap(context),
-      KitNotice(
-        key: const ValueKey('custom-provider-headers-empty'),
-        icon: AppIconography.info,
-        message: l10n.providerHeadersEmpty,
+  List<Widget> _advancedTab(BuildContext context, AppLocalizations l10n) {
+    final trusted = _trustedFingerprintFor(
+      CustomProviderDraft.normalizeBaseUrl(_baseUrl.text, _protocol),
+    );
+    return [
+      KitSectionLabel(l10n.providerHeadersSection),
+      Text(
+        l10n.providerHeadersHint,
+        style: KitText.styleOf(context, KitTextRole.caption),
       ),
-    ],
-    for (final row in _headers) ...[
-      _gap(context),
-      KitField(
-        key: ValueKey('custom-provider-header-name-${_headers.indexOf(row)}'),
-        label: l10n.providerHeadersName,
-        controller: row.name,
-        kind: KitFieldKind.mono,
-        hint: 'HTTP-Referer',
-        action: KitAction(
-          label: l10n.providerHeadersPresets,
-          icon: AppIconography.chevronDown,
-          onPressed: () => _pickHeaderPreset(row),
+      if (_headers.isEmpty) ...[
+        _gap(context),
+        KitNotice(
+          key: const ValueKey('custom-provider-headers-empty'),
+          icon: AppIconography.info,
+          message: l10n.providerHeadersEmpty,
         ),
-      ),
-      _gap(context),
-      KitField(
-        key: ValueKey('custom-provider-header-value-${_headers.indexOf(row)}'),
-        label: l10n.providerHeadersValue,
-        controller: row.value,
-        kind: KitFieldKind.mono,
-        action: KitAction(
-          label: l10n.providerManageDelete,
-          icon: AppIconography.delete,
-          destructive: true,
-          onPressed: () => _removeHeader(row),
+      ],
+      for (final row in _headers) ...[
+        _gap(context),
+        KitField(
+          key: ValueKey('custom-provider-header-name-${_headers.indexOf(row)}'),
+          label: l10n.providerHeadersName,
+          controller: row.name,
+          kind: KitFieldKind.mono,
+          hint: 'HTTP-Referer',
+          action: KitAction(
+            label: l10n.providerHeadersPresets,
+            icon: AppIconography.chevronDown,
+            onPressed: () => _pickHeaderPreset(row),
+          ),
         ),
+        _gap(context),
+        KitField(
+          key: ValueKey(
+            'custom-provider-header-value-${_headers.indexOf(row)}',
+          ),
+          label: l10n.providerHeadersValue,
+          controller: row.value,
+          kind: KitFieldKind.mono,
+          action: KitAction(
+            label: l10n.providerManageDelete,
+            icon: AppIconography.delete,
+            destructive: true,
+            onPressed: () => _removeHeader(row),
+          ),
+        ),
+      ],
+      _gap(context),
+      KitButton.secondary(
+        key: const ValueKey('custom-provider-header-add'),
+        label: l10n.providerHeadersAdd,
+        icon: AppIconography.add,
+        onPressed: _addHeader,
       ),
-    ],
-    _gap(context),
-    KitButton.secondary(
-      key: const ValueKey('custom-provider-header-add'),
-      label: l10n.providerHeadersAdd,
-      icon: AppIconography.add,
-      onPressed: _addHeader,
-    ),
-    KitSectionLabel(l10n.providerEditTest, gapBefore: _space(context) * 2),
-    KitButton.secondary(
-      key: const ValueKey('custom-provider-test'),
-      label: l10n.providerEditTest,
-      icon: AppIconography.play,
-      onPressed: _selected.isEmpty ? null : _testNow,
-    ),
-    if ((_previewText ?? '').isNotEmpty) ...[
-      KitSectionLabel(l10n.providerAddPreview, gapBefore: _space(context) * 2),
-      KitCodeBlock(
-        key: const ValueKey('custom-provider-preview'),
-        text: _previewText!,
-        language: 'json',
-        maxLines: 18,
+      KitSectionLabel(l10n.providerTlsSection, gapBefore: _space(context) * 2),
+      if (trusted != null)
+        KitRow(
+          key: const ValueKey('custom-provider-trust'),
+          title: l10n.providerTlsTrusted,
+          supporting: TextSpan(
+            text:
+                '${l10n.providerTlsTrustedBody} ${_displayFingerprint(trusted)}',
+          ),
+          supportingMaxLines: 3,
+          action: KitAction(
+            key: const ValueKey('custom-provider-trust-revoke'),
+            label: l10n.providerTlsRevoke,
+            destructive: true,
+            onPressed: _revokeTrust,
+          ),
+        )
+      else
+        Text(
+          l10n.providerTlsNotTrusted,
+          style: KitText.styleOf(context, KitTextRole.caption),
+        ),
+      KitSectionLabel(l10n.providerEditTest, gapBefore: _space(context) * 2),
+      KitButton.secondary(
+        key: const ValueKey('custom-provider-test'),
+        label: l10n.providerEditTest,
+        icon: AppIconography.play,
+        onPressed: _selected.isEmpty ? null : _testNow,
       ),
-    ],
-  ];
+      if ((_previewText ?? '').isNotEmpty) ...[
+        KitSectionLabel(
+          l10n.providerAddPreview,
+          gapBefore: _space(context) * 2,
+        ),
+        KitCodeBlock(
+          key: const ValueKey('custom-provider-preview'),
+          text: _previewText!,
+          language: 'json',
+          maxLines: 18,
+        ),
+      ],
+    ];
+  }
 
   Widget _savedScreen(BuildContext context, AppLocalizations l10n) {
     final receipt = _receipt!;
@@ -1383,6 +1539,7 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
                         protocol: _protocol,
                         resolveKey: _resolveKey,
                         headers: _headerMap(),
+                        trustFor: widget.controller.providerTrustFor,
                       ),
                     ),
                   ),

@@ -21,6 +21,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'custom_provider.dart';
+import 'provider_tls.dart';
+import 'server_trust.dart' show ServerCertificateInfo;
 
 /// Why a model list could not be read. The message is an English fallback;
 /// the form translates the kind, so the person reads a sentence in their own
@@ -69,6 +71,9 @@ class ProviderModelFetchFailure implements Exception {
     this.canRetryWithoutKey = false,
     this.trace = const <String>[],
     this.path,
+    this.tlsProblem,
+    this.certificate,
+    this.trustWasPinned = false,
   });
 
   /// English fallback, for logs and for a kind this build has no wording for.
@@ -86,6 +91,18 @@ class ProviderModelFetchFailure implements Exception {
 
   /// The last path tried, for a message that can point at it.
   final String? path;
+
+  /// [ProviderModelFetchKind.tls] only: what the handshake said was wrong.
+  final ProviderTlsProblem? tlsProblem;
+
+  /// [ProviderModelFetchKind.tls] only: the certificate the endpoint sent, so
+  /// the form can show its fingerprint and offer to trust it.
+  final ServerCertificateInfo? certificate;
+
+  /// True when a certificate had already been trusted for this origin and the
+  /// endpoint now presents a different one. That is a warning, not the first
+  /// question: something replaced the certificate the person checked.
+  final bool trustWasPinned;
 
   @override
   String toString() => message;
@@ -125,9 +142,11 @@ class ProviderModelSource {
   ProviderModelSource({
     ProviderHttpGet? get,
     this.overallBudget = const Duration(seconds: 50),
-  }) : _get = get ?? _defaultGet;
+  }) : _get = get;
 
-  final ProviderHttpGet _get;
+  /// A test transport; null means the real one, built per call so it can
+  /// carry the trust this fetch was given.
+  final ProviderHttpGet? _get;
 
   /// The whole read, not one request. A gateway that hangs on the first
   /// spelling must not keep the button spinning for a minute.
@@ -143,6 +162,7 @@ class ProviderModelSource {
     String? apiKey,
     Map<String, String> headers = const {},
     Duration timeout = const Duration(seconds: 20),
+    String? trustedFingerprint,
     void Function(List<String> trace)? onTrace,
   }) async {
     final base = _cleanBase(baseUrl);
@@ -159,6 +179,17 @@ class ProviderModelSource {
     final trace = <String>[];
     final clock = Stopwatch()..start();
     ProviderModelFetchFailure? best;
+    // A transport supplied by a test never touches TLS; the default one reads
+    // the trust this call was given.
+    final get =
+        _get ??
+        (url, requestHeaders, requestTimeout) => _defaultGet(
+          url,
+          requestHeaders,
+          requestTimeout,
+          trustedFingerprint: trustedFingerprint,
+        );
+    final pinned = (trustedFingerprint ?? '').trim().isNotEmpty;
 
     for (final url in urls) {
       for (final sent in attempts) {
@@ -171,7 +202,7 @@ class ProviderModelSource {
               );
         }
         try {
-          final answer = await _get(url, sent, timeout);
+          final answer = await get(url, sent, timeout);
           final code = answer.statusCode;
           trace.add('${_short(url)} · $code');
           onTrace?.call(List.unmodifiable(trace));
@@ -245,10 +276,14 @@ class ProviderModelSource {
             trace: List.unmodifiable(trace),
             path: url.path,
           );
-        } on HandshakeException {
+        } on HandshakeException catch (error) {
+          final tls = error is ProviderTlsException ? error : null;
           throw ProviderModelFetchFailure(
             'The endpoint\u2019s certificate could not be verified',
             kind: ProviderModelFetchKind.tls,
+            tlsProblem: tls?.problem ?? classifyProviderTlsFailure(error),
+            certificate: tls?.info,
+            trustWasPinned: pinned,
             trace: List.unmodifiable(trace),
             path: url.path,
           );
@@ -314,7 +349,9 @@ class ProviderModelSource {
     add('$trimmed/models');
     if (!lower.endsWith('/v1')) add('$trimmed/v1/models');
     if (protocol == ProviderProtocol.google) {
-      if (!lower.endsWith('/v1beta')) add('$trimmed/v1beta/models?pageSize=100');
+      if (!lower.endsWith('/v1beta')) {
+        add('$trimmed/v1beta/models?pageSize=100');
+      }
       add('$trimmed/models?pageSize=100');
     }
     return [for (final path in paths) Uri.parse(path)];
@@ -455,14 +492,15 @@ class ProviderModelSource {
   static Future<ProviderHttpAnswer> _defaultGet(
     Uri url,
     Map<String, String> headers,
-    Duration timeout,
-  ) async {
-    final client = HttpClient()
-      ..connectionTimeout = timeout
-      // The environment's proxy, not DIRECT: a person on a phone may only
-      // reach a gateway through the proxy they configured, and this call is
-      // made by the app rather than by the server.
-      ..findProxy = HttpClient.findProxyFromEnvironment;
+    Duration timeout, {
+    String? trustedFingerprint,
+  }) async {
+    X509Certificate? rejected;
+    final client = createProviderHttpClient(
+      trustedFingerprint: trustedFingerprint,
+      connectionTimeout: timeout,
+      onUntrustedCertificate: (certificate) => rejected = certificate,
+    );
     try {
       final request = await client.getUrl(url).timeout(timeout);
       request.followRedirects = true;
@@ -478,6 +516,17 @@ class ProviderModelSource {
         statusCode: response.statusCode,
         body: utf8.decode(bytes, allowMalformed: true),
       );
+    } on HandshakeException catch (error) {
+      // `close(force: true)` below runs before this rethrow leaves the
+      // method; the certificate is retained in the exception itself.
+      if (rejected != null) {
+        throw ProviderTlsException(
+          error.message,
+          certificate: rejected!,
+          problem: classifyProviderTlsFailure(error),
+        );
+      }
+      rethrow;
     } finally {
       client.close(force: true);
     }

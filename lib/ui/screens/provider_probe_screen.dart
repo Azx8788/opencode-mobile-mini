@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/custom_provider.dart';
 import '../../domain/provider_probe.dart';
+import '../../domain/provider_tls.dart';
 import '../../l10n/app_localizations.dart';
 
 AppLocalizations _l10nOf(BuildContext context) =>
@@ -25,6 +26,7 @@ class ProviderProbeScreen extends StatefulWidget {
     this.resolveKey,
     this.headers = const {},
     this.autoRun = false,
+    this.trustFor,
   });
 
   final String providerName;
@@ -50,6 +52,10 @@ class ProviderProbeScreen extends StatefulWidget {
   /// Starts the checks as the screen opens, for the "test this provider"
   /// path where pressing Run is a second, pointless confirmation.
   final bool autoRun;
+
+  /// The certificate fingerprint already trusted for an origin. Read at the
+  /// moment a check runs, because the address can be edited here.
+  final String? Function(String origin)? trustFor;
 
   @override
   State<ProviderProbeScreen> createState() => _ProviderProbeScreenState();
@@ -105,7 +111,13 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
       _running = true;
       _results.clear();
     });
-    final probe = ProviderProbe();
+    final probe = ProviderProbe(
+      trustedFingerprint: widget.trustFor?.call(
+        providerOrigin(
+          CustomProviderDraft.normalizeBaseUrl(_baseUrl.text, _protocol),
+        ),
+      ),
+    );
     await probe.runAll(
       protocol: _protocol,
       baseUrl: _baseUrl.text,
@@ -138,10 +150,7 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
           preferredSize: const Size.fromHeight(20),
           child: Padding(
             padding: const EdgeInsets.only(bottom: 8),
-            child: Text(
-              widget.providerName,
-              style: theme.textTheme.bodySmall,
-            ),
+            child: Text(widget.providerName, style: theme.textTheme.bodySmall),
           ),
         ),
       ),
@@ -220,10 +229,7 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
-            l10n.providerProbeNote,
-            style: theme.textTheme.bodySmall,
-          ),
+          Text(l10n.providerProbeNote, style: theme.textTheme.bodySmall),
           if (_running) ...[
             const SizedBox(height: 12),
             const LinearProgressIndicator(),
@@ -251,11 +257,10 @@ class _ProviderProbeScreenState extends State<ProviderProbeScreen> {
     );
   }
 
-  static String _protocolName(ProviderProtocol protocol) =>
-      switch (protocol) {
-        ProviderProtocol.chatCompletions => 'Chat Completions',
-        ProviderProtocol.responses => 'Responses',
-        ProviderProtocol.anthropic => 'Anthropic Messages',
-        ProviderProtocol.google => 'Google Gemini',
-      };
+  static String _protocolName(ProviderProtocol protocol) => switch (protocol) {
+    ProviderProtocol.chatCompletions => 'Chat Completions',
+    ProviderProtocol.responses => 'Responses',
+    ProviderProtocol.anthropic => 'Anthropic Messages',
+    ProviderProtocol.google => 'Google Gemini',
+  };
 }

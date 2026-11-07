@@ -57290,6 +57290,138 @@ abstract class AppLocalizations {
   /// **'The certificate of this address could not be verified.'**
   String get providerModelsFetchTls;
 
+  /// 供应商证书信任：providerTlsSelfSigned
+  ///
+  /// In en, this message translates to:
+  /// **'This address uses a self-signed certificate, so this device cannot verify who issued it.'**
+  String get providerTlsSelfSigned;
+
+  /// 供应商证书信任：providerTlsUnknownIssuer
+  ///
+  /// In en, this message translates to:
+  /// **'The certificate\'s issuer cannot be verified. Its chain may be incomplete.'**
+  String get providerTlsUnknownIssuer;
+
+  /// 供应商证书信任：providerTlsExpired
+  ///
+  /// In en, this message translates to:
+  /// **'The certificate has expired. Check the phone\'s date and time first; if those are right, the provider needs to renew it.'**
+  String get providerTlsExpired;
+
+  /// 供应商证书信任：providerTlsNotYetValid
+  ///
+  /// In en, this message translates to:
+  /// **'The certificate is not valid yet. Check the phone\'s date and time.'**
+  String get providerTlsNotYetValid;
+
+  /// 供应商证书信任：providerTlsHostname
+  ///
+  /// In en, this message translates to:
+  /// **'The name on the certificate does not match this address.'**
+  String get providerTlsHostname;
+
+  /// 供应商证书信任：providerTlsOther
+  ///
+  /// In en, this message translates to:
+  /// **'Could not establish an encrypted connection to this address.'**
+  String get providerTlsOther;
+
+  /// 供应商证书信任：providerTlsChanged
+  ///
+  /// In en, this message translates to:
+  /// **'The certificate is not the one you trusted before.'**
+  String get providerTlsChanged;
+
+  /// 供应商证书信任：providerTlsTrustTitle
+  ///
+  /// In en, this message translates to:
+  /// **'Trust the certificate of this address?'**
+  String get providerTlsTrustTitle;
+
+  /// 供应商证书信任：providerTlsTrustBody
+  ///
+  /// In en, this message translates to:
+  /// **'Only trust it if you can compare the fingerprint below through another channel. After that, reading models, connection checks and balance lookups accept this certificate; no other address is affected.'**
+  String get providerTlsTrustBody;
+
+  /// 供应商证书信任：providerTlsTrustChangedBody
+  ///
+  /// In en, this message translates to:
+  /// **'This address now presents a different certificate from the one you trusted. The provider may have renewed it, or the connection may be intercepted. Check the fingerprint again before trusting it.'**
+  String get providerTlsTrustChangedBody;
+
+  /// 供应商证书信任：providerTlsTrustAction
+  ///
+  /// In en, this message translates to:
+  /// **'Trust and retry'**
+  String get providerTlsTrustAction;
+
+  /// 供应商证书信任：providerTlsTrustCancel
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get providerTlsTrustCancel;
+
+  /// 供应商证书信任：providerTlsOrigin
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get providerTlsOrigin;
+
+  /// 供应商证书信任：providerTlsIssuer
+  ///
+  /// In en, this message translates to:
+  /// **'Issuer'**
+  String get providerTlsIssuer;
+
+  /// 供应商证书信任：providerTlsValidTo
+  ///
+  /// In en, this message translates to:
+  /// **'Valid until'**
+  String get providerTlsValidTo;
+
+  /// 供应商证书信任：providerTlsFingerprint
+  ///
+  /// In en, this message translates to:
+  /// **'SHA-256 fingerprint'**
+  String get providerTlsFingerprint;
+
+  /// 供应商证书信任：providerTlsSection
+  ///
+  /// In en, this message translates to:
+  /// **'Certificate'**
+  String get providerTlsSection;
+
+  /// 供应商证书信任：providerTlsTrusted
+  ///
+  /// In en, this message translates to:
+  /// **'This address\'s certificate is trusted'**
+  String get providerTlsTrusted;
+
+  /// 供应商证书信任：providerTlsTrustedBody
+  ///
+  /// In en, this message translates to:
+  /// **'Reading models, connection checks and balance lookups accept this certificate.'**
+  String get providerTlsTrustedBody;
+
+  /// 供应商证书信任：providerTlsRevoke
+  ///
+  /// In en, this message translates to:
+  /// **'Revoke trust'**
+  String get providerTlsRevoke;
+
+  /// 供应商证书信任：providerTlsRevoked
+  ///
+  /// In en, this message translates to:
+  /// **'Trust revoked. The next read asks again.'**
+  String get providerTlsRevoked;
+
+  /// 供应商证书信任：providerTlsNotTrusted
+  ///
+  /// In en, this message translates to:
+  /// **'No certificate is trusted. When one cannot be verified, the app asks before connecting.'**
+  String get providerTlsNotTrusted;
+
   /// Model list failure: other status
   ///
   /// In en, this message translates to:
