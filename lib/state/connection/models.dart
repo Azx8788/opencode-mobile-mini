@@ -135,6 +135,29 @@ mixin _ConnectionControllerModels on ChangeNotifier {
     return _self._persistModelLibrary();
   }
 
+  /// Applies one provider's ticked set to this phone's picker in one write.
+  ///
+  /// The provider window saves two things on purpose: the entry goes into the
+  /// server's config (for the server), and these ids go into the local model
+  /// library (for the picker). A server that ignores the entry — or a config
+  /// the running process never re-reads — can no longer make the picker show
+  /// models the person unticked.
+  Future<void> setModelsEnabled(
+    String providerID, {
+    required Iterable<String> enabled,
+    required Iterable<String> disabled,
+  }) {
+    final provider = providerID.trim();
+    if (provider.isEmpty) return Future<void>.value();
+    _modelLibrary = _modelLibrary.withEnabledSet(
+      provider,
+      enabled: enabled,
+      disabled: disabled,
+    );
+    _self._notifyListeners();
+    return _self._persistModelLibrary();
+  }
+
   bool get serverOwnsSessionSelection =>
       _self.api is SessionSelectionGateway ||
       (_self.api == null && (_self.profile != null));

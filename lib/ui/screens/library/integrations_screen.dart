@@ -110,6 +110,9 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   @override
   void initState() {
     super.initState();
+    // Providers shows the app's own window (see build): the server's
+    // provider list is never read, so there is nothing to load.
+    if (widget.mode == IntegrationsMode.providers) return;
     WidgetsBinding.instance.addObserver(this);
     widget.controller.addListener(_onControllerChanged);
     final connectID = widget.connectProviderID;
@@ -281,13 +284,30 @@ class _IntegrationsScreenState extends State<IntegrationsScreen>
   bool get _showProviders => widget.mode != IntegrationsMode.mcp;
 
   @override
-  Widget build(BuildContext context) => ListenableBuilder(
-    listenable: Listenable.merge([
-      widget.controller,
-      widget.controller.profileDataChanges,
-    ]),
-    builder: (context, _) => _buildScreen(context),
-  );
+  Widget build(BuildContext context) {
+    // Providers opens the app's own provider window. The server's provider
+    // list is hidden on purpose: an entry written into the server's config
+    // never reached the running server here, so every row offered a fix that
+    // could not work. The app's window writes the same file, reads it back,
+    // and is the only list that can actually change which models exist.
+    if (widget.mode == IntegrationsMode.providers) {
+      return ListenableBuilder(
+        listenable: widget.controller,
+        builder: (context, _) => CustomProvidersScreen(
+          controller: widget.controller,
+          embedded: widget.embedded,
+          initialProviderID: widget.connectProviderID,
+        ),
+      );
+    }
+    return ListenableBuilder(
+      listenable: Listenable.merge([
+        widget.controller,
+        widget.controller.profileDataChanges,
+      ]),
+      builder: (context, _) => _buildScreen(context),
+    );
+  }
 
   /// Amber only where the person must act: finishing in the browser.
   /// Never red: a sign-in that ended or failed is neutral (the provider's

@@ -69,6 +69,40 @@ class ModelLibrary {
     balances: balances,
   );
 
+  /// One provider's tick set in a single step: [enabled] is shown, [disabled]
+  /// is not, and every other model keeps whatever it had.
+  ///
+  /// The provider form saves the same ticks twice — into the server's config
+  /// and into this list — because the picker answers to this phone. A server
+  /// that never re-reads its config cannot put back a model that was turned
+  /// off here.
+  ModelLibrary withEnabledSet(
+    String providerID, {
+    required Iterable<String> enabled,
+    required Iterable<String> disabled,
+  }) {
+    final provider = providerID.trim();
+    if (provider.isEmpty) return this;
+    var next = this;
+    for (final raw in enabled) {
+      final id = raw.trim();
+      if (id.isEmpty) continue;
+      next = next.withEnabled(
+        ModelRef(providerID: provider, modelID: id).normalized,
+        true,
+      );
+    }
+    for (final raw in disabled) {
+      final id = raw.trim();
+      if (id.isEmpty) continue;
+      next = next.withEnabled(
+        ModelRef(providerID: provider, modelID: id).normalized,
+        false,
+      );
+    }
+    return next;
+  }
+
   /// Whether the provider's models are hidden from the picker. A local
   /// preference, like [disabled], one level up.
   bool isProviderHidden(String providerID) =>
@@ -92,8 +126,7 @@ class ModelLibrary {
     );
   }
 
-  ProviderBalance? balanceFor(String providerID) =>
-      balances[providerID.trim()];
+  ProviderBalance? balanceFor(String providerID) => balances[providerID.trim()];
 
   ModelLibrary withBalance(String providerID, ProviderBalance balance) {
     final id = providerID.trim();

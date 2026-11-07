@@ -492,6 +492,15 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
           resultPath: _balancePath.text.trim(),
         ),
       );
+      // The same ticks, for this phone's picker: the config entry is what the
+      // server reads, this is what the app reads. Saving them together means
+      // an entry the server never picks up still changes which models the
+      // picker offers.
+      await widget.controller.setModelsEnabled(
+        draft.id,
+        enabled: [for (final model in draft.models) model.id],
+        disabled: draft.effectiveDisabledModelIDs,
+      );
       final reloaded = await _tryReload();
       if (!mounted) return;
       // The reload re-reads the config, but the catalogue the app shows is
@@ -1041,10 +1050,7 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
     ..._balanceSection(context, l10n),
   ];
 
-  List<Widget> _balanceSection(
-    BuildContext context,
-    AppLocalizations l10n,
-  ) => [
+  List<Widget> _balanceSection(BuildContext context, AppLocalizations l10n) => [
     KitSectionLabel(l10n.providerBalanceSection, gapBefore: _space(context)),
     KitSwitchRow(
       key: const ValueKey('provider-balance-enabled'),

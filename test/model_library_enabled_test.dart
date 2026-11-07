@@ -31,7 +31,10 @@ void main() {
     );
     expect(restored.isEnabled(model('a')), isFalse);
     expect(restored.isEnabled(model('b')), isTrue);
-    expect(restored.withEnabled(model('a'), true).isEnabled(model('a')), isTrue);
+    expect(
+      restored.withEnabled(model('a'), true).isEnabled(model('a')),
+      isTrue,
+    );
   });
 
   test('an old saved library without the field still shows everything', () {
@@ -46,5 +49,66 @@ void main() {
     final library = const ModelLibrary().withEnabled(model('gone'), false);
     final retained = library.retainWhere((ref) => ref.modelID != 'gone');
     expect(retained.disabled, isEmpty);
+  });
+
+  group('one provider in one step', () {
+    ModelRef gpt(String id) => ModelRef(providerID: 'openai', modelID: id);
+
+    test('a save keeps the ticked few and hides the rest', () {
+      // The case that made the form look broken: 79 models served, 2 ticked.
+      final library = const ModelLibrary().withEnabledSet(
+        'openai',
+        enabled: ['gpt-5.6-luna', 'gpt-6-luna'],
+        disabled: ['gpt-4o', 'gpt-4.1', 'o3'],
+      );
+      expect(library.isEnabled(gpt('gpt-5.6-luna')), isTrue);
+      expect(library.isEnabled(gpt('gpt-6-luna')), isTrue);
+      expect(library.isEnabled(gpt('gpt-4o')), isFalse);
+      expect(library.isEnabled(gpt('gpt-4.1')), isFalse);
+      expect(library.isEnabled(gpt('o3')), isFalse);
+    });
+
+    test('another provider keeps its own list', () {
+      final library = const ModelLibrary()
+          .withEnabled(
+            ModelRef(providerID: 'anthropic', modelID: 'claude'),
+            false,
+          )
+          .withEnabledSet('openai', enabled: ['gpt-4o'], disabled: const []);
+      expect(
+        library.isEnabled(ModelRef(providerID: 'anthropic', modelID: 'claude')),
+        isFalse,
+      );
+      expect(library.isEnabled(gpt('gpt-4o')), isTrue);
+    });
+
+    test('ticking a model again takes it off the deny list', () {
+      final library = const ModelLibrary()
+          .withEnabledSet('openai', enabled: const [], disabled: ['gpt-4o'])
+          .withEnabledSet('openai', enabled: ['gpt-4o'], disabled: const []);
+      expect(library.isEnabled(gpt('gpt-4o')), isTrue);
+      expect(library.disabled, isEmpty);
+    });
+
+    test('a blank provider or blank id changes nothing', () {
+      const library = ModelLibrary();
+      expect(
+        identical(
+          library.withEnabledSet('  ', enabled: ['a'], disabled: const []),
+          library,
+        ),
+        isTrue,
+      );
+      expect(
+        library
+            .withEnabledSet(
+              'openai',
+              enabled: const ['  '],
+              disabled: const [''],
+            )
+            .disabled,
+        isEmpty,
+      );
+    });
   });
 }

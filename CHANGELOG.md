@@ -2,6 +2,28 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.6+10 — 2026-11-07
+
+Providers is the app's own window now. The server's provider list is hidden:
+an entry written into `opencode.json` was merged onto a catalogue the running
+process had already built, so a key, an address or a model switch saved there
+could not change what the server served — and the page showed a list that
+promised exactly that.
+
+  * **Every "Providers" door opens the provider window** — settings, this
+    phone, usage, chat notices, the model picker and deep links. The server's
+    own list is not read at all in that mode, so no row can offer a fix it
+    cannot make.
+  * **A save changes this phone's picker as well.** The ticks are written
+    twice: into the config entry (what the server reads) and into the local
+    model library (what the picker reads). A server that never re-reads its
+    config can no longer put back a model the person turned off.
+  * **"Models and checks" keeps a door** at the bottom of the provider
+    window, so the all-providers switchboard and the per-model tests stay one
+    tap away.
+
+Builds are `0.3.6+10`.
+
 ## 0.3.5+9 — 2026-11-07
 
 Three answers to "I changed a provider and nothing happened":

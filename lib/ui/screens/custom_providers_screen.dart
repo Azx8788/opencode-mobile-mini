@@ -14,6 +14,7 @@ import '../app_iconography.dart';
 import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit.dart';
 import 'custom_provider_screen.dart';
+import 'provider_models_screen.dart';
 import 'provider_probe_screen.dart';
 
 AppLocalizations _l10nOf(BuildContext context) =>
@@ -31,12 +32,21 @@ class CustomProvidersScreen extends StatefulWidget {
     super.key,
     required this.controller,
     this.linux,
+    this.embedded = false,
+    this.initialProviderID,
   });
 
   final ConnectionController controller;
 
   /// The in-app server bridge. Null means "make one" — instances are cheap.
   final BuiltinLinux? linux;
+
+  /// Body only, for a host that already has a top bar of its own.
+  final bool embedded;
+
+  /// A provider some other screen asked for ("this model's provider"): its
+  /// form opens once, as soon as the list is read. Null opens nothing.
+  final String? initialProviderID;
 
   @override
   State<CustomProvidersScreen> createState() => _CustomProvidersScreenState();
@@ -51,6 +61,7 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
   Object? _error;
   bool _loading = true;
   bool _busy = false;
+  bool _initialOpened = false;
 
   /// True when this profile is the server the app itself runs, whose files
   /// this app may write.
@@ -80,6 +91,7 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
         _catalogue = catalogue;
         _loading = false;
       });
+      _openInitialOnce();
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -87,6 +99,38 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
         _loading = false;
       });
     }
+  }
+
+  /// Opens the provider some other screen asked for, once.
+  ///
+  /// "Configure this model's provider" used to land on the server's own
+  /// provider list. That list is hidden now, so the same tap lands here and
+  /// opens the entry whose id the caller named.
+  void _openInitialOnce() {
+    if (_initialOpened || !mounted) return;
+    final id = widget.initialProviderID?.trim().toLowerCase();
+    if (id == null || id.isEmpty) return;
+    final catalogue = _catalogue;
+    if (catalogue == null) return;
+    ProviderListEntry? entry;
+    for (final candidate in providerListEntries(catalogue)) {
+      if (candidate.id.toLowerCase() == id) {
+        entry = candidate;
+        break;
+      }
+    }
+    if (entry == null || entry.blocked) return;
+    _initialOpened = true;
+    final target = entry;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      unawaited(
+        _openForm(
+          target.record,
+          template: target.record == null ? target.template : null,
+        ),
+      );
+    });
   }
 
   Future<void> _openForm(
@@ -176,24 +220,26 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
     final l10n = _l10nOf(context);
     return KitScreen(
       width: KitScreenWidth.list,
-      topBar: KitTopBar(
-        title: l10n.providerManageTitle,
-        subtitle: widget.controller.profile?.name,
-        actions: [
-          KitAction(
-            key: const ValueKey('providers-add-top'),
-            label: l10n.providerAddTitle,
-            icon: AppIconography.add,
-            onPressed: _loading ? null : () => _openForm(null),
-          ),
-          KitAction(
-            key: const ValueKey('providers-refresh'),
-            label: l10n.providerManageRefresh,
-            icon: AppIconography.retry,
-            onPressed: _loading ? null : _load,
-          ),
-        ],
-      ),
+      topBar: widget.embedded
+          ? null
+          : KitTopBar(
+              title: l10n.providerManageTitle,
+              subtitle: widget.controller.profile?.name,
+              actions: [
+                KitAction(
+                  key: const ValueKey('providers-add-top'),
+                  label: l10n.providerAddTitle,
+                  icon: AppIconography.add,
+                  onPressed: _loading ? null : () => _openForm(null),
+                ),
+                KitAction(
+                  key: const ValueKey('providers-refresh'),
+                  label: l10n.providerManageRefresh,
+                  icon: AppIconography.retry,
+                  onPressed: _loading ? null : _load,
+                ),
+              ],
+            ),
       status: _busy
           ? KitStatus(
               kind: KitStatusKind.work,
@@ -346,6 +392,27 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
           ],
         ),
       ],
+      // The catalogue view keeps its door: it is where every model of every
+      // provider sits on one page, with a switch and a test each.
+      SizedBox(height: tokens.space4),
+      KitRowGroup(
+        margin: EdgeInsets.zero,
+        children: [
+          KitRow(
+            key: const ValueKey('providers-open-models'),
+            title: l10n.providerModelsTitle,
+            supporting: TextSpan(text: l10n.providerModelsHint),
+            supportingMaxLines: 2,
+            trailing: const KitChevron(),
+            onTap: () => Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) =>
+                    ProviderModelsScreen(controller: widget.controller),
+              ),
+            ),
+          ),
+        ],
+      ),
     ];
   }
 
