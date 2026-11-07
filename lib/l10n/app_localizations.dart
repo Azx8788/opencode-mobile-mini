@@ -9258,13 +9258,13 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{Sent 1 queued prompt} other{Sent {count} queued prompts}}'**
-  String chatUiQueuedSent(num count);
+  String chatUiQueuedSent(int count);
 
   /// Chat journey:  · {count, plural, one{1 draft waiting for other servers} other{{count} drafts waiting for other servers}}
   ///
   /// In en, this message translates to:
   /// **' · {count, plural, one{1 draft waiting for other servers} other{{count} drafts waiting for other servers}}'**
-  String chatUiOtherDraftsWaitingSuffix(num count);
+  String chatUiOtherDraftsWaitingSuffix(int count);
 
   /// Chat journey: Next turns in this session use {model}.
   ///
@@ -9300,19 +9300,19 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 draft queued to send on reconnect.} other{{count} drafts queued to send on reconnect.}}'**
-  String chatUiDraftsQueued(num count);
+  String chatUiDraftsQueued(int count);
 
   /// Chat journey: {count, plural, one{1 draft waiting for other servers.} other{{count} drafts waiting for other servers.}}
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 draft waiting for other servers.} other{{count} drafts waiting for other servers.}}'**
-  String chatUiOtherDraftsWaiting(num count);
+  String chatUiOtherDraftsWaiting(int count);
 
   /// Chat journey: {count, plural, one{1 question} other{{count} questions}}
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 question} other{{count} questions}}'**
-  String chatUiQuestionCount(num count);
+  String chatUiQuestionCount(int count);
 
   /// Chat journey: Permission needed: {title}
   ///
@@ -9330,7 +9330,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{question} · {count, plural, one{1 question} other{{count} questions}}'**
-  String chatUiQuestionsSummary(Object question, num count);
+  String chatUiQuestionsSummary(Object question, int count);
 
   /// Chat journey: Rate limited. Retrying{attempt}…
   ///
@@ -9348,7 +9348,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 reference is added as text when you send. Not saved with your draft.} other{{count} references are added as text when you send. Not saved with your draft.}}'**
-  String chatUiReferencesAttachedNotice(num count);
+  String chatUiReferencesAttachedNotice(int count);
 
   /// Chat journey: {count} attached
   ///
@@ -9360,7 +9360,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 earlier message} other{{count} earlier messages}}'**
-  String chatUiEarlierMessageCount(num count);
+  String chatUiEarlierMessageCount(int count);
 
   /// Chat journey: {count} tok
   ///
@@ -9396,7 +9396,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 line} other{{count} lines}}'**
-  String chatUiLineCount(num count);
+  String chatUiLineCount(int count);
 
   /// Chat journey: L{start}–{end}
   ///
@@ -9408,7 +9408,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 entry} other{{count} entries}}'**
-  String chatUiEntryCount(num count);
+  String chatUiEntryCount(int count);
 
   /// Chat journey: {count} found
   ///
@@ -9420,13 +9420,13 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 match} other{{count} matches}}'**
-  String chatUiMatchCount(num count);
+  String chatUiMatchCount(int count);
 
   /// Chat journey: {count, plural, one{1 file} other{{count} files}}
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 file} other{{count} files}}'**
-  String chatUiFileCount(num count);
+  String chatUiFileCount(int count);
 
   /// Chat journey: {provider} search
   ///
@@ -9438,7 +9438,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 result} other{{count} results}}'**
-  String chatUiResultCount(num count);
+  String chatUiResultCount(int count);
 
   /// Chat journey: {count} answered
   ///
@@ -40640,6 +40640,120 @@ abstract class AppLocalizations {
   /// **'Another setup is running. Wait for it to finish.'**
   String get agentsFailBusy;
 
+  /// Sign-in step action: an Anthropic-compatible gateway instead of a Claude account
+  ///
+  /// In en, this message translates to:
+  /// **'Use a third-party endpoint'**
+  String get agentsEndpointAction;
+
+  /// Endpoint sheet title
+  ///
+  /// In en, this message translates to:
+  /// **'Third-party endpoint'**
+  String get agentsEndpointTitle;
+
+  /// Endpoint sheet explanation
+  ///
+  /// In en, this message translates to:
+  /// **'Send {agent} to an Anthropic-compatible gateway. Its address and key are saved in the agent\'s own settings on this phone, and the app keeps no copy.'**
+  String agentsEndpointIntro(String agent);
+
+  /// Endpoint form: gateway address field
+  ///
+  /// In en, this message translates to:
+  /// **'Base URL'**
+  String get agentsEndpointBaseUrl;
+
+  /// Endpoint form: gateway address example
+  ///
+  /// In en, this message translates to:
+  /// **'https://gateway.example.com'**
+  String get agentsEndpointBaseUrlHint;
+
+  /// Endpoint form: gateway key field
+  ///
+  /// In en, this message translates to:
+  /// **'Key'**
+  String get agentsEndpointKey;
+
+  /// Endpoint form: a key already exists in the settings file
+  ///
+  /// In en, this message translates to:
+  /// **'A key is saved. Type a new one only to replace it.'**
+  String get agentsEndpointKeySaved;
+
+  /// Endpoint form: optional model field
+  ///
+  /// In en, this message translates to:
+  /// **'Model'**
+  String get agentsEndpointModel;
+
+  /// Endpoint form: model field helper
+  ///
+  /// In en, this message translates to:
+  /// **'Empty uses the gateway\'s default'**
+  String get agentsEndpointModelHint;
+
+  /// Endpoint form: save button
+  ///
+  /// In en, this message translates to:
+  /// **'Save and check'**
+  String get agentsEndpointSave;
+
+  /// Endpoint form: save in progress
+  ///
+  /// In en, this message translates to:
+  /// **'Saving…'**
+  String get agentsEndpointSaving;
+
+  /// Endpoint form: remove the saved gateway
+  ///
+  /// In en, this message translates to:
+  /// **'Remove endpoint'**
+  String get agentsEndpointRemove;
+
+  /// Endpoint removal confirmation
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} goes back to its own sign-in. Nothing else in its settings changes.'**
+  String agentsEndpointRemoveBody(String agent);
+
+  /// Endpoint removal confirm button
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get agentsEndpointRemoveConfirm;
+
+  /// Endpoint removal result
+  ///
+  /// In en, this message translates to:
+  /// **'Endpoint removed.'**
+  String get agentsEndpointRemoved;
+
+  /// Endpoint form: plain http warning
+  ///
+  /// In en, this message translates to:
+  /// **'This address is not HTTPS. The key would travel in the clear.'**
+  String get agentsEndpointInsecure;
+
+  /// Endpoint form: required fields missing
+  ///
+  /// In en, this message translates to:
+  /// **'Fill in the address and the key.'**
+  String get agentsEndpointIncomplete;
+
+  /// Endpoint form: save failed
+  ///
+  /// In en, this message translates to:
+  /// **'The endpoint couldn\'t be saved. Check the address and try again.'**
+  String get agentsEndpointFailed;
+
+  /// Sign-in step: the agent uses a gateway
+  ///
+  /// In en, this message translates to:
+  /// **'Using {host}'**
+  String agentsEndpointConfigured(String host);
+
   /// Sign-in step title
   ///
   /// In en, this message translates to:
@@ -42666,7 +42780,7 @@ abstract class AppLocalizations {
   ///
   /// In en, this message translates to:
   /// **'{count, plural, one{1 line} other{{count} lines}}'**
-  String chatRequestReadLines(num count);
+  String chatRequestReadLines(int count);
 
   /// Chat journey: What was sent
   ///

@@ -5,6 +5,7 @@ import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../domain/agent_auth_probe.dart';
+import '../../../domain/agent_endpoint.dart';
 import '../../../domain/agent_sign_in.dart';
 import '../../../domain/phone_agent_host.dart';
 import '../../../domain/phone_agents.dart';
@@ -14,6 +15,7 @@ import '../../app_iconography.dart';
 import '../../app_theme.dart' show AppStatusTone;
 import '../../kit/kit.dart';
 import '../chats/chats_host.dart';
+import 'agent_endpoint_sheet.dart';
 import 'agent_error_notice.dart';
 import 'agent_sign_in_terminal.dart';
 import 'agents_text.dart';
@@ -99,6 +101,10 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
   bool _removalPending = false;
   AgentRemovalResult? _removed;
 
+  // The gateway this agent's own settings file names, read when its sign-in
+  // step opens. Null until the first read.
+  AgentEndpointStatus? _endpoint;
+
   PhoneAgentsSource get _agents => ref.read(chatsHostProvider).agents!;
 
   /// Present only when the source can remove an installed agent.
@@ -123,6 +129,49 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
     return agents is PhoneAgentAccountSource
         ? agents as PhoneAgentAccountSource
         : null;
+  }
+
+  /// Present only when the source can reach an agent's own settings file.
+  PhoneAgentEndpointSource? get _endpoints {
+    final agents = _agents;
+    return agents is PhoneAgentEndpointSource
+        ? agents as PhoneAgentEndpointSource
+        : null;
+  }
+
+  bool _supportsEndpoint(String id) =>
+      _endpoints?.supportsAgentEndpoint(id) ?? false;
+
+  /// What the agent's settings file says now. Read when the sign-in step
+  /// opens, not on every rebuild: it is a file read on the phone.
+  Future<void> _readEndpoint() async {
+    final id = _agentId;
+    final source = _endpoints;
+    if (id == null || source == null || !source.supportsAgentEndpoint(id)) {
+      return;
+    }
+    try {
+      final status = await source.readAgentEndpoint(id);
+      if (mounted && id == _agentId) setState(() => _endpoint = status);
+    } catch (_) {
+      // A settings file the app cannot read leaves the account page as it is.
+    }
+  }
+
+  /// The gateway form. Saving it changes the row's sign-in truth, so the
+  /// step is re-read instead of guessed.
+  Future<void> _openEndpoint() async {
+    final id = _agentId;
+    if (id == null) return;
+    final changed = await showAgentEndpointSheet(context, agentId: id);
+    if (!mounted || changed != true) return;
+    _signInKicked = false;
+    setState(() => _readingSignIn = false);
+    await _readEndpoint();
+    if (!mounted) return;
+    await _agents.refreshAgentRows();
+    if (!mounted) return;
+    _enter(AgentSheetStep.signIn);
   }
 
   @override
@@ -167,6 +216,7 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
       case AgentSheetStep.check:
         unawaited(_runCheck());
       case AgentSheetStep.signIn:
+        unawaited(_readEndpoint());
         unawaited(_beginSignIn());
       case AgentSheetStep.list || AgentSheetStep.setup:
         break;
@@ -188,6 +238,8 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
       return;
     }
     _agentId = id;
+    // The previous agent's gateway is not this agent's.
+    _endpoint = null;
     switch (row.fixAction) {
       case PhoneAgentFixAction.resume:
         try {
@@ -902,11 +954,17 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
         ? account?.accountDisplayName?.trim()
         : null;
     final canSignOut =
-        _signingOut ||
-        (phase == AgentSignInPhase.signedIn &&
-            accounts != null &&
-            accounts.agentAccount(id)?.state == AgentAuthProbeState.signedIn &&
-            accounts.canSignOutAgent(id));
+        !(_endpoint?.configured ?? false) &&
+        (_signingOut ||
+            (phase == AgentSignInPhase.signedIn &&
+                accounts != null &&
+                accounts.agentAccount(id)?.state ==
+                    AgentAuthProbeState.signedIn &&
+                accounts.canSignOutAgent(id)));
+    // A gateway has no account command to sign out of: removing it is the
+    // one way back, and that lives in the endpoint sheet.
+    final gateway = _endpoint?.configured ?? false;
+    final gatewayHost = _endpoint?.baseUrl ?? '';
 
     // A stopped agent (its row offers only Resume) still opens this page so
     // Sign out and Remove stay reachable; Resume is its one main act.
@@ -942,7 +1000,9 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
           ? l10n.agentsSignInLimit(name)
           : l10n.agentsLimitReset(name, KitTime.moment(context, resetAt));
     } else if (signedIn) {
-      body = l10n.agentsSignedInBody(name);
+      body = gateway
+          ? l10n.agentsEndpointConfigured(gatewayHost)
+          : l10n.agentsSignedInBody(name);
     } else if (hostKey) {
       body = l10n.agentsSignInUnavailable;
     } else if (checking) {
@@ -962,8 +1022,9 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
       loading: checking || _signingOut,
       primary: primary,
       // The agent's own status can say signed in while its login no longer
-      // works (an expired session): signing in again is always offered.
-      secondary: signedIn
+      // works (an expired session): signing in again is always offered. A
+      // gateway is edited instead, never replaced by the account page.
+      secondary: signedIn && !gateway
           ? KitAction(
               key: const ValueKey('agents-sign-in-again'),
               label: l10n.agentsSignInAgain,
@@ -971,6 +1032,18 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
             )
           : null,
       tertiary: [
+        if (gateway)
+          KitAction(
+            key: const ValueKey('agents-endpoint-edit'),
+            label: l10n.agentsEndpointTitle,
+            onPressed: _signingOut ? null : () => unawaited(_openEndpoint()),
+          ),
+        if (!gateway && !signedIn && _supportsEndpoint(id) && !hostKey)
+          KitAction(
+            key: const ValueKey('agents-endpoint-add'),
+            label: l10n.agentsEndpointAction,
+            onPressed: _signingOut ? null : () => unawaited(_openEndpoint()),
+          ),
         if (canSignOut)
           KitAction(
             key: const ValueKey('agents-sign-out'),
@@ -989,7 +1062,7 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
             key: const ValueKey('agents-sign-in-words'),
             tone: KitTextTone.secondary,
           ),
-          if (accountName != null && accountName.isNotEmpty)
+          if (!gateway && accountName != null && accountName.isNotEmpty)
             KitText(
               agentSignedInLine(l10n, account!),
               key: const ValueKey('agents-sign-in-account'),

@@ -5466,7 +5466,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiQueuedSent(num count) {
+  String chatUiQueuedSent(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5477,7 +5477,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiOtherDraftsWaitingSuffix(num count) {
+  String chatUiOtherDraftsWaitingSuffix(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5513,7 +5513,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiDraftsQueued(num count) {
+  String chatUiDraftsQueued(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5524,7 +5524,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiOtherDraftsWaiting(num count) {
+  String chatUiOtherDraftsWaiting(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5535,7 +5535,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiQuestionCount(num count) {
+  String chatUiQuestionCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5556,7 +5556,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiQuestionsSummary(Object question, num count) {
+  String chatUiQuestionsSummary(Object question, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5577,7 +5577,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiReferencesAttachedNotice(num count) {
+  String chatUiReferencesAttachedNotice(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5595,7 +5595,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiEarlierMessageCount(num count) {
+  String chatUiEarlierMessageCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5631,7 +5631,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiLineCount(num count) {
+  String chatUiLineCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5647,7 +5647,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiEntryCount(num count) {
+  String chatUiEntryCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5663,7 +5663,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiMatchCount(num count) {
+  String chatUiMatchCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5674,7 +5674,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiFileCount(num count) {
+  String chatUiFileCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5690,7 +5690,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatUiResultCount(num count) {
+  String chatUiResultCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -25731,6 +25731,72 @@ class AppLocalizationsEn extends AppLocalizations {
       'Another setup is running. Wait for it to finish.';
 
   @override
+  String get agentsEndpointAction => 'Use a third-party endpoint';
+
+  @override
+  String get agentsEndpointTitle => 'Third-party endpoint';
+
+  @override
+  String agentsEndpointIntro(String agent) {
+    return 'Send $agent to an Anthropic-compatible gateway. Its address and key are saved in the agent\'s own settings on this phone, and the app keeps no copy.';
+  }
+
+  @override
+  String get agentsEndpointBaseUrl => 'Base URL';
+
+  @override
+  String get agentsEndpointBaseUrlHint => 'https://gateway.example.com';
+
+  @override
+  String get agentsEndpointKey => 'Key';
+
+  @override
+  String get agentsEndpointKeySaved =>
+      'A key is saved. Type a new one only to replace it.';
+
+  @override
+  String get agentsEndpointModel => 'Model';
+
+  @override
+  String get agentsEndpointModelHint => 'Empty uses the gateway\'s default';
+
+  @override
+  String get agentsEndpointSave => 'Save and check';
+
+  @override
+  String get agentsEndpointSaving => 'Saving…';
+
+  @override
+  String get agentsEndpointRemove => 'Remove endpoint';
+
+  @override
+  String agentsEndpointRemoveBody(String agent) {
+    return '$agent goes back to its own sign-in. Nothing else in its settings changes.';
+  }
+
+  @override
+  String get agentsEndpointRemoveConfirm => 'Remove';
+
+  @override
+  String get agentsEndpointRemoved => 'Endpoint removed.';
+
+  @override
+  String get agentsEndpointInsecure =>
+      'This address is not HTTPS. The key would travel in the clear.';
+
+  @override
+  String get agentsEndpointIncomplete => 'Fill in the address and the key.';
+
+  @override
+  String get agentsEndpointFailed =>
+      'The endpoint couldn\'t be saved. Check the address and try again.';
+
+  @override
+  String agentsEndpointConfigured(String host) {
+    return 'Using $host';
+  }
+
+  @override
   String agentsSignInTitle(String agent) {
     return 'Sign in with $agent';
   }
@@ -27059,7 +27125,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String chatRequestReadLines(num count) {
+  String chatRequestReadLines(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,

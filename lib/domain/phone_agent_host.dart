@@ -1,4 +1,5 @@
 import 'agent_catalog.dart';
+import 'agent_endpoint.dart';
 
 const phoneAgentHostSecretPrefix = 'oc.agentHostSecret.';
 const phoneAgentGatePrefix = 'oc.agentPhoneGate.';
@@ -116,4 +117,15 @@ abstract interface class PhoneAgentHost {
   Future<void> start();
   Future<void> stop();
   Future<AgentPhoneCheckResult> selfTest(String agentId);
+
+  /// The gateway this agent's own settings file names, if any. Only agents
+  /// that can take one answer; others throw.
+  Future<AgentEndpointStatus> readAgentEndpoint(String agentId);
+
+  /// Writes the endpoint into the agent's own settings file, leaving every
+  /// other key in that file untouched.
+  Future<void> saveAgentEndpoint(String agentId, AgentEndpoint endpoint);
+
+  /// Removes only the keys this app wrote; the file stays otherwise.
+  Future<void> clearAgentEndpoint(String agentId);
 }

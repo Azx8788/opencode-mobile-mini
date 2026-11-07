@@ -9,6 +9,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../domain/agent_helper_status.dart';
 import '../../domain/agent_catalog.dart';
+import '../../domain/agent_endpoint.dart';
 import '../../domain/phone_agent_host.dart';
 import '../../domain/phone_agents.dart';
 import '../../domain/server_gateway.dart';
@@ -20,9 +21,11 @@ import '../../paseo/gateway.dart';
 import '../../paseo/transport.dart';
 import '../../ui/kit/kit_redact.dart';
 import '../builtin_linux.dart';
+import '../builtin_folders.dart';
 import '../setup/setup_engine.dart';
 import '../setup/setup_contract.dart';
 import 'agent_components.dart';
+import 'agent_endpoint_scripts.dart';
 import 'agent_install_guard.dart';
 import 'agent_removal_scripts.dart';
 import 'paseo_scripts.dart';
@@ -133,6 +136,110 @@ final class BuiltinPhoneAgents implements PhoneAgentHost {
   bool supportsSignOut(String agentId) =>
       _authBridgeAvailable &&
       AgentPhoneScripts.supportsSignOut(_agent(agentId));
+
+  // ---- third-party endpoint (Claude Code's own settings file) -------------
+
+  @override
+  Future<AgentEndpointStatus> readAgentEndpoint(String agentId) async {
+    if (!agentSupportsEndpoint(agentId)) {
+      throw const ProductException('This agent has no endpoint setting');
+    }
+    final rootfs = await BuiltinRootfsFolders.locateRootfs();
+    if (rootfs == null) return AgentEndpointStatus.absent;
+    final file = File(
+      '${rootfs.path}/home/oc/.oc-profiles/$profileId/claude/settings.json',
+    );
+    final FileSystemEntityType type;
+    try {
+      type = await FileSystemEntity.type(file.path, followLinks: false);
+    } on FileSystemException {
+      throw const ProductException('The endpoint setting could not be read');
+    }
+    if (type == FileSystemEntityType.notFound) {
+      return AgentEndpointStatus.absent;
+    }
+    // The file belongs to the agent; a link or a directory is not one.
+    if (type != FileSystemEntityType.file) {
+      throw const ProductException('The endpoint setting could not be read');
+    }
+    final String raw;
+    try {
+      if (await file.length() > 1048576) {
+        throw const ProductException('The endpoint setting is too large');
+      }
+      raw = await file.readAsString();
+    } on FileSystemException {
+      throw const ProductException('The endpoint setting could not be read');
+    }
+    final Object? decoded;
+    try {
+      decoded = jsonDecode(raw.isEmpty ? '{}' : raw);
+    } on FormatException {
+      throw const ProductException(
+        'Claude\u2019s settings file is not valid JSON',
+      );
+    }
+    if (decoded is! Map) {
+      throw const ProductException(
+        'Claude\u2019s settings file is not a JSON object',
+      );
+    }
+    final env = decoded['env'];
+    if (env is! Map) return AgentEndpointStatus.absent;
+    final base = env['ANTHROPIC_BASE_URL'];
+    final token = env['ANTHROPIC_AUTH_TOKEN'] ?? env['ANTHROPIC_API_KEY'];
+    final model = env['ANTHROPIC_MODEL'];
+    return AgentEndpointStatus(
+      baseUrl: base is String && base.trim().isNotEmpty ? base.trim() : null,
+      model: model is String && model.trim().isNotEmpty ? model.trim() : null,
+      hasKey: token is String && token.trim().isNotEmpty,
+    );
+  }
+
+  @override
+  Future<void> saveAgentEndpoint(String agentId, AgentEndpoint endpoint) async {
+    await _writeAgentEndpoint(agentId, 'write', endpoint: endpoint);
+  }
+
+  @override
+  Future<void> clearAgentEndpoint(String agentId) =>
+      _writeAgentEndpoint(agentId, 'clear');
+
+  Future<void> _writeAgentEndpoint(
+    String agentId,
+    String action, {
+    AgentEndpoint? endpoint,
+  }) async {
+    if (!agentSupportsEndpoint(agentId)) {
+      throw const ProductException('This agent has no endpoint setting');
+    }
+    // Only an installed agent has a home to write into.
+    _agent(agentId);
+    final BuiltinLinuxRunResult result;
+    try {
+      result = await _linux.runAgentSetupCheck(
+        AgentEndpointScripts.claude(
+          profileId: profileId,
+          action: action,
+          endpoint: endpoint,
+        ),
+        timeout: const Duration(seconds: 30),
+      );
+    } catch (_) {
+      throw const ProductException(
+        'The phone\u2019s Linux tools are not ready',
+      );
+    }
+    if (result.exitCode != 0) {
+      throw ProductException(switch (result.exitCode) {
+        20 => 'The phone\u2019s Linux tools are not ready',
+        21 => 'Claude\u2019s settings file is not valid JSON',
+        23 => 'This endpoint cannot be saved',
+        24 => 'This endpoint has no saved key yet',
+        _ => 'The endpoint could not be saved',
+      });
+    }
+  }
 
   /// Android runs one status check per profile at a time and refuses a
   /// second one as "host unavailable". The agent list, the sign-in step and

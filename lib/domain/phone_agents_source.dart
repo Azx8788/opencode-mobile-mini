@@ -11,6 +11,7 @@
 /// `phone_agent_host.dart` / `agent_sign_in.dart`, never raw text.
 library;
 
+import 'agent_endpoint.dart';
 import 'agent_sign_in.dart';
 import 'agent_auth_probe.dart';
 import 'chat_feed.dart';
@@ -36,6 +37,19 @@ abstract interface class PhoneAgentAccountSource {
   Future<bool> confirmAgentSignIn(String agentId);
   bool canSignOutAgent(String agentId);
   Future<void> signOutAgent(String agentId);
+}
+
+/// Optional gateway setting for an agent that has no account to sign in with.
+///
+/// Present only when the source can reach the agent's own settings file; the
+/// sheet asks instead of assuming, exactly as it does for removal and
+/// accounts. Only agents that document the keys answer (see
+/// `agentSupportsEndpoint`).
+abstract interface class PhoneAgentEndpointSource {
+  bool supportsAgentEndpoint(String agentId);
+  Future<AgentEndpointStatus> readAgentEndpoint(String agentId);
+  Future<void> saveAgentEndpoint(String agentId, AgentEndpoint endpoint);
+  Future<void> clearAgentEndpoint(String agentId);
 }
 
 /// One entry of the agent chip's sheet.

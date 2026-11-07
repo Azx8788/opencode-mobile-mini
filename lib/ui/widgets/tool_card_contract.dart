@@ -465,7 +465,7 @@ class _ToolContract {
           details.add(strings.chatUiFromLine(value));
         }
         if (_valueNumber(input['limit']) case final value?) {
-          details.add(strings.chatUiLineCount(value));
+          details.add(strings.chatUiLineCount(value.toInt()));
         }
         final display = metadata['display'];
         if (display is Map) {
@@ -501,10 +501,10 @@ class _ToolContract {
         subtitle = _valueString(input['pattern']);
         technical = true;
         if (_valueNumber(metadata['matches']) case final value?) {
-          details.add(strings.chatUiMatchCount(value));
+          details.add(strings.chatUiMatchCount(value.toInt()));
         }
         if (_valueNumber(metadata['count']) case final value? when value > 0) {
-          details.add(strings.chatUiFileCount(value));
+          details.add(strings.chatUiFileCount(value.toInt()));
         }
         if (_valueString(input['include']) case final value?) {
           details.add(value);
@@ -586,7 +586,7 @@ class _ToolContract {
             : strings.chatUiProviderSearch(metadata['provider'] ?? '');
         subtitle = _valueString(input['query']);
         if (_valueNumber(metadata['numResults']) case final value?) {
-          details.add(strings.chatUiResultCount(value));
+          details.add(strings.chatUiResultCount(value.toInt()));
         }
         break;
       case 'task':

@@ -35,6 +35,7 @@ OC_AUTH_PROBE
 
   static const _authProbe = r'''
 import json, os, re, selectors, signal, subprocess, sys, time
+from urllib.parse import urlsplit
 agent, executable, action = sys.argv[1:]
 def emit(state, account=None, error=None):
     value = {'state': state}
@@ -95,14 +96,34 @@ try:
         if code != 0: fail('signOutFailed')
     if agent == 'claude':
         if os.environ.get('CLAUDE_CONFIG_DIR') != home + '/claude': fail('invalidContext')
-        code, data = run(['auth', 'status', '--json'])
-        if code not in (0, 1) or not isinstance(data, dict) or type(data.get('loggedIn')) is not bool or not isinstance(data.get('authMethod'), str) or not isinstance(data.get('apiProvider'), str):
-            fail('invalidResponse')
-        if data['loggedIn']:
-            if code != 0: fail('invalidResponse')
+        # A gateway configured in the agent's own settings file is a signed-in
+        # state too: `auth status` only knows about Claude accounts, and would
+        # call a working gateway "signed out" without ever trying it.
+        gateway = None
+        try:
+            with open(home + '/claude/settings.json', encoding='utf-8') as source: settings = json.load(source)
+            values = settings.get('env') if isinstance(settings, dict) else None
+            if isinstance(values, dict):
+                base = values.get('ANTHROPIC_BASE_URL')
+                token = values.get('ANTHROPIC_AUTH_TOKEN') or values.get('ANTHROPIC_API_KEY')
+                if isinstance(base, str) and base.strip() and isinstance(token, str) and token.strip():
+                    gateway = base.strip()
+        except (OSError, ValueError, TypeError): gateway = None
+        if gateway is not None:
+            # A gateway answers by itself; the account command would only add
+            # a 60-second wait to every refresh and then call it signed out.
             if action == 'logout': fail('signOutFailed')
-            emit('signedIn', account(data.get('email')))
-        else: emit('signedOut')
+            emit('signedIn', account(urlsplit(gateway).hostname))
+        else:
+            code, data = 1, None
+            try: code, data = run(['auth', 'status', '--json'])
+            except (OSError, ValueError, TypeError, subprocess.TimeoutExpired, TimeoutError): pass
+            if isinstance(data, dict) and type(data.get('loggedIn')) is bool and data['loggedIn']:
+                if action == 'logout': fail('signOutFailed')
+                emit('signedIn', account(data.get('email')))
+            elif isinstance(data, dict) and type(data.get('loggedIn')) is bool:
+                emit('signedOut')
+            else: fail('invalidResponse')
     elif agent == 'fx':
         code, data = run(['status', '--json'])
         if code != 0 or not isinstance(data, dict) or data.get('kind') != 'status' or not isinstance(data.get('auth'), str):

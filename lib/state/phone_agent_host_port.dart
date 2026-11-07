@@ -3,6 +3,7 @@ import '../domain/agent_helper_status.dart';
 export '../builtin/agents/phone_agents_host.dart' show PhoneAgentIdleState;
 import '../builtin/agents/phone_agents_host.dart';
 import '../domain/agent_catalog.dart';
+import '../domain/agent_endpoint.dart';
 import '../domain/agent_sign_in.dart';
 import '../domain/agent_auth_probe.dart';
 import '../domain/phone_agent_host.dart';
@@ -108,6 +109,15 @@ final class BuiltinPhoneAgentHostPort
   @override
   Future<AgentRemovalResult> removeAgent(String agentId) =>
       _host.removeAgent(agentId);
+  @override
+  Future<AgentEndpointStatus> readAgentEndpoint(String agentId) =>
+      _host.readAgentEndpoint(agentId);
+  @override
+  Future<void> saveAgentEndpoint(String agentId, AgentEndpoint endpoint) =>
+      _host.saveAgentEndpoint(agentId, endpoint);
+  @override
+  Future<void> clearAgentEndpoint(String agentId) =>
+      _host.clearAgentEndpoint(agentId);
   @override
   Future<AgentHelperStatus> helperStatus() => _host.helperStatus();
 

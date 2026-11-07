@@ -147,6 +147,7 @@ import '../domain/merged_chat_feed.dart';
 import '../domain/phone_agent_host.dart';
 import '../domain/phone_agents.dart';
 import '../domain/phone_agents_source.dart';
+import '../domain/agent_endpoint.dart';
 import '../domain/agent_sign_in.dart';
 import '../domain/agent_catalog.dart';
 import '../domain/agent_tools/agent_certification.dart';

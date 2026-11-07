@@ -4754,7 +4754,7 @@
     "description": "Chat journey: {count, plural, one{Sent 1 queued prompt} other{Sent {count} queued prompts}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -4763,7 +4763,7 @@
     "description": "Chat journey:  · {count, plural, one{1 draft waiting for other servers} other{{count} drafts waiting for other servers}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -4817,7 +4817,7 @@
     "description": "Chat journey: {count, plural, one{1 draft queued to send on reconnect.} other{{count} drafts queued to send on reconnect.}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -4826,7 +4826,7 @@
     "description": "Chat journey: {count, plural, one{1 draft waiting for other servers.} other{{count} drafts waiting for other servers.}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -4835,7 +4835,7 @@
     "description": "Chat journey: {count, plural, one{1 question} other{{count} questions}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -4865,7 +4865,7 @@
         "type": "Object"
       },
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -4895,7 +4895,7 @@
     "description": "Chat journey: {count, plural, one{1 reference is added as text when you send. Not saved with your draft.} other{{count} references are added as text when you send. Not saved with your draft.}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -4913,7 +4913,7 @@
     "description": "Chat journey: {count, plural, one{1 earlier message} other{{count} earlier messages}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -4970,7 +4970,7 @@
     "description": "Chat journey: {count, plural, one{1 line} other{{count} lines}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -4991,7 +4991,7 @@
     "description": "Chat journey: {count, plural, one{1 entry} other{{count} entries}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -5009,7 +5009,7 @@
     "description": "Chat journey: {count, plural, one{1 match} other{{count} matches}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -5018,7 +5018,7 @@
     "description": "Chat journey: {count, plural, one{1 file} other{{count} files}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -5036,7 +5036,7 @@
     "description": "Chat journey: {count, plural, one{1 result} other{{count} results}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },
@@ -30548,6 +30548,97 @@
   "@agentsFailBusy": {
     "description": "Phone check failure"
   },
+  "agentsEndpointAction": "Use a third-party endpoint",
+  "@agentsEndpointAction": {
+    "description": "Sign-in step action: an Anthropic-compatible gateway instead of a Claude account"
+  },
+  "agentsEndpointTitle": "Third-party endpoint",
+  "@agentsEndpointTitle": {
+    "description": "Endpoint sheet title"
+  },
+  "agentsEndpointIntro": "Send {agent} to an Anthropic-compatible gateway. Its address and key are saved in the agent's own settings on this phone, and the app keeps no copy.",
+  "@agentsEndpointIntro": {
+    "description": "Endpoint sheet explanation",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "agentsEndpointBaseUrl": "Base URL",
+  "@agentsEndpointBaseUrl": {
+    "description": "Endpoint form: gateway address field"
+  },
+  "agentsEndpointBaseUrlHint": "https://gateway.example.com",
+  "@agentsEndpointBaseUrlHint": {
+    "description": "Endpoint form: gateway address example"
+  },
+  "agentsEndpointKey": "Key",
+  "@agentsEndpointKey": {
+    "description": "Endpoint form: gateway key field"
+  },
+  "agentsEndpointKeySaved": "A key is saved. Type a new one only to replace it.",
+  "@agentsEndpointKeySaved": {
+    "description": "Endpoint form: a key already exists in the settings file"
+  },
+  "agentsEndpointModel": "Model",
+  "@agentsEndpointModel": {
+    "description": "Endpoint form: optional model field"
+  },
+  "agentsEndpointModelHint": "Empty uses the gateway's default",
+  "@agentsEndpointModelHint": {
+    "description": "Endpoint form: model field helper"
+  },
+  "agentsEndpointSave": "Save and check",
+  "@agentsEndpointSave": {
+    "description": "Endpoint form: save button"
+  },
+  "agentsEndpointSaving": "Saving…",
+  "@agentsEndpointSaving": {
+    "description": "Endpoint form: save in progress"
+  },
+  "agentsEndpointRemove": "Remove endpoint",
+  "@agentsEndpointRemove": {
+    "description": "Endpoint form: remove the saved gateway"
+  },
+  "agentsEndpointRemoveBody": "{agent} goes back to its own sign-in. Nothing else in its settings changes.",
+  "@agentsEndpointRemoveBody": {
+    "description": "Endpoint removal confirmation",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "agentsEndpointRemoveConfirm": "Remove",
+  "@agentsEndpointRemoveConfirm": {
+    "description": "Endpoint removal confirm button"
+  },
+  "agentsEndpointRemoved": "Endpoint removed.",
+  "@agentsEndpointRemoved": {
+    "description": "Endpoint removal result"
+  },
+  "agentsEndpointInsecure": "This address is not HTTPS. The key would travel in the clear.",
+  "@agentsEndpointInsecure": {
+    "description": "Endpoint form: plain http warning"
+  },
+  "agentsEndpointIncomplete": "Fill in the address and the key.",
+  "@agentsEndpointIncomplete": {
+    "description": "Endpoint form: required fields missing"
+  },
+  "agentsEndpointFailed": "The endpoint couldn't be saved. Check the address and try again.",
+  "@agentsEndpointFailed": {
+    "description": "Endpoint form: save failed"
+  },
+  "agentsEndpointConfigured": "Using {host}",
+  "@agentsEndpointConfigured": {
+    "description": "Sign-in step: the agent uses a gateway",
+    "placeholders": {
+      "host": {
+        "type": "String"
+      }
+    }
+  },
   "agentsSignInTitle": "Sign in with {agent}",
   "@agentsSignInTitle": {
     "description": "Sign-in step title",
@@ -32371,7 +32462,7 @@
     "description": "Chat journey: {count, plural, one{1 line} other{{count} lines}}",
     "placeholders": {
       "count": {
-        "type": "num"
+        "type": "int"
       }
     }
   },

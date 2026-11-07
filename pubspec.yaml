@@ -1,7 +1,7 @@
 name: opencode_mobile
 description: "OpenCode Mini - Android-only (arm64) coding-agent client that runs agents in its own Linux."
 publish_to: "none"
-version: 0.3.7+11
+version: 0.3.8+12
 
 environment:
   sdk: ^3.10.0

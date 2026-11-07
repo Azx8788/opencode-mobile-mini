@@ -43,6 +43,7 @@ mixin _ConnectionControllerPhoneAgents on ChangeNotifier
         PhoneAgentsSource,
         AgentChatFeedSource,
         PhoneAgentAccountSource,
+        PhoneAgentEndpointSource,
         PhoneAgentRemovalSource,
         PhoneAgentRecoverySource {
   ConnectionController get _self;
@@ -368,6 +369,29 @@ mixin _ConnectionControllerPhoneAgents on ChangeNotifier
         unawaited(refreshAgentRows());
       }
     });
+  }
+
+  // ---- third-party endpoint (Claude Code) ---------------------------------
+
+  @override
+  bool supportsAgentEndpoint(String agentId) => agentSupportsEndpoint(agentId);
+
+  @override
+  Future<AgentEndpointStatus> readAgentEndpoint(String agentId) =>
+      _paEnsureHost().readAgentEndpoint(agentId);
+
+  @override
+  Future<void> saveAgentEndpoint(String agentId, AgentEndpoint endpoint) async {
+    await _paEnsureHost().saveAgentEndpoint(agentId, endpoint);
+    // The row's sign-in truth comes from the agent's own settings file, so it
+    // changes the moment the write lands.
+    await refreshAgentRows();
+  }
+
+  @override
+  Future<void> clearAgentEndpoint(String agentId) async {
+    await _paEnsureHost().clearAgentEndpoint(agentId);
+    await refreshAgentRows();
   }
 
   bool _paEligible(AgentDescriptor descriptor) =>

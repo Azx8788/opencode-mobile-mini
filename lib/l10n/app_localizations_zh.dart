@@ -5060,7 +5060,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiQueuedSent(num count) {
+  String chatUiQueuedSent(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5071,7 +5071,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiOtherDraftsWaitingSuffix(num count) {
+  String chatUiOtherDraftsWaitingSuffix(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5107,7 +5107,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiDraftsQueued(num count) {
+  String chatUiDraftsQueued(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5117,7 +5117,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiOtherDraftsWaiting(num count) {
+  String chatUiOtherDraftsWaiting(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5128,7 +5128,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiQuestionCount(num count) {
+  String chatUiQuestionCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5149,7 +5149,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiQuestionsSummary(Object question, num count) {
+  String chatUiQuestionsSummary(Object question, int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5169,7 +5169,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiReferencesAttachedNotice(num count) {
+  String chatUiReferencesAttachedNotice(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5184,7 +5184,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiEarlierMessageCount(num count) {
+  String chatUiEarlierMessageCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5220,7 +5220,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiLineCount(num count) {
+  String chatUiLineCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5236,7 +5236,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiEntryCount(num count) {
+  String chatUiEntryCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5252,7 +5252,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiMatchCount(num count) {
+  String chatUiMatchCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5263,7 +5263,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiFileCount(num count) {
+  String chatUiFileCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -5279,7 +5279,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatUiResultCount(num count) {
+  String chatUiResultCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
@@ -24217,6 +24217,69 @@ class AppLocalizationsZh extends AppLocalizations {
   String get agentsFailBusy => '另一项设置正在进行。请等待其完成。';
 
   @override
+  String get agentsEndpointAction => '使用第三方端点';
+
+  @override
+  String get agentsEndpointTitle => '第三方端点';
+
+  @override
+  String agentsEndpointIntro(String agent) {
+    return '让 $agent 通过 Anthropic 兼容网关工作。地址和密钥会写进智能体在这台手机上的设置，应用不留副本。';
+  }
+
+  @override
+  String get agentsEndpointBaseUrl => '接口地址';
+
+  @override
+  String get agentsEndpointBaseUrlHint => 'https://gateway.example.com';
+
+  @override
+  String get agentsEndpointKey => '密钥';
+
+  @override
+  String get agentsEndpointKeySaved => '已保存密钥。只有要更换时才需要重新填写。';
+
+  @override
+  String get agentsEndpointModel => '模型';
+
+  @override
+  String get agentsEndpointModelHint => '留空则用网关的默认模型';
+
+  @override
+  String get agentsEndpointSave => '保存并检查';
+
+  @override
+  String get agentsEndpointSaving => '保存中…';
+
+  @override
+  String get agentsEndpointRemove => '移除端点';
+
+  @override
+  String agentsEndpointRemoveBody(String agent) {
+    return '$agent 会回到自己的登录方式。设置里的其它内容不变。';
+  }
+
+  @override
+  String get agentsEndpointRemoveConfirm => '移除';
+
+  @override
+  String get agentsEndpointRemoved => '端点已移除。';
+
+  @override
+  String get agentsEndpointInsecure => '这个地址不是 HTTPS，密钥会以明文传输。';
+
+  @override
+  String get agentsEndpointIncomplete => '请填写地址和密钥。';
+
+  @override
+  String get agentsEndpointFailed => '端点未能保存。请检查地址后重试。';
+
+  @override
+  String agentsEndpointConfigured(String host) {
+    return '正在使用 $host';
+  }
+
+  @override
   String agentsSignInTitle(String agent) {
     return '使用 $agent 登录';
   }
@@ -25469,7 +25532,7 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
-  String chatRequestReadLines(num count) {
+  String chatRequestReadLines(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,

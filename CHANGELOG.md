@@ -2,6 +2,35 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.8+12 — 2026-11-07
+
+Claude Code could only be used with a Claude account.
+
+  * **A gateway is now a first-class way to use Claude Code.** Code that
+    talks to an Anthropic-compatible endpoint (a company gateway, a
+    self-hosted proxy, a regional reseller) had no way in: the agent's
+    sign-in step offered only `claude auth login`, so a person without a
+    Claude account could install the agent and never start a conversation.
+    The step now offers "Use a third-party endpoint": a base URL, a key and
+    an optional model, written into Claude Code's own settings file
+    (`$CLAUDE_CONFIG_DIR/settings.json`, the `env` block it documents) and
+    nowhere else.
+  * **The saved key is never read back.** The form shows whether one is
+    saved, not what it is; changing only the address or the model keeps it,
+    and the settings writer refuses a write that would leave the endpoint
+    without a key. The key travels to the phone base64-encoded in one
+    app-authored program, so no quote, newline or space in it can change the
+    command, and a symlinked settings file is refused rather than followed.
+  * **A gateway counts as signed in, without a 60-second detour.**
+    `auth status` only knows about Claude accounts and called a configured
+    gateway "signed out" — after a minute of waiting. The check now reads the
+    settings file first and answers at once; the account command runs only
+    when no gateway is configured.
+  * **Removing the endpoint is the way back.** The settings file keeps every
+    other key (permissions, other env values); removing the endpoint drops
+    only the four keys this app wrote, and an account sign-out is no longer
+    offered while a gateway is in use.
+
 ## 0.3.7+11 — 2026-11-07
 
 Two dead ends, both in the keyboard-to-endpoint path.
