@@ -176,7 +176,7 @@ class _AgentEndpointSheetState extends ConsumerState<AgentEndpointSheet> {
       handle: true,
       title: l10n.agentsEndpointTitle,
       onClose: () => KitSheet.close(context, false),
-      loading: _loading,
+      loading: _loading || _saving || _removing,
       primary: KitAction(
         key: const ValueKey('agent-endpoint-save'),
         label: _saving ? l10n.agentsEndpointSaving : l10n.agentsEndpointSave,

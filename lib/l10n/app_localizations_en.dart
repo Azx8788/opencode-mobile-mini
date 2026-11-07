@@ -25957,6 +25957,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Sign-in isn\'t ready on this phone yet';
 
   @override
+  String agentsSignInHostKey(String agent) {
+    return '$agent doesn\'t sign in here. It reads its key from its own settings on this phone — open the terminal once and finish its setup there.';
+  }
+
+  @override
   String agentsSignInLimit(String agent) {
     return '$agent plan limit reached · try again later';
   }

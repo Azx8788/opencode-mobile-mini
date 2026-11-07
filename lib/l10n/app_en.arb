@@ -30896,6 +30896,15 @@
   "@agentsSignInUnavailable": {
     "description": "Sign-in step: no handler for this agent"
   },
+  "agentsSignInHostKey": "{agent} doesn't sign in here. It reads its key from its own settings on this phone — open the terminal once and finish its setup there.",
+  "@agentsSignInHostKey": {
+    "description": "Sign-in step: the agent takes a key, not an account",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
   "agentsSignInLimit": "{agent} plan limit reached · try again later",
   "@agentsSignInLimit": {
     "description": "Sign-in step: limit",

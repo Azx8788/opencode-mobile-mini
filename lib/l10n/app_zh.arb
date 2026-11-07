@@ -806,6 +806,7 @@
   "agentsSignInTerminalIntroOther": "{agent} 在此通过自带的提示登录。如果它打开页面，请在那里登录后返回。如果要求输入代码或密钥，请选择“粘贴”。",
   "agentsSignInTerminalNotYet": "{agent} 尚未登录。准备好后请重新开始登录。",
   "agentsSignInUnavailable": "此手机上暂时还不能登录",
+  "agentsSignInHostKey": "{agent} 不在这里登录。它读取自己在这台手机上的设置里的密钥：请在终端里运行一次 {agent}，在那里完成设置。",
   "agentsSignOutAction": "退出 {agent} 登录",
   "agentsSignOutBody": "在你重新登录之前，{agent} 无法开始新的对话。",
   "agentsSignOutFailed": "无法确认 {agent} 已退出登录。请重试。",

@@ -24433,6 +24433,11 @@ class AppLocalizationsZh extends AppLocalizations {
   String get agentsSignInUnavailable => '此手机上暂时还不能登录';
 
   @override
+  String agentsSignInHostKey(String agent) {
+    return '$agent 不在这里登录。它读取自己在这台手机上的设置里的密钥：请在终端里运行一次 $agent，在那里完成设置。';
+  }
+
+  @override
   String agentsSignInLimit(String agent) {
     return '$agent 的套餐额度已用完 · 请稍后再试';
   }

@@ -1004,7 +1004,7 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
           ? l10n.agentsEndpointConfigured(gatewayHost)
           : l10n.agentsSignedInBody(name);
     } else if (hostKey) {
-      body = l10n.agentsSignInUnavailable;
+      body = l10n.agentsSignInHostKey(name);
     } else if (checking) {
       body = l10n.agentsSignInChecking;
     } else {

@@ -2,6 +2,14 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.9+13 — 2026-11-07
+
+One sentence was wrong. The sign-in page told agents that take a key that
+"sign-in isn't ready on this phone yet", which reads like a missing feature
+rather than a different kind of setup. It now says what is true: the agent
+reads its key from its own settings on this phone, and the terminal is where
+that setup happens.
+
 ## 0.3.8+12 — 2026-11-07
 
 Claude Code could only be used with a Claude account.

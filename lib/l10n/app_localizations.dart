@@ -40976,6 +40976,12 @@ abstract class AppLocalizations {
   /// **'Sign-in isn\'t ready on this phone yet'**
   String get agentsSignInUnavailable;
 
+  /// Sign-in step: the agent takes a key, not an account
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} doesn\'t sign in here. It reads its key from its own settings on this phone — open the terminal once and finish its setup there.'**
+  String agentsSignInHostKey(String agent);
+
   /// Sign-in step: limit
   ///
   /// In en, this message translates to:
