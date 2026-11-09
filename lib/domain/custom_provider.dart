@@ -529,20 +529,20 @@ class CustomProviderDraft {
       if (headerMap.isNotEmpty) 'headers': headerMap,
       'timeout': timeoutMs,
     },
-    // No models yet is a real state: the entry is written first, then the
-    // server reads the endpoint's list with it.
-    if (models.isNotEmpty)
-      'models': {
-        for (final model in models)
-          model.id: {
-            'name': model.label,
-            'tool_call': true,
-            'reasoning': protocol != ProviderProtocol.responses,
-            'attachment': protocol != ProviderProtocol.chatCompletions,
-            // Responses takes its sampling knobs per request, not per model.
-            'temperature': protocol != ProviderProtocol.responses,
-          },
-      },
+    // Written even when empty: v1's schema wants the record, and the entry
+    // exists before any model is known — the server reads the endpoint's own
+    // list with it, and Save writes the chosen models afterwards.
+    'models': {
+      for (final model in models)
+        model.id: {
+          'name': model.label,
+          'tool_call': true,
+          'reasoning': protocol != ProviderProtocol.responses,
+          'attachment': protocol != ProviderProtocol.chatCompletions,
+          // Responses takes its sampling knobs per request, not per model.
+          'temperature': protocol != ProviderProtocol.responses,
+        },
+    },
   };
 
   /// v2 keeps the key in `settings` (the schema has no explicit `baseURL`
@@ -573,26 +573,25 @@ class CustomProviderDraft {
       if (headerMap.isNotEmpty) 'headers': headerMap,
       'timeout': timeoutMs,
     },
-    // Written before any model is known: the server reads the endpoint's own
-    // list with this entry, and the chosen models are written back after.
-    if (models.isNotEmpty || effectiveDisabledModelIDs.isNotEmpty)
-      'models': {
-        for (final model in models)
-          model.id: {
-            'name': model.label,
-            'capabilities': {
-              'tools': true,
-              'input': _inputModalities,
-              'output': const ['text'],
-              if (protocol != ProviderProtocol.responses) 'temperature': true,
-            },
+    // Written even when empty: the entry exists before any model is known —
+    // the server reads the endpoint's own list with it, and the chosen models
+    // are written back after.
+    'models': {
+      for (final model in models)
+        model.id: {
+          'name': model.label,
+          'capabilities': {
+            'tools': true,
+            'input': _inputModalities,
+            'output': const ['text'],
+            if (protocol != ProviderProtocol.responses) 'temperature': true,
           },
-        // The built-in catalogue is merged, never replaced: a model that is
-        // already there and left out of the map above stays visible. Turning
-        // it off is an explicit entry of its own.
-        for (final id in effectiveDisabledModelIDs)
-          id: const {'disabled': true},
-      },
+        },
+      // The built-in catalogue is merged, never replaced: a model that is
+      // already there and left out of the map above stays visible. Turning
+      // it off is an explicit entry of its own.
+      for (final id in effectiveDisabledModelIDs) id: const {'disabled': true},
+    },
   };
 
   /// Chat Completions has no agreed way to signal image input across

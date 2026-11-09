@@ -288,7 +288,9 @@ void main() {
           (empty.mergeInto(null, ProviderConfigFormat.v2,
                   requireModels: false)['providers'] as Map)['my-gateway']
               as Map;
-      expect(entry.containsKey('models'), false);
+      // An empty record, not a missing one: the schemas of both dialects want
+      // `models` present, and an empty map claims no model at all.
+      expect(entry['models'], isEmpty);
       expect(entry['package'], 'aisdk:@ai-sdk/openai-compatible');
     });
   });
