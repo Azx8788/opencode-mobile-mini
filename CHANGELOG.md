@@ -2,6 +2,24 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.11+15 — 2026-11-09
+
+AI Team could not start on a phone whose own server was OpenCode 2.1.1.
+
+  * **The engine and the app disagreed about the server version.** The phone
+    engine still accepted only 2.0.29, while the app installs and runs 2.1.1.
+    The protected restart therefore ended with `unsupported_server_version`
+    and the setup page said the team could not begin work, even though the
+    engine itself was answering.
+  * **The engine now accepts the two server versions it has been tested
+    against**, 2.0.29 for phones that have not taken the update and 2.1.1 for
+    current installs. It still validates the live `/openapi.json` contract
+    before any session or prompt request, and reports the version the server
+    actually runs instead of a fixed one.
+  * **A 2.1.1 driver schema is now part of the engine tests**, captured from
+    the real server, so a future server update that drops an operation fails
+    the build rather than the team.
+
 ## 0.3.10+14 — 2026-11-09
 
 ColorOS and some other Chinese ROMs still replaced the keyboard with their

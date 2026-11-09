@@ -1,0 +1,62 @@
+name: Build AI Team phone engine
+
+# The release workflow only verifies the committed engine binaries against
+# their sources. This workflow is the deliberate build step: run it by hand
+# after changing engine/phone, then commit the arm64 libraries and manifest
+# it uploads. The x86_64 runner is required because Google's NDK toolchain
+# ships as x86_64 host binaries.
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  engine:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Rust with the Android targets
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,x86_64-linux-android
+
+      - name: Install ripgrep when the image lacks it
+        run: |
+          set -euo pipefail
+          if ! command -v rg >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y ripgrep
+          fi
+
+      - name: Test the engine on the host
+        run: cargo test --manifest-path engine/phone/Cargo.toml --locked
+
+      - name: Build and stage the arm64 engine
+        run: |
+          set -euo pipefail
+          NDK_DIR="$(ls -d "$ANDROID_HOME"/ndk/* 2>/dev/null | sort -V | tail -1 || true)"
+          if [ -z "$NDK_DIR" ]; then
+            echo "::error::No Android NDK is installed on this runner"
+            exit 1
+          fi
+          echo "Using NDK: $NDK_DIR"
+          export ANDROID_NDK_HOME="$NDK_DIR"
+          export OC_ENGINE_BUILD_DIR="$RUNNER_TEMP/aiteam-engine-build"
+          engine/phone/tool/build-android.sh --stage-android
+
+      - name: Upload the arm64 engine and its manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: aiteam-engine-arm64
+          if-no-files-found: error
+          path: |
+            android/app/src/main/jniLibs/arm64-v8a/libaiteam_engine.so
+            android/app/src/main/jniLibs/arm64-v8a/libaiteam_sandbox.so
+            android/app/src/main/jniLibs/arm64-v8a/libaiteam_boundary_probe.so
+            android/app/src/main/assets/aiteam-engine-manifest.json
+            LICENSES/Rust-Phone-Engine.txt
