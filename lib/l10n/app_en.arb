@@ -44788,6 +44788,26 @@
   "providerModelsFetchNotConfigured": "This provider is not in the server's configuration yet.",
   "@providerModelsFetchNotConfigured": {
     "description": "Model list failure: the provider is missing from the config"
+  },
+  "providerModelsRetrying": "Retrying in {seconds}s (attempt {attempt} of 3)…",
+  "@providerModelsRetrying": {
+    "description": "A transient model-read failure is being retried",
+    "placeholders": {
+      "attempt": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "providerModelsKeptPrevious": "Kept the last list: {count} models.",
+  "@providerModelsKeptPrevious": {
+    "description": "Every retry failed, so the previous list stays",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   }
-
 }

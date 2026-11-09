@@ -1,10 +1,15 @@
 /// Fetches the model list an endpoint advertises.
 ///
-/// This is the one part of adding a provider that needs no server support:
-/// it is a plain HTTPS call from the phone using the key the person is
-/// already typing. It matters because a hand-written config fails most often
-/// on model ids — a gateway renames or aliases them freely — so reading the
-/// endpoint's own list is more reliable than any documented list.
+/// This file holds the policy of that read, not the socket: which spellings of
+/// `/models` to try, which auth scheme first, and what a 401, a 404 or a web
+/// page means. The request itself is made by the server
+/// (`ProviderServerModelSource`), because the key is in the server's config and
+/// a gateway that serves only known coding clients answers a phone with a 200
+/// and a refusal. There is no transport of the phone's own here, on purpose.
+///
+/// The read matters because a hand-written config fails most often on model
+/// ids — a gateway renames or aliases them freely — so reading the endpoint's
+/// own list is more reliable than any documented list.
 ///
 /// Gateways built on NewAPI and OneAPI answer `GET {base}/models` in the
 /// OpenAI shape (`{"data":[{"id":...}]}`), some put it under `/v1` while the
@@ -137,6 +142,58 @@ class ProviderHttpAnswer {
 
   final int statusCode;
   final String body;
+}
+
+/// Whether a failed read is worth repeating.
+///
+/// A wrong address, a refused key or an empty list answers the same way every
+/// time; a dropped connection, a gateway that answered 502, or a server that
+/// was still starting may not. Retrying those three would only make the person
+/// wait seven seconds for the same sentence.
+bool providerModelFetchIsTransient(ProviderModelFetchKind kind) =>
+    switch (kind) {
+      ProviderModelFetchKind.network ||
+      ProviderModelFetchKind.timeout ||
+      ProviderModelFetchKind.serverError ||
+      ProviderModelFetchKind.serverUnavailable ||
+      ProviderModelFetchKind.unknown => true,
+      _ => false,
+    };
+
+/// How long to wait before each retry: one second, then two, then four.
+///
+/// Three retries, and then the list stays as it was. A gateway that is down
+/// for longer than seven seconds is not going to be fixed by a fourth press
+/// of the same button.
+const providerModelFetchBackoff = <Duration>[
+  Duration(seconds: 1),
+  Duration(seconds: 2),
+  Duration(seconds: 4),
+];
+
+/// Reads a model list, repeating a failure that could go away by itself.
+///
+/// [onRetry] is told which retry is starting and how long the wait is, so the
+/// form can say "attempt 2 of 4" instead of a button that looks stuck.
+Future<ProviderModelListing> readProviderModelsWithRetry(
+  Future<ProviderModelListing> Function() read, {
+  void Function(int attempt, Duration wait)? onRetry,
+  Future<void> Function(Duration)? wait,
+}) async {
+  final sleep = wait ?? Future<void>.delayed;
+  for (var attempt = 0; ; attempt++) {
+    try {
+      return await read();
+    } on ProviderModelFetchFailure catch (error) {
+      final worthRetrying =
+          attempt < providerModelFetchBackoff.length &&
+          providerModelFetchIsTransient(error.kind);
+      if (!worthRetrying) rethrow;
+      final pause = providerModelFetchBackoff[attempt];
+      onRetry?.call(attempt + 1, pause);
+      await sleep(pause);
+    }
+  }
 }
 
 /// Signature of the transport, so tests can answer without a socket.

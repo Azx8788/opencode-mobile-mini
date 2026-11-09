@@ -295,6 +295,108 @@ void main() {
       expect(result.outcome, ProviderSessionOutcome.emptyReply);
     });
   });
+
+  group('a failed model read is repeated', () {
+    final listing = ProviderModelListing(
+      models: const [CustomProviderModel(id: 'gpt-6-luna')],
+      url: Uri.parse('https://gw.example.com/v1/models'),
+      statusCode: 200,
+    );
+
+    test('three times, a second, two, then four', () async {
+      final waits = <Duration>[];
+      final attempts = <int>[];
+      var calls = 0;
+      await expectLater(
+        readProviderModelsWithRetry(
+          () async {
+            calls++;
+            throw const ProviderModelFetchFailure(
+              'The server did not answer',
+              kind: ProviderModelFetchKind.network,
+            );
+          },
+          onRetry: (attempt, wait) {
+            attempts.add(attempt);
+            waits.add(wait);
+          },
+          wait: (duration) async {},
+        ),
+        throwsA(isA<ProviderModelFetchFailure>()),
+      );
+      expect(calls, 4, reason: 'one try and three retries');
+      expect(attempts, [1, 2, 3]);
+      expect(waits, [
+        const Duration(seconds: 1),
+        const Duration(seconds: 2),
+        const Duration(seconds: 4),
+      ]);
+    });
+
+    test('a refusal is not repeated', () async {
+      var calls = 0;
+      final failure = await expectFailure(
+        readProviderModelsWithRetry(
+          () async {
+            calls++;
+            throw const ProviderModelFetchFailure(
+              'The API key was refused (401)',
+              kind: ProviderModelFetchKind.refusedKey,
+              statusCode: 401,
+            );
+          },
+          wait: (duration) async {},
+        ),
+      );
+      expect(calls, 1, reason: 'the same key will be refused again');
+      expect(failure.kind, ProviderModelFetchKind.refusedKey);
+    });
+
+    test('a second attempt can succeed', () async {
+      var calls = 0;
+      final result = await readProviderModelsWithRetry(
+        () async {
+          calls++;
+          if (calls == 1) {
+            throw const ProviderModelFetchFailure(
+              'The endpoint did not answer in time',
+              kind: ProviderModelFetchKind.timeout,
+            );
+          }
+          return listing;
+        },
+        wait: (duration) async {},
+      );
+      expect(calls, 2);
+      expect(result.models.single.id, 'gpt-6-luna');
+    });
+
+    test('only failures that can change are transient', () {
+      const transient = [
+        ProviderModelFetchKind.network,
+        ProviderModelFetchKind.timeout,
+        ProviderModelFetchKind.serverError,
+        ProviderModelFetchKind.serverUnavailable,
+        ProviderModelFetchKind.unknown,
+      ];
+      const settled = [
+        ProviderModelFetchKind.badUrl,
+        ProviderModelFetchKind.missingKey,
+        ProviderModelFetchKind.refusedKey,
+        ProviderModelFetchKind.notFound,
+        ProviderModelFetchKind.notJson,
+        ProviderModelFetchKind.emptyList,
+        ProviderModelFetchKind.tls,
+        ProviderModelFetchKind.notConfigured,
+      ];
+      for (final kind in transient) {
+        expect(providerModelFetchIsTransient(kind), isTrue, reason: '$kind');
+      }
+      for (final kind in settled) {
+        expect(providerModelFetchIsTransient(kind), isFalse, reason: '$kind');
+      }
+    });
+  });
 }
 
 /// The failure a call throws, with its kind intact.

@@ -57625,6 +57625,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This provider is not in the server\'s configuration yet.'**
   String get providerModelsFetchNotConfigured;
+
+  /// A transient model-read failure is being retried
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying in {seconds}s (attempt {attempt} of 3)…'**
+  String providerModelsRetrying(int attempt, int seconds);
+
+  /// Every retry failed, so the previous list stays
+  ///
+  /// In en, this message translates to:
+  /// **'Kept the last list: {count} models.'**
+  String providerModelsKeptPrevious(int count);
 }
 
 class _AppLocalizationsDelegate

@@ -34589,4 +34589,14 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerModelsFetchNotConfigured => '这个供应商还没有写进服务端配置。';
+
+  @override
+  String providerModelsRetrying(int attempt, int seconds) {
+    return '$seconds 秒后重试（第 $attempt 次，共 3 次）…';
+  }
+
+  @override
+  String providerModelsKeptPrevious(int count) {
+    return '已保留上次获取的列表：$count 个模型。';
+  }
 }

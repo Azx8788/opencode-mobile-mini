@@ -10016,6 +10016,7 @@
   "providerProbeElapsed": "往返耗时：{seconds} 秒",
   "providerAddNeedSave": "服务端用磁盘上的配置读取模型列表，所以会先保存这个供应商并重载一次。",
   "providerModelsFetchServerDown": "服务端无法执行这次请求：{message}",
-  "providerModelsFetchNotConfigured": "这个供应商还没有写进服务端配置。"
-
+  "providerModelsFetchNotConfigured": "这个供应商还没有写进服务端配置。",
+  "providerModelsRetrying": "{seconds} 秒后重试（第 {attempt} 次，共 3 次）…",
+  "providerModelsKeptPrevious": "已保留上次获取的列表：{count} 个模型。"
 }

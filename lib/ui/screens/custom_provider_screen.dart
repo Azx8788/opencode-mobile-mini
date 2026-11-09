@@ -117,6 +117,10 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
   bool _fetching = false;
   String? _fetchError;
 
+  /// Set while a transient failure is being retried: which attempt is next and
+  /// how long the wait is. Without it the button just looks stuck.
+  String? _fetchNote;
+
   /// Where the last successful read came from, and how many models it named.
   String? _fetchInfo;
 
@@ -401,6 +405,7 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       _fetching = true;
       _fetchError = null;
       _fetchInfo = null;
+      _fetchNote = null;
       _adoptedRoot = null;
       _fetchTrace = const [];
     });
@@ -421,14 +426,22 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
           kind: ProviderModelFetchKind.serverUnavailable,
         );
       }
-      final listing = await _models.fetch(
-        configPath: _store.pathOf(written),
-        providerID: _draft().id,
-        baseUrl: CustomProviderDraft.normalizeBaseUrl(_baseUrl.text, _protocol),
-        protocol: _protocol,
-        onTrace: (trace) {
+      final listing = await readProviderModelsWithRetry(
+        () => _models.fetch(
+          configPath: _store.pathOf(written),
+          providerID: _draft().id,
+          baseUrl: CustomProviderDraft.normalizeBaseUrl(_baseUrl.text, _protocol),
+          protocol: _protocol,
+          onTrace: (trace) {
+            if (!mounted) return;
+            setState(() => _fetchTrace = trace);
+          },
+        ),
+        onRetry: (attempt, pause) {
           if (!mounted) return;
-          setState(() => _fetchTrace = trace);
+          setState(() {
+            _fetchNote = l10n.providerModelsRetrying(attempt, pause.inSeconds);
+          });
         },
       );
       if (!mounted) return;
@@ -436,6 +449,7 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       setState(() {
         _listed = listing.models;
         _fetching = false;
+        _fetchNote = null;
         _adoptedRoot = adopted;
         _fetchInfo = _l10nOf(
           context,
@@ -451,12 +465,14 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       setState(() {
         _fetchError = _describeFailure(error);
         _fetchTrace = error.trace;
+        _fetchNote = null;
         _fetching = false;
       });
     } catch (error) {
       if (!mounted) return;
       setState(() {
         _fetchError = '$error';
+        _fetchNote = null;
         _fetching = false;
       });
     }
@@ -1305,10 +1321,26 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
           message: '${l10n.providerAddFetchFailed}: $_fetchError',
           retry: KitAction(label: l10n.commonRetry, onPressed: _fetchModels),
         ),
+        if (_listed.isNotEmpty) ...[
+          SizedBox(height: _space(context) / 2),
+          Text(
+            l10n.providerModelsKeptPrevious(_listed.length),
+            key: const ValueKey('custom-provider-fetch-kept'),
+            style: KitText.styleOf(context, KitTextRole.caption),
+          ),
+        ],
         if (_fetchTrace.isNotEmpty) ...[
           SizedBox(height: _space(context) / 2),
           _traceLines(context, l10n, _fetchTrace),
         ],
+      ],
+      if (_fetching && _fetchNote != null) ...[
+        _gap(context),
+        Text(
+          _fetchNote!,
+          key: const ValueKey('custom-provider-fetch-retry'),
+          style: KitText.styleOf(context, KitTextRole.caption),
+        ),
       ],
       if (_fetchInfo != null) ...[
         _gap(context),

@@ -36632,4 +36632,14 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get providerModelsFetchNotConfigured =>
       'This provider is not in the server\'s configuration yet.';
+
+  @override
+  String providerModelsRetrying(int attempt, int seconds) {
+    return 'Retrying in ${seconds}s (attempt $attempt of 3)…';
+  }
+
+  @override
+  String providerModelsKeptPrevious(int count) {
+    return 'Kept the last list: $count models.';
+  }
 }
