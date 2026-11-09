@@ -105,12 +105,11 @@ void main() {
     );
     expect(field.obscureText, isFalse);
     // Two traps, both real: `visiblePassword` is a password variation to
-    // Android, and so is any text field that disables suggestions. ColorOS
-    // swaps in its secure keyboard for either. The email variation is not a
-    // password and still keeps suggestions off; the dots come from the
-    // controller.
-    expect(field.keyboardType, TextInputType.emailAddress);
-    expect(field.enableSuggestions, isFalse);
+    // Android, and so is any text-class field that disables suggestions.
+    // ColorOS swaps in its secure keyboard for either. Suggestions stay on
+    // here; the dots come from the controller, and IME learning stays off.
+    expect(field.keyboardType, TextInputType.text);
+    expect(field.enableSuggestions, isTrue);
     expect(field.enableIMEPersonalizedLearning, isFalse);
     expect(find.byKey(const ValueKey('reveal')), findsOneWidget);
   });
@@ -141,6 +140,34 @@ void main() {
     expect(field.keyboardType, TextInputType.text);
     expect(field.enableSuggestions, isTrue);
     expect(field.autocorrect, isFalse);
+    expect(field.enableIMEPersonalizedLearning, isFalse);
+  });
+
+  testWidgets('a URL field keeps suggestions on too, so its URI bit is not '
+      'swallowed by the password variation', (tester) async {
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: KitField(
+            label: 'Base URL',
+            controller: controller,
+            kind: KitFieldKind.url,
+            fieldKey: const ValueKey('url-field'),
+          ),
+        ),
+      ),
+    );
+
+    final field = tester.widget<TextField>(
+      find.descendant(
+        of: find.byKey(const ValueKey('url-field')),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(field.keyboardType, TextInputType.url);
+    expect(field.enableSuggestions, isTrue);
     expect(field.enableIMEPersonalizedLearning, isFalse);
   });
 }

@@ -8,18 +8,18 @@ ColorOS and some other Chinese ROMs still replaced the keyboard with their
 own "secure keyboard" in the provider form. The password input type was not
 the only trigger.
 
-  * **A text field that disables suggestions is a password to Android.**
+  * **A field that turns suggestions off is a password to Android.**
     Flutter's engine adds `TYPE_TEXT_VARIATION_VISIBLE_PASSWORD` whenever
-    `enableSuggestions` is false, even with `obscureText: false`; ColorOS
-    treats any password variation as credential input and takes the keyboard
-    over. The provider key field now reports the email variation, which is
-    not a password and still keeps suggestions off. The dots are still drawn
-    by the app, never by the system.
-  * **Technical fields stop hiding their suggestions.** IDs, paths and
-    header values kept suggestions off for the same reason, and hit the same
-    mapping. They now keep the ordinary keyboard with autocorrect off, so
-    Android receives no password variation. The terminal no longer forces
-    the plain text type that the xterm view pairs with suggestions off.
+    `enableSuggestions` is false, even with `obscureText: false`. A URL is
+    no escape: `TYPE_TEXT_VARIATION_URI` (0x10) is a subset of
+    `VISIBLE_PASSWORD` (0x90), so the URI bit is swallowed. ColorOS treats
+    every password variation as credential input and takes the keyboard
+    over. Every KitField keeps suggestions on now; autocorrect and IME
+    learning stay off, and the key field still draws its own dots.
+  * **The terminal and the typed-name confirmation join the same rule.**
+    xterm keeps suggestions on with learning off, and the confirmation no
+    longer hides its suggestions, so neither reaches Android as a
+    password.
 
 ## 0.3.9+13 — 2026-11-07
 

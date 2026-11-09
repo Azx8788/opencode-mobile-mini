@@ -164,7 +164,10 @@ class CustomTextEditState extends State<CustomTextEdit> with TextInputClient {
         inputAction: widget.inputAction,
         keyboardAppearance: widget.keyboardAppearance,
         autocorrect: false,
-        enableSuggestions: false,
+        // Suggestions stay on: Flutter's Android engine reports a text field
+        // with suggestions off as a visible password, and ColorOS then
+        // forces its secure keyboard. Learning stays off.
+        enableSuggestions: true,
         enableIMEPersonalizedLearning: false,
       );
 

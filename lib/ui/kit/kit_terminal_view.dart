@@ -329,11 +329,11 @@ class KitTerminalView extends StatelessWidget {
                       tokens.space2,
                     ).resolve(TextDirection.ltr)
                   : EdgeInsets.all(tokens.space2),
-              // xterm turns suggestions off itself, so a plain `text` type
-              // would reach Android as a visible password and ColorOS would
-              // force its secure keyboard. The email variation is not a
-              // password and keeps the space bar a terminal needs.
-              keyboardType: TextInputType.emailAddress,
+              // xterm keeps suggestions on now, so a plain text type reaches
+              // Android as ordinary text; disabling suggestions would make
+              // it a visible password and ColorOS would force its secure
+              // keyboard.
+              keyboardType: TextInputType.text,
               keyboardAppearance: roles.brightness,
               deleteDetection: true,
               hardwareKeyboardOnly: hardwareOnly,

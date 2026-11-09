@@ -661,14 +661,14 @@ class _KitFieldState extends State<KitField> {
     KitFieldKind.number => TextInputType.numberWithOptions(
       decimal: widget.decimal,
     ),
-    // NOT `text`, and NOT `visiblePassword`. Flutter's Android engine adds
-    // `TYPE_TEXT_VARIATION_VISIBLE_PASSWORD` to any text field that disables
-    // suggestions (`TextInputPlugin.inputTypeFromTextInputType`), and
-    // ColorOS swaps in its own secure keyboard for every password
-    // variation. The email variation is not a password, keeps a QWERTY
-    // layout, and still lets suggestions be turned off. The dots come from
-    // the controller, not from the system.
-    KitFieldKind.secret => TextInputType.emailAddress,
+    // Always `text`, never `visiblePassword`. Flutter's Android engine adds
+    // `TYPE_TEXT_VARIATION_VISIBLE_PASSWORD` to any text-class field that
+    // disables suggestions (`TextInputPlugin.inputTypeFromTextInputType`),
+    // and ColorOS swaps in its own secure keyboard for every password
+    // variation. That is why this kind keeps suggestions on (see
+    // [suggestWords] below); the dots come from the controller, not from the
+    // system.
+    KitFieldKind.secret => TextInputType.text,
     _ => TextInputType.text,
   };
 
@@ -763,17 +763,14 @@ class _KitFieldState extends State<KitField> {
     final plainWords =
         widget.kind == KitFieldKind.text ||
         widget.kind == KitFieldKind.multiline;
-    // A text field that reports no suggestions is sent to Android as a
-    // visible password, which ColorOS answers with its secure keyboard. Only
-    // prose keeps suggestions; a technical value keeps the ordinary
-    // keyboard and turns autocorrect off instead, so the platform never
-    // receives a password variation. The secret kind is the exception: it
-    // needs suggestions off, so its keyboard type is a non-password
-    // variation instead (see [_keyboard]).
-    final suggestWords =
-        plainWords ||
-        widget.kind == KitFieldKind.mono ||
-        widget.kind == KitFieldKind.path;
+    // Never false. Flutter's Android engine turns any text-class field with
+    // suggestions off into `TYPE_TEXT_VARIATION_VISIBLE_PASSWORD`, and
+    // ColorOS answers every password variation with its secure keyboard. A
+    // URL is no escape: `TYPE_TEXT_VARIATION_URI` (0x10) is a subset of
+    // `VISIBLE_PASSWORD` (0x90), so the URI bit disappears. Autocorrect and
+    // IME learning stay off instead; the secret kind still draws its own
+    // dots.
+    const suggestWords = true;
     // A TextFormField (a TextField inside a FormField), so the field takes
     // part in a framework Form and [fieldKey] finds a TextFormField.
     Widget editable = TextFormField(
@@ -790,6 +787,8 @@ class _KitFieldState extends State<KitField> {
       // field stays an ordinary one to the system.
       obscureText: false,
       autocorrect: plainWords && !secret,
+      // See [suggestWords]: never false on Android, or ColorOS calls the
+      // field a password and takes the keyboard over.
       enableSuggestions: suggestWords,
       // Never let a keyboard learn a technical value, a URL or a key.
       enableIMEPersonalizedLearning: !_technical,
