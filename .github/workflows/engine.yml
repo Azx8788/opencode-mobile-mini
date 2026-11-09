@@ -60,7 +60,7 @@ jobs:
           if "arm64-v8a" not in abis:
               raise SystemExit("arm64-v8a engine manifest entry missing")
           manifest["abis"] = {"arm64-v8a": abis["arm64-v8a"]}
-          path.write_text(json.dumps(manifest, indent=2) + "\\n")
+          path.write_text(json.dumps(manifest, indent=2) + "\n")
           PY
 
       - name: Upload the arm64 engine and its manifest
