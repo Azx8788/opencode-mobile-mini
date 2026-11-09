@@ -1,7 +1,7 @@
 {
   "schemaVersion": 2,
   "sourceSha256": "9ad775e4a392677a883ccacb32cde1fe3f5aa29966c5e69887be66cfeac7332a",
-  "sourceRevision": "5fa0973a4caaa7930d5b1bc6f91ce472106bedd7",
+  "sourceRevision": "31cb15d787f9a810f159c56d428db8e45716180a",
   "sourceDirty": false,
   "rustcVersion": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
   "ndkVersion": "30.0.16248370",
