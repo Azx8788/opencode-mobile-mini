@@ -661,13 +661,14 @@ class _KitFieldState extends State<KitField> {
     KitFieldKind.number => TextInputType.numberWithOptions(
       decimal: widget.decimal,
     ),
-    // Plain text, NOT `visiblePassword`. Android classifies
-    // `TYPE_TEXT_VARIATION_VISIBLE_PASSWORD` as a password field even though
-    // it shows what is typed, and several Chinese ROMs swap in their "secure
-    // keyboard" for any password field — which is exactly what this kind is
-    // avoiding by drawing its own dots. The value is a key, not prose, so a
-    // normal keyboard with suggestions off is the right one anyway.
-    KitFieldKind.secret => TextInputType.text,
+    // NOT `text`, and NOT `visiblePassword`. Flutter's Android engine adds
+    // `TYPE_TEXT_VARIATION_VISIBLE_PASSWORD` to any text field that disables
+    // suggestions (`TextInputPlugin.inputTypeFromTextInputType`), and
+    // ColorOS swaps in its own secure keyboard for every password
+    // variation. The email variation is not a password, keeps a QWERTY
+    // layout, and still lets suggestions be turned off. The dots come from
+    // the controller, not from the system.
+    KitFieldKind.secret => TextInputType.emailAddress,
     _ => TextInputType.text,
   };
 
@@ -762,6 +763,17 @@ class _KitFieldState extends State<KitField> {
     final plainWords =
         widget.kind == KitFieldKind.text ||
         widget.kind == KitFieldKind.multiline;
+    // A text field that reports no suggestions is sent to Android as a
+    // visible password, which ColorOS answers with its secure keyboard. Only
+    // prose keeps suggestions; a technical value keeps the ordinary
+    // keyboard and turns autocorrect off instead, so the platform never
+    // receives a password variation. The secret kind is the exception: it
+    // needs suggestions off, so its keyboard type is a non-password
+    // variation instead (see [_keyboard]).
+    final suggestWords =
+        plainWords ||
+        widget.kind == KitFieldKind.mono ||
+        widget.kind == KitFieldKind.path;
     // A TextFormField (a TextField inside a FormField), so the field takes
     // part in a framework Form and [fieldKey] finds a TextFormField.
     Widget editable = TextFormField(
@@ -778,8 +790,9 @@ class _KitFieldState extends State<KitField> {
       // field stays an ordinary one to the system.
       obscureText: false,
       autocorrect: plainWords && !secret,
-      enableSuggestions: plainWords && !secret,
-      enableIMEPersonalizedLearning: !secret,
+      enableSuggestions: suggestWords,
+      // Never let a keyboard learn a technical value, a URL or a key.
+      enableIMEPersonalizedLearning: !_technical,
       smartDashesType: plainWords
           ? SmartDashesType.enabled
           : SmartDashesType.disabled,

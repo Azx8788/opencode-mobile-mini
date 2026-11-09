@@ -104,10 +104,43 @@ void main() {
       ),
     );
     expect(field.obscureText, isFalse);
-    // `visiblePassword` is still a password input type to Android, and the
-    // ROMs this field exists for switch keyboards on it. Plain text keeps
-    // the plain keyboard; the dots come from the controller.
-    expect(field.keyboardType, TextInputType.text);
+    // Two traps, both real: `visiblePassword` is a password variation to
+    // Android, and so is any text field that disables suggestions. ColorOS
+    // swaps in its secure keyboard for either. The email variation is not a
+    // password and still keeps suggestions off; the dots come from the
+    // controller.
+    expect(field.keyboardType, TextInputType.emailAddress);
+    expect(field.enableSuggestions, isFalse);
+    expect(field.enableIMEPersonalizedLearning, isFalse);
     expect(find.byKey(const ValueKey('reveal')), findsOneWidget);
+  });
+
+  testWidgets('a technical field keeps suggestions on, so Android is not '
+      'given a password variation', (tester) async {
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: KitField(
+            label: 'Provider id',
+            controller: controller,
+            kind: KitFieldKind.mono,
+            fieldKey: const ValueKey('mono-field'),
+          ),
+        ),
+      ),
+    );
+
+    final field = tester.widget<TextField>(
+      find.descendant(
+        of: find.byKey(const ValueKey('mono-field')),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(field.keyboardType, TextInputType.text);
+    expect(field.enableSuggestions, isTrue);
+    expect(field.autocorrect, isFalse);
+    expect(field.enableIMEPersonalizedLearning, isFalse);
   });
 }

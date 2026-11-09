@@ -550,7 +550,11 @@ class _KitConfirmSheetState extends State<KitConfirmSheet> {
                   controller: _typed,
                   enabled: !_working,
                   autocorrect: false,
-                  enableSuggestions: false,
+                  // Suggestions stay on: a text field that turns them off is
+                  // reported to Android as a visible password, and ColorOS
+                  // answers that with its secure keyboard. The name is still
+                  // checked exactly; a suggestion is only a candidate.
+                  enableSuggestions: true,
                   textDirection: TextDirection.ltr,
                   style: tokens.typedName,
                   decoration: InputDecoration(

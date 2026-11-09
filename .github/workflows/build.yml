@@ -110,6 +110,7 @@ jobs:
             test/mini_package_test.dart \
             test/mini_l10n_test.dart \
             test/token_count_format_test.dart \
+            test/kit_field_secret_mask_test.dart \
             test/provider_probe_test.dart \
             test/provider_parameter_test.dart \
             test/model_switch_fit_test.dart \
