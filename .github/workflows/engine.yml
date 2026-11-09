@@ -37,7 +37,7 @@ jobs:
         env:
           OC_ENGINE_TEST_ROOT: ${{ runner.temp }}/aiteam-engine-tests
           OC_PHONE_PROOF_ROOT: ${{ runner.temp }}/aiteam-phone-proof
-        run: cargo test --manifest-path engine/phone/Cargo.toml --locked --no-fail-fast
+        run: cargo test --manifest-path engine/phone/Cargo.toml --locked --no-fail-fast -- --test-threads=1
 
       - name: Build and stage the arm64 engine
         run: |
