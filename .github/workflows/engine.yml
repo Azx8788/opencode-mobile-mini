@@ -34,6 +34,8 @@ jobs:
           fi
 
       - name: Test the engine on the host
+        env:
+          OC_ENGINE_TEST_ROOT: ${{ runner.temp }}/aiteam-engine-tests
         run: cargo test --manifest-path engine/phone/Cargo.toml --locked
 
       - name: Build and stage the arm64 engine
