@@ -58,6 +58,15 @@ enum ProviderModelFetchKind {
   /// The endpoint answered, but with a status that is not a model list.
   serverError,
 
+  /// The request never left the server: the app's own OpenCode is not
+  /// running, or its environment cannot run the read. Never retried from the
+  /// phone — that is the whole point of doing it there.
+  serverUnavailable,
+
+  /// The provider is not in the server's configuration (yet), so there is
+  /// nothing to read a model list with.
+  notConfigured,
+
   /// Anything else, reported with its text.
   unknown,
 }
@@ -140,13 +149,13 @@ typedef ProviderHttpGet =
 
 class ProviderModelSource {
   ProviderModelSource({
-    ProviderHttpGet? get,
+    required ProviderHttpGet get,
     this.overallBudget = const Duration(seconds: 50),
   }) : _get = get;
 
-  /// A test transport; null means the real one, built per call so it can
-  /// carry the trust this fetch was given.
-  final ProviderHttpGet? _get;
+  /// Where one request goes. Required: this app has no transport of its own
+  /// for a provider, by design — the server's key never leaves the server.
+  final ProviderHttpGet _get;
 
   /// The whole read, not one request. A gateway that hangs on the first
   /// spelling must not keep the button spinning for a minute.
@@ -162,7 +171,6 @@ class ProviderModelSource {
     String? apiKey,
     Map<String, String> headers = const {},
     Duration timeout = const Duration(seconds: 20),
-    String? trustedFingerprint,
     void Function(List<String> trace)? onTrace,
   }) async {
     final base = _cleanBase(baseUrl);
@@ -179,17 +187,10 @@ class ProviderModelSource {
     final trace = <String>[];
     final clock = Stopwatch()..start();
     ProviderModelFetchFailure? best;
-    // A transport supplied by a test never touches TLS; the default one reads
-    // the trust this call was given.
-    final get =
-        _get ??
-        (url, requestHeaders, requestTimeout) => _defaultGet(
-          url,
-          requestHeaders,
-          requestTimeout,
-          trustedFingerprint: trustedFingerprint,
-        );
-    final pinned = (trustedFingerprint ?? '').trim().isNotEmpty;
+    final get = _get;
+    // A transport may carry a pin of its own; this one cannot, because the
+    // certificate is the server's to verify now.
+    const pinned = false;
 
     for (final url in urls) {
       for (final sent in attempts) {
@@ -302,6 +303,10 @@ class ProviderModelSource {
             path: url.path,
           );
         } catch (error) {
+          // A transport that already knows what went wrong (the in-server one
+          // classifies TLS, timeouts and an unavailable server itself) must
+          // not be flattened into "unknown".
+          if (error is ProviderModelFetchFailure) rethrow;
           best = ProviderModelFetchFailure(
             '$error',
             trace: List.unmodifiable(trace),
@@ -487,48 +492,5 @@ class ProviderModelSource {
       );
     }
     return CustomProviderDraft.normalizeModels(models);
-  }
-
-  static Future<ProviderHttpAnswer> _defaultGet(
-    Uri url,
-    Map<String, String> headers,
-    Duration timeout, {
-    String? trustedFingerprint,
-  }) async {
-    X509Certificate? rejected;
-    final client = createProviderHttpClient(
-      trustedFingerprint: trustedFingerprint,
-      connectionTimeout: timeout,
-      onUntrustedCertificate: (certificate) => rejected = certificate,
-    );
-    try {
-      final request = await client.getUrl(url).timeout(timeout);
-      request.followRedirects = true;
-      headers.forEach(request.headers.set);
-      request.headers.set(HttpHeaders.acceptEncodingHeader, 'identity');
-      final response = await request.close().timeout(timeout);
-      final bytes = await response
-          .fold<List<int>>(<int>[], (all, chunk) => all..addAll(chunk))
-          .timeout(timeout);
-      // `allowMalformed`: a gateway that answers in GBK, or an HTML error
-      // page, must not turn into "the base URL is not a valid address".
-      return ProviderHttpAnswer(
-        statusCode: response.statusCode,
-        body: utf8.decode(bytes, allowMalformed: true),
-      );
-    } on HandshakeException catch (error) {
-      // `close(force: true)` below runs before this rethrow leaves the
-      // method; the certificate is retained in the exception itself.
-      if (rejected != null) {
-        throw ProviderTlsException(
-          error.message,
-          certificate: rejected!,
-          problem: classifyProviderTlsFailure(error),
-        );
-      }
-      rethrow;
-    } finally {
-      client.close(force: true);
-    }
   }
 }

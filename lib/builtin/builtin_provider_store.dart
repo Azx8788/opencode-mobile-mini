@@ -139,6 +139,11 @@ class BuiltinProviderStore {
 
   String _absolute(String relative) => '$_home/$relative';
 
+  /// The absolute path of the file this server reads, for a caller that has
+  /// to name it outside this class (the in-server model read does).
+  String pathOf(ResolvedProviderConfig resolved) =>
+      _absolute(resolved.relativePath);
+
   /// Finds the file the server would read.
   ///
   /// Only the v2 location: the start script pins `XDG_CONFIG_HOME` at
@@ -277,11 +282,16 @@ fi
   ///
   /// [replace] is the edit path: an entry with the same id is overwritten
   /// instead of refused. A draft whose key box was left empty keeps the key
-  /// file the config already points at.
+  /// the config already has.
+  ///
+  /// [requireModels] is false for the write that has to happen before a model
+  /// list exists: the server reads the endpoint's own list from the entry, so
+  /// the entry goes to disk first and the chosen models are written after.
   Future<ProviderWriteReceipt> save(
     CustomProviderDraft draft, {
     ResolvedProviderConfig? resolved,
     bool replace = false,
+    bool requireModels = true,
   }) async {
     final target = resolved ?? await resolve();
     final snapshot = await read(target);
@@ -298,6 +308,7 @@ fi
         snapshot.document,
         target.format,
         replace: replace,
+        requireModels: requireModels,
       );
     } on Exception catch (error) {
       throw ProviderWriteRefused('$error', reason: 'merge');
@@ -474,11 +485,14 @@ fi
     final writeScript =
         '''
 set -eu
+umask 077
 f='$path'
 mkdir -p "\$(dirname "\$f")"
-${backup != null ? "cp \"\$f\" '$backup'" : ''}
+${backup != null ? "cp \"\$f\" '$backup'\nchmod 600 '$backup'" : ''}
 printf '%s' '$encoded' | base64 -d > "\$f.tmp.$stamp"
+chmod 600 "\$f.tmp.$stamp"
 mv "\$f.tmp.$stamp" "\$f"
+chmod 600 "\$f"
 echo DONE
 ''';
     final written = await _run(writeScript, const Duration(seconds: 45));

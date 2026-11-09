@@ -34016,13 +34016,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerAddApiKey => 'API 密钥';
 
   @override
-  String get providerAddApiKeyHelper => '保存在服务器上一个只有 OpenCode 读取的文件里，不写进配置。';
+  String get providerAddApiKeyHelper => '直接写入服务端配置，只有服务端自己的账号能读。';
 
   @override
   String get providerAddFetch => '获取模型';
 
   @override
-  String get providerAddFetching => '正在请求端点…';
+  String get providerAddFetching => '服务端正在读取列表…';
 
   @override
   String get providerAddFetchFailed => '无法读取模型列表';
@@ -34096,7 +34096,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerModelsTitle => '模型与检查';
 
   @override
-  String get providerModelsHint => '服务器已知的全部供应商，以及它们提供的模型。点“测试”对某个模型运行五项检查。';
+  String get providerModelsHint => '服务端认识的所有供应商，以及它们提供的模型。点“测试”让服务端真实发一条消息。';
 
   @override
   String get providerModelsEmpty => '服务器还没有报告任何供应商。';
@@ -34125,13 +34125,13 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerProbeProtocol => '协议';
 
   @override
-  String get providerProbeRun => '运行五项检查';
+  String get providerProbeRun => '发送一条测试消息';
 
   @override
-  String get providerProbeRunning => '正在运行…';
+  String get providerProbeRunning => '等待服务端…';
 
   @override
-  String get providerProbeNote => '每项只发一个短请求：回复、流式、工具调用、系统提示词、完成原因。';
+  String get providerProbeNote => '服务端会用这个模型新建一个会话，发一条简短消息，然后删除该会话。';
 
   @override
   String get providerProbeNeedBaseUrl => '请先填写供应商的基础地址。';
@@ -34349,7 +34349,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String get providerDetailModelsHint =>
-      '用上面填好的地址、密钥和协议，向供应商请求它自己的模型列表，再勾选要保留的。没勾选的模型会在保存时于服务器上停用——供应商自带的那些也一样。';
+      '服务端用上面的配置读取供应商自己的模型列表，然后勾选要保留的模型。未勾选的模型会在配置里被关闭。';
 
   @override
   String get providerModelsConfigFirst => '先填好 API Base Url。';
@@ -34523,7 +34523,7 @@ class AppLocalizationsZh extends AppLocalizations {
   String get providerTlsTrusted => '已信任这个地址的证书';
 
   @override
-  String get providerTlsTrustedBody => '读取模型、连接检查和余额查询会接受这份证书。';
+  String get providerTlsTrustedBody => '余额查询接受这个证书。';
 
   @override
   String get providerTlsRevoke => '撤销信任';
@@ -34543,4 +34543,50 @@ class AppLocalizationsZh extends AppLocalizations {
   String providerModelsRootAdopted(String url) {
     return '接口地址已改为 $url，模型接口在这里。对话也会发到这个根路径。';
   }
+
+  @override
+  String get providerProbeServerOnly => '供应商测试在应用自带的服务端内执行。请连接应用内服务端后再测试。';
+
+  @override
+  String get providerProbeServerDown => '服务端没有响应，测试没有执行。请启动服务端后重试。';
+
+  @override
+  String get providerProbeServerNotLoaded => '服务端还没有加载这个供应商。请重新保存，或重启服务端。';
+
+  @override
+  String providerProbeServerRejected(String message) {
+    return '服务端拒绝创建测试会话：$message';
+  }
+
+  @override
+  String get providerProbeServerTimeout => '模型没有在限定时间内回复。';
+
+  @override
+  String get providerProbeServerEmpty => '这一轮结束了，但没有返回任何文本。';
+
+  @override
+  String providerProbePassed(String reply) {
+    return '已回复：$reply';
+  }
+
+  @override
+  String providerProbeServedAs(String model) {
+    return '服务端报告实际回答的是 $model，与所选模型不一致。';
+  }
+
+  @override
+  String providerProbeElapsed(String seconds) {
+    return '往返耗时：$seconds 秒';
+  }
+
+  @override
+  String get providerAddNeedSave => '服务端用磁盘上的配置读取模型列表，所以会先保存这个供应商并重载一次。';
+
+  @override
+  String providerModelsFetchServerDown(String message) {
+    return '服务端无法执行这次请求：$message';
+  }
+
+  @override
+  String get providerModelsFetchNotConfigured => '这个供应商还没有写进服务端配置。';
 }

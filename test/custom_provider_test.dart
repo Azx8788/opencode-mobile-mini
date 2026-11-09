@@ -259,11 +259,37 @@ void main() {
       expect(options.containsKey('apiKey'), false);
     });
 
-    test('a missing key is refused in plaintext mode', () {
+    test('a plaintext entry with no key writes no apiKey at all', () {
+      // A gateway on the local network has no key; an entry without `apiKey`
+      // is how that is written. The model read reports a key the endpoint
+      // does need, in its own words.
+      final document = draft(
+        keyMode: ProviderKeyMode.plaintext,
+        apiKey: ' ',
+      ).toDocument(ProviderConfigFormat.v1);
+      final options =
+          (document['provider'] as Map)['my-gateway']['options'] as Map;
+      expect(options.containsKey('apiKey'), false);
+    });
+
+    test('a draft with no models is valid for the write before the read', () {
+      // The server reads the endpoint's model list from the entry, so the
+      // entry has to be written first — before any model is known.
+      final empty = draft(models: const []);
       expect(
-        () => draft(keyMode: ProviderKeyMode.plaintext, apiKey: ' ').validate(),
+        () => empty.validate(requireModels: false),
+        returnsNormally,
+      );
+      expect(
+        () => empty.validate(),
         throwsA(isA<Exception>()),
       );
+      final entry =
+          (empty.mergeInto(null, ProviderConfigFormat.v2,
+                  requireModels: false)['providers'] as Map)['my-gateway']
+              as Map;
+      expect(entry.containsKey('models'), false);
+      expect(entry['package'], 'aisdk:@ai-sdk/openai-compatible');
     });
   });
 

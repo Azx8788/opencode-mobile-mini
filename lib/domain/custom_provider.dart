@@ -465,7 +465,17 @@ class CustomProviderDraft {
   }
 
   /// Rejects what cannot be saved, with a reason the form can show.
-  void validate() {
+  ///
+  /// [requireModels] is false for the one write that happens *before* a model
+  /// list exists: the server reads the endpoint's models with the saved entry,
+  /// so the entry has to be on disk first. An entry with no models is a valid
+  /// config — it simply offers none until the list is read back.
+  ///
+  /// A key is not required either: a gateway on the local network (LM Studio,
+  /// Ollama) has none, and an entry without `apiKey` is exactly how that is
+  /// written. A missing key that the endpoint does need is reported by the
+  /// model read, in its own words.
+  void validate({bool requireModels = true}) {
     if (name.trim().isEmpty) {
       throw const ProductException('Give the provider a name');
     }
@@ -481,12 +491,8 @@ class CustomProviderDraft {
         'The base URL must start with http:// or https://',
       );
     }
-    if (models.isEmpty) {
+    if (requireModels && models.isEmpty) {
       throw const ProductException('Select at least one model');
-    }
-    if (keyMode == ProviderKeyMode.plaintext &&
-        (apiKey?.trim().isEmpty ?? true)) {
-      throw const ProductException('Enter the API key, or choose another way');
     }
     if (timeoutMs <= 0) {
       throw const ProductException('The timeout must be greater than zero');
@@ -494,8 +500,11 @@ class CustomProviderDraft {
   }
 
   /// The provider entry alone, ready to be merged into a config document.
-  Map<String, Object?> toProviderEntry(ProviderConfigFormat format) {
-    validate();
+  Map<String, Object?> toProviderEntry(
+    ProviderConfigFormat format, {
+    bool requireModels = true,
+  }) {
+    validate(requireModels: requireModels);
     return switch (format) {
       ProviderConfigFormat.v1 => _v1Entry(),
       ProviderConfigFormat.v2 => _v2Entry(),
@@ -513,23 +522,27 @@ class CustomProviderDraft {
     'options': {
       'baseURL': baseUrl,
       if (keyMode == ProviderKeyMode.secretFile) 'apiKey': '{file:$secretPath}',
-      if (keyMode == ProviderKeyMode.plaintext) 'apiKey': apiKey!.trim(),
+      if (keyMode == ProviderKeyMode.plaintext && hasKey)
+        'apiKey': apiKey!.trim(),
       if (keyMode == ProviderKeyMode.external && keyPlaceholder != null)
         'apiKey': keyPlaceholder!,
       if (headerMap.isNotEmpty) 'headers': headerMap,
       'timeout': timeoutMs,
     },
-    'models': {
-      for (final model in models)
-        model.id: {
-          'name': model.label,
-          'tool_call': true,
-          'reasoning': protocol != ProviderProtocol.responses,
-          'attachment': protocol != ProviderProtocol.chatCompletions,
-          // Responses takes its sampling knobs per request, not per model.
-          'temperature': protocol != ProviderProtocol.responses,
-        },
-    },
+    // No models yet is a real state: the entry is written first, then the
+    // server reads the endpoint's list with it.
+    if (models.isNotEmpty)
+      'models': {
+        for (final model in models)
+          model.id: {
+            'name': model.label,
+            'tool_call': true,
+            'reasoning': protocol != ProviderProtocol.responses,
+            'attachment': protocol != ProviderProtocol.chatCompletions,
+            // Responses takes its sampling knobs per request, not per model.
+            'temperature': protocol != ProviderProtocol.responses,
+          },
+      },
   };
 
   /// v2 keeps the key in `settings` (the schema has no explicit `baseURL`
@@ -553,28 +566,33 @@ class CustomProviderDraft {
     'settings': {
       'baseURL': baseUrl,
       if (keyMode == ProviderKeyMode.secretFile) 'apiKey': '{file:$secretPath}',
-      if (keyMode == ProviderKeyMode.plaintext) 'apiKey': apiKey!.trim(),
+      if (keyMode == ProviderKeyMode.plaintext && hasKey)
+        'apiKey': apiKey!.trim(),
       if (keyMode == ProviderKeyMode.external && keyPlaceholder != null)
         'apiKey': keyPlaceholder!,
       if (headerMap.isNotEmpty) 'headers': headerMap,
       'timeout': timeoutMs,
     },
-    'models': {
-      for (final model in models)
-        model.id: {
-          'name': model.label,
-          'capabilities': {
-            'tools': true,
-            'input': _inputModalities,
-            'output': const ['text'],
-            if (protocol != ProviderProtocol.responses) 'temperature': true,
+    // Written before any model is known: the server reads the endpoint's own
+    // list with this entry, and the chosen models are written back after.
+    if (models.isNotEmpty || effectiveDisabledModelIDs.isNotEmpty)
+      'models': {
+        for (final model in models)
+          model.id: {
+            'name': model.label,
+            'capabilities': {
+              'tools': true,
+              'input': _inputModalities,
+              'output': const ['text'],
+              if (protocol != ProviderProtocol.responses) 'temperature': true,
+            },
           },
-        },
-      // The built-in catalogue is merged, never replaced: a model that is
-      // already there and left out of the map above stays visible. Turning
-      // it off is an explicit entry of its own.
-      for (final id in effectiveDisabledModelIDs) id: const {'disabled': true},
-    },
+        // The built-in catalogue is merged, never replaced: a model that is
+        // already there and left out of the map above stays visible. Turning
+        // it off is an explicit entry of its own.
+        for (final id in effectiveDisabledModelIDs)
+          id: const {'disabled': true},
+      },
   };
 
   /// Chat Completions has no agreed way to signal image input across
@@ -585,8 +603,13 @@ class CustomProviderDraft {
   };
 
   /// The whole document, for a person who will paste it by hand.
-  Map<String, Object?> toDocument(ProviderConfigFormat format) => {
-    _rootKey(format): {id: toProviderEntry(format)},
+  Map<String, Object?> toDocument(
+    ProviderConfigFormat format, {
+    bool requireModels = true,
+  }) => {
+    _rootKey(format): {
+      id: toProviderEntry(format, requireModels: requireModels),
+    },
   };
 
   /// `existing` with this provider added, or with an entry of the same id
@@ -600,9 +623,12 @@ class CustomProviderDraft {
     Map<String, Object?>? existing,
     ProviderConfigFormat format, {
     bool replace = false,
+    bool requireModels = true,
   }) {
-    final entry = toProviderEntry(format);
-    if (existing == null) return toDocument(format);
+    final entry = toProviderEntry(format, requireModels: requireModels);
+    if (existing == null) {
+      return toDocument(format, requireModels: requireModels);
+    }
     final rootKey = _rootKey(format);
     final merged = <String, Object?>{...existing};
     final current = merged[rootKey];

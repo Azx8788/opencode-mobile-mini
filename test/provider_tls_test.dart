@@ -2,17 +2,19 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:opencode_mobile/domain/custom_provider.dart';
 import 'package:opencode_mobile/domain/provider_balance.dart';
-import 'package:opencode_mobile/domain/provider_model_source.dart';
-import 'package:opencode_mobile/domain/provider_probe.dart';
 import 'package:opencode_mobile/domain/provider_tls.dart';
+import 'package:opencode_mobile/domain/server_trust.dart';
 import 'package:opencode_mobile/state/model_library.dart';
 
 /// A real HTTPS server with a self-signed certificate, because the failure
 /// this covers only exists at the handshake: a fake transport that throws
 /// `HandshakeException` would prove the catch block, not that a trusted
 /// fingerprint actually makes `dart:io` complete the connection.
+///
+/// What still connects from the phone is the balance lookup — the model list
+/// and the provider test are made by the server now, with its own certificate
+/// store, so their trust is not this app's to pin.
 void main() {
   late HttpServer server;
   late int port;
@@ -51,98 +53,27 @@ void main() {
 
   String base() => 'https://127.0.0.1:$port';
 
-  Future<ProviderModelFetchFailure> failure({String? pin}) async {
+  /// The fingerprint the server presents, learned the way the app learns it:
+  /// from a handshake it refused.
+  Future<String> fingerprint() async {
+    X509Certificate? rejected;
+    final client = createProviderHttpClient(
+      connectionTimeout: const Duration(seconds: 5),
+      onUntrustedCertificate: (certificate) => rejected = certificate,
+    );
     try {
-      await ProviderModelSource().fetch(
-        baseUrl: base(),
-        protocol: ProviderProtocol.chatCompletions,
-        apiKey: 'sk-test',
-        trustedFingerprint: pin,
-      );
-    } on ProviderModelFetchFailure catch (error) {
-      return error;
+      final request = await client.getUrl(Uri.parse('${base()}/models'));
+      await request.close();
+    } catch (_) {
+      // The refusal is the point; the handshake already happened.
+    } finally {
+      client.close(force: true);
     }
-    fail('the self-signed endpoint should have been refused');
+    return certificateFingerprintSha256(rejected!);
   }
 
-  group('a certificate the device cannot verify', () {
-    test('fails with the certificate and its reason, not a dead end', () async {
-      final error = await failure();
-      expect(error.kind, ProviderModelFetchKind.tls);
-      expect(error.certificate, isNotNull);
-      expect(error.certificate!.subject, contains('provider-test'));
-      expect(
-        error.certificate!.fingerprintSha256,
-        matches(RegExp(r'^[0-9a-f]{64}$')),
-      );
-      expect(error.certificate!.endValidity.isAfter(DateTime.now()), isTrue);
-      expect(
-        error.tlsProblem,
-        anyOf(ProviderTlsProblem.selfSigned, ProviderTlsProblem.unknownIssuer),
-      );
-      expect(error.trustWasPinned, isFalse);
-    });
-
-    test('the stored fingerprint lets the same address answer', () async {
-      final first = await failure();
-      final listing = await ProviderModelSource().fetch(
-        baseUrl: base(),
-        protocol: ProviderProtocol.chatCompletions,
-        apiKey: 'sk-test',
-        trustedFingerprint: first.certificate!.fingerprintSha256,
-      );
-      expect(listing.models.map((model) => model.id), ['trusted-model']);
-      expect(listing.url.path, '/models');
-    });
-
-    test('a different fingerprint is refused again', () async {
-      final error = await failure(pin: '0' * 64);
-      expect(error.kind, ProviderModelFetchKind.tls);
-      expect(error.certificate, isNotNull);
-      // A pin was in use: the form warns that the certificate changed rather
-      // than presenting this as a first-time question.
-      expect(error.trustWasPinned, isTrue);
-    });
-  });
-
-  group('the other reads use the same trust', () {
-    test(
-      'a probe without the pin reports the certificate, not a stack',
-      () async {
-        final result = await ProviderProbe().runOne(
-          kind: ProviderProbeKind.nonStreaming,
-          protocol: ProviderProtocol.chatCompletions,
-          baseUrl: base(),
-          model: 'trusted-model',
-          apiKey: 'sk-test',
-        );
-        expect(result.passed, isFalse);
-        expect(result.detail, contains('certificate could not be verified'));
-        expect(result.detail, isNot(contains('HandshakeException')));
-      },
-    );
-
-    test('a probe with the pin reaches the endpoint', () async {
-      final first = await failure();
-      final result =
-          await ProviderProbe(
-            trustedFingerprint: first.certificate!.fingerprintSha256,
-          ).runOne(
-            kind: ProviderProbeKind.nonStreaming,
-            protocol: ProviderProtocol.chatCompletions,
-            baseUrl: base(),
-            model: 'trusted-model',
-            apiKey: 'sk-test',
-          );
-      // The test server answers 404 there; what matters is that the
-      // handshake happened, so the detail is an HTTP status, not a
-      // certificate complaint.
-      expect(result.passed, isFalse);
-      expect(result.detail, contains('404'));
-    });
-
-    test('a balance lookup with the pin reads the value', () async {
-      final first = await failure();
+  group('the balance lookup uses the trust', () {
+    test('with the pin it reads the value', () async {
       final client = ProviderBalanceClient();
       final reading = await client.fetch(
         balance: const ProviderBalance(
@@ -152,7 +83,7 @@ void main() {
         ),
         baseUrl: base(),
         apiKey: 'sk-test',
-        trustedFingerprint: first.certificate!.fingerprintSha256,
+        trustedFingerprint: await fingerprint(),
       );
       expect(reading.value, 'trusted-model');
     });

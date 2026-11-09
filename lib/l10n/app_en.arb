@@ -44039,9 +44039,9 @@
   "providerAddBaseUrlHelper": "As the endpoint's documentation prints it. A pasted /chat/completions, /responses or /messages is removed; the rest of the path stays.",
   "providerAddModels": "Models",
   "providerAddApiKey": "API key",
-  "providerAddApiKeyHelper": "Saved in a file on the server that only OpenCode reads, not in the configuration.",
+  "providerAddApiKeyHelper": "Written into the server's configuration, which only the server's own account can read.",
   "providerAddFetch": "Fetch models",
-  "providerAddFetching": "Asking the endpoint…",
+  "providerAddFetching": "The server is reading the list…",
   "providerAddFetchFailed": "Could not read the model list",
   "providerAddModelsFound": "{count} models",
   "@providerAddModelsFound": {
@@ -44088,7 +44088,7 @@
   "@providerModelsTitle": {
     "description": "Title of the page that lists every provider and its models"
   },
-  "providerModelsHint": "Every provider the server knows, and the models it serves. Tap Test to run the five checks against one model.",
+  "providerModelsHint": "Every provider the server knows, and the models it serves. Tap Test to send one real message through the server.",
   "@providerModelsHint": {
     "description": "Explains that the list comes from the server catalogue and each model can be tested"
   },
@@ -44129,15 +44129,15 @@
   "@providerProbeProtocol": {
     "description": "Field label: which wire format the provider speaks"
   },
-  "providerProbeRun": "Run the five checks",
+  "providerProbeRun": "Send a test message",
   "@providerProbeRun": {
     "description": "Button that starts the provider self-check"
   },
-  "providerProbeRunning": "Running…",
+  "providerProbeRunning": "Waiting for the server…",
   "@providerProbeRunning": {
     "description": "Button label while the self-check is in flight"
   },
-  "providerProbeNote": "One short request per check: reply, stream, tool call, system prompt, finish reason.",
+  "providerProbeNote": "The server opens a session with this model, sends one short message, and deletes the session afterwards.",
   "@providerProbeNote": {
     "description": "Explains what the five probes are"
   },
@@ -44444,7 +44444,7 @@
   "@providerHeadersEmpty": {
     "description": "Empty custom headers state"
   },
-  "providerDetailModelsHint": "Ask the provider for its own model list with the address, key and protocol above, then tick what to keep. Unticked models are turned off on the server when you save — including the ones it ships with.",
+  "providerDetailModelsHint": "The server reads the endpoint's own model list with the configuration above, then tick what to keep. Unticked models are turned off in the config.",
   "@providerDetailModelsHint": {
     "description": "Models tab explanation"
   },
@@ -44682,7 +44682,7 @@
   "@providerTlsTrusted": {
     "description": "供应商证书信任：providerTlsTrusted"
   },
-  "providerTlsTrustedBody": "Reading models, connection checks and balance lookups accept this certificate.",
+  "providerTlsTrustedBody": "The balance lookup accepts this certificate.",
   "@providerTlsTrustedBody": {
     "description": "供应商证书信任：providerTlsTrustedBody"
   },
@@ -44715,5 +44715,79 @@
         "type": "String"
       }
     }
+  },
+  "providerProbeServerOnly": "Provider tests run inside the app's own server. Connect the in-app server to test a provider.",
+  "@providerProbeServerOnly": {
+    "description": "Shown instead of the test when the connected server is not the one the app runs"
+  },
+  "providerProbeServerDown": "The server is not answering, so nothing was tested. Start it and try again.",
+  "@providerProbeServerDown": {
+    "description": "Provider test failure: the server could not be reached"
+  },
+  "providerProbeServerNotLoaded": "The server has not loaded this provider. Save it again, or restart the server.",
+  "@providerProbeServerNotLoaded": {
+    "description": "Provider test failure: the provider is not in the server's runtime"
+  },
+  "providerProbeServerRejected": "The server refused to open the test session: {message}",
+  "@providerProbeServerRejected": {
+    "description": "Provider test failure: the server rejected the session",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "providerProbeServerTimeout": "The model did not answer in time.",
+  "@providerProbeServerTimeout": {
+    "description": "Provider test failure: no answer in time"
+  },
+  "providerProbeServerEmpty": "The turn finished with no text.",
+  "@providerProbeServerEmpty": {
+    "description": "Provider test failure: an empty reply"
+  },
+  "providerProbePassed": "Replied: {reply}",
+  "@providerProbePassed": {
+    "description": "Provider test passed, with what the model said",
+    "placeholders": {
+      "reply": {
+        "type": "String"
+      }
+    }
+  },
+  "providerProbeServedAs": "The server reports it answered as {model}, not the model that was asked for.",
+  "@providerProbeServedAs": {
+    "description": "Provider test note: the model the server says it used",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "providerProbeElapsed": "Round trip: {seconds} s",
+  "@providerProbeElapsed": {
+    "description": "Provider test: how long the turn took",
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "providerAddNeedSave": "The server reads the list with the configuration on disk, so this saves the provider and reloads once first.",
+  "@providerAddNeedSave": {
+    "description": "Hint under Fetch models before the provider has been written"
+  },
+  "providerModelsFetchServerDown": "The server could not run the request: {message}",
+  "@providerModelsFetchServerDown": {
+    "description": "Model list failure: the in-app server could not make the request",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "providerModelsFetchNotConfigured": "This provider is not in the server's configuration yet.",
+  "@providerModelsFetchNotConfigured": {
+    "description": "Model list failure: the provider is missing from the config"
   }
+
 }

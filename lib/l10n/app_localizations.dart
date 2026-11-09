@@ -56609,7 +56609,7 @@ abstract class AppLocalizations {
   /// No description provided for @providerAddApiKeyHelper.
   ///
   /// In en, this message translates to:
-  /// **'Saved in a file on the server that only OpenCode reads, not in the configuration.'**
+  /// **'Written into the server\'s configuration, which only the server\'s own account can read.'**
   String get providerAddApiKeyHelper;
 
   /// No description provided for @providerAddFetch.
@@ -56621,7 +56621,7 @@ abstract class AppLocalizations {
   /// No description provided for @providerAddFetching.
   ///
   /// In en, this message translates to:
-  /// **'Asking the endpoint…'**
+  /// **'The server is reading the list…'**
   String get providerAddFetching;
 
   /// No description provided for @providerAddFetchFailed.
@@ -56759,7 +56759,7 @@ abstract class AppLocalizations {
   /// Explains that the list comes from the server catalogue and each model can be tested
   ///
   /// In en, this message translates to:
-  /// **'Every provider the server knows, and the models it serves. Tap Test to run the five checks against one model.'**
+  /// **'Every provider the server knows, and the models it serves. Tap Test to send one real message through the server.'**
   String get providerModelsHint;
 
   /// Shown when the server catalogue has no providers
@@ -56813,19 +56813,19 @@ abstract class AppLocalizations {
   /// Button that starts the provider self-check
   ///
   /// In en, this message translates to:
-  /// **'Run the five checks'**
+  /// **'Send a test message'**
   String get providerProbeRun;
 
   /// Button label while the self-check is in flight
   ///
   /// In en, this message translates to:
-  /// **'Running…'**
+  /// **'Waiting for the server…'**
   String get providerProbeRunning;
 
   /// Explains what the five probes are
   ///
   /// In en, this message translates to:
-  /// **'One short request per check: reply, stream, tool call, system prompt, finish reason.'**
+  /// **'The server opens a session with this model, sends one short message, and deletes the session afterwards.'**
   String get providerProbeNote;
 
   /// Shown when Run is tapped with an empty base URL
@@ -57197,7 +57197,7 @@ abstract class AppLocalizations {
   /// Models tab explanation
   ///
   /// In en, this message translates to:
-  /// **'Ask the provider for its own model list with the address, key and protocol above, then tick what to keep. Unticked models are turned off on the server when you save — including the ones it ships with.'**
+  /// **'The server reads the endpoint\'s own model list with the configuration above, then tick what to keep. Unticked models are turned off in the config.'**
   String get providerDetailModelsHint;
 
   /// Models tab when no address
@@ -57521,7 +57521,7 @@ abstract class AppLocalizations {
   /// 供应商证书信任：providerTlsTrustedBody
   ///
   /// In en, this message translates to:
-  /// **'Reading models, connection checks and balance lookups accept this certificate.'**
+  /// **'The balance lookup accepts this certificate.'**
   String get providerTlsTrustedBody;
 
   /// 供应商证书信任：providerTlsRevoke
@@ -57553,6 +57553,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The address was changed to {url}, where the models answer. Messages are sent to this same root.'**
   String providerModelsRootAdopted(String url);
+
+  /// Shown instead of the test when the connected server is not the one the app runs
+  ///
+  /// In en, this message translates to:
+  /// **'Provider tests run inside the app\'s own server. Connect the in-app server to test a provider.'**
+  String get providerProbeServerOnly;
+
+  /// Provider test failure: the server could not be reached
+  ///
+  /// In en, this message translates to:
+  /// **'The server is not answering, so nothing was tested. Start it and try again.'**
+  String get providerProbeServerDown;
+
+  /// Provider test failure: the provider is not in the server's runtime
+  ///
+  /// In en, this message translates to:
+  /// **'The server has not loaded this provider. Save it again, or restart the server.'**
+  String get providerProbeServerNotLoaded;
+
+  /// Provider test failure: the server rejected the session
+  ///
+  /// In en, this message translates to:
+  /// **'The server refused to open the test session: {message}'**
+  String providerProbeServerRejected(String message);
+
+  /// Provider test failure: no answer in time
+  ///
+  /// In en, this message translates to:
+  /// **'The model did not answer in time.'**
+  String get providerProbeServerTimeout;
+
+  /// Provider test failure: an empty reply
+  ///
+  /// In en, this message translates to:
+  /// **'The turn finished with no text.'**
+  String get providerProbeServerEmpty;
+
+  /// Provider test passed, with what the model said
+  ///
+  /// In en, this message translates to:
+  /// **'Replied: {reply}'**
+  String providerProbePassed(String reply);
+
+  /// Provider test note: the model the server says it used
+  ///
+  /// In en, this message translates to:
+  /// **'The server reports it answered as {model}, not the model that was asked for.'**
+  String providerProbeServedAs(String model);
+
+  /// Provider test: how long the turn took
+  ///
+  /// In en, this message translates to:
+  /// **'Round trip: {seconds} s'**
+  String providerProbeElapsed(String seconds);
+
+  /// Hint under Fetch models before the provider has been written
+  ///
+  /// In en, this message translates to:
+  /// **'The server reads the list with the configuration on disk, so this saves the provider and reloads once first.'**
+  String get providerAddNeedSave;
+
+  /// Model list failure: the in-app server could not make the request
+  ///
+  /// In en, this message translates to:
+  /// **'The server could not run the request: {message}'**
+  String providerModelsFetchServerDown(String message);
+
+  /// Model list failure: the provider is missing from the config
+  ///
+  /// In en, this message translates to:
+  /// **'This provider is not in the server\'s configuration yet.'**
+  String get providerModelsFetchNotConfigured;
 }
 
 class _AppLocalizationsDelegate

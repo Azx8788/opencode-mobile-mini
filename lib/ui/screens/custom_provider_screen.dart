@@ -9,6 +9,8 @@ import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_provider_store.dart';
 import '../../builtin/builtin_provider_templates.dart';
 import '../../builtin/builtin_server.dart' show looksLikeInAppServer;
+import '../../builtin/provider_server_models.dart';
+import '../../builtin/provider_server_scripts.dart';
 import '../../domain/custom_provider.dart';
 import '../../domain/custom_provider_record.dart';
 import '../../domain/provider_balance.dart';
@@ -17,7 +19,7 @@ import '../../domain/provider_tls.dart';
 import '../../domain/server_trust.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import 'provider_probe_screen.dart';
+import 'provider_test_screen.dart';
 import '../app_iconography.dart';
 import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit.dart';
@@ -80,10 +82,34 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
 
   late final BuiltinLinux _linux = widget.linux ?? BuiltinLinux();
   late final BuiltinProviderStore _store = BuiltinProviderStore(linux: _linux);
-  late final ProviderModelSource _models = ProviderModelSource();
+  late final ProviderServerModelSource _models = ProviderServerModelSource(
+    linux: _linux,
+    userAgent: ProviderServerScripts.userAgent(
+      widget.controller.installedServerVersion ??
+          widget.controller.profile?.serverVersion,
+    ),
+  );
   final ProviderBalanceClient _balanceClient = ProviderBalanceClient();
 
   ProviderProtocol _protocol = ProviderProtocol.chatCompletions;
+
+  /// Where the key goes. The server reads the model list and sends the test
+  /// itself, so the key has to be somewhere the server can read: in the
+  /// config, which only the server's own account can open. `secretFile` is
+  /// kept for entries written that way before this rule.
+  late final ProviderKeyMode _keyMode =
+      widget.editing?.keyMode ?? ProviderKeyMode.plaintext;
+
+  /// True once this entry is in the config, whichever action put it there.
+  /// The write before a model read happens on a new provider, and from then
+  /// on saving is an edit of an entry that already exists.
+  bool _existsOnServer = false;
+
+  /// The key this form wrote into the config. A new provider has no
+  /// [widget.editing] to read it back from, so a save that follows a write
+  /// keeps it here instead of writing an entry without one.
+  String? _savedKey;
+
   ResolvedProviderConfig? _resolved;
   List<CustomProviderModel> _listed = const [];
   final Set<String> _selected = {};
@@ -101,13 +127,13 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
   /// Every request the last read made: `host/path · status`.
   List<String> _fetchTrace = const [];
 
-  /// The models tab fetches once on its own the first time it is opened, so
-  /// "I typed the address and key and saw nothing" cannot happen. A retry
-  /// stays manual.
-  bool _autoFetched = false;
   bool _saving = false;
   String? _saveError;
   ProviderWriteReceipt? _receipt;
+
+  /// The last write, whether it came from Save, the model read or the test.
+  /// Only Save turns it into [_receipt] (the "written to …" screen).
+  ProviderWriteReceipt? _lastReceipt;
   bool _reloaded = false;
   bool _autoID = true;
   String? _resolveError;
@@ -141,6 +167,7 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
   /// True when the entry already has a key somewhere; the field then shows
   /// "Saved · Replace" instead of an empty box that looks like a lost key.
   bool get _hasStoredKey {
+    if (_savedKey != null) return true;
     final editing = widget.editing;
     if (editing == null) return false;
     return (editing.apiKey?.isNotEmpty ?? false) ||
@@ -263,9 +290,9 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
     final id = CustomProviderDraft.normalizeProviderId(
       _id.text.isEmpty ? _name.text : _id.text,
     );
-    final keyMode = typedKey.isNotEmpty
-        ? ProviderKeyMode.secretFile
-        : editing?.keyMode ?? ProviderKeyMode.secretFile;
+    // A key typed here is written into the config: the server is the one that
+    // has to read it, for the model list and for every real request.
+    final keyMode = typedKey.isNotEmpty ? ProviderKeyMode.plaintext : _keyMode;
     // What the server currently serves for this id, plus whatever this form
     // has listed. The ticked set alone is not enough: a provider saved
     // before this rule existed has two entries in its config and eighty
@@ -284,7 +311,7 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       apiKey: typedKey.isNotEmpty
           ? typedKey
           : keyMode == ProviderKeyMode.plaintext
-          ? editing?.apiKey
+          ? editing?.apiKey ?? _savedKey
           : null,
       keyMode: keyMode,
       keyPlaceholder: editing?.keyPlaceholder,
@@ -351,14 +378,25 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       _baseUrl.text.trim().isNotEmpty &&
       _selected.isNotEmpty;
 
+  /// Reads the endpoint's model list — from the server, with the entry this
+  /// form just wrote.
+  ///
+  /// The order is the whole point. The server asks the endpoint with the
+  /// address, key and headers in its own config and with its own identity, so
+  /// the entry is written and reloaded first; the phone never opens a
+  /// connection to a provider. An entry with no models is a valid config, so
+  /// the ticked list is written afterwards by Save.
   Future<void> _fetchModels() async {
-    if (_fetching) return;
-    final typed = _baseUrl.text.trim();
-    if (typed.isEmpty) {
-      setState(() => _fetchError = _l10nOf(context).providerModelsConfigFirst);
+    if (_fetching || _saving) return;
+    final l10n = _l10nOf(context);
+    if (_baseUrl.text.trim().isEmpty) {
+      setState(() => _fetchError = l10n.providerModelsConfigFirst);
       return;
     }
-    final base = CustomProviderDraft.normalizeBaseUrl(typed, _protocol);
+    if (!_writable) {
+      setState(() => _fetchError = l10n.providerAddCopyOnly);
+      return;
+    }
     setState(() {
       _fetching = true;
       _fetchError = null;
@@ -366,14 +404,28 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       _adoptedRoot = null;
       _fetchTrace = const [];
     });
+    final resolved = _resolved;
+    if (!await _writeConfig(requireModels: false)) {
+      if (!mounted) return;
+      setState(() {
+        _fetching = false;
+        _fetchError = _saveError;
+      });
+      return;
+    }
+    final written = _resolved ?? resolved;
     try {
-      final key = await _resolveKey();
+      if (written == null) {
+        throw const ProviderModelFetchFailure(
+          'The server\u2019s configuration could not be found',
+          kind: ProviderModelFetchKind.serverUnavailable,
+        );
+      }
       final listing = await _models.fetch(
-        baseUrl: base,
+        configPath: _store.pathOf(written),
+        providerID: _draft().id,
+        baseUrl: CustomProviderDraft.normalizeBaseUrl(_baseUrl.text, _protocol),
         protocol: _protocol,
-        apiKey: key,
-        headers: _headerMap(),
-        trustedFingerprint: _trustedFingerprintFor(base),
         onTrace: (trace) {
           if (!mounted) return;
           setState(() => _fetchTrace = trace);
@@ -401,13 +453,6 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
         _fetchTrace = error.trace;
         _fetching = false;
       });
-      if (error.kind == ProviderModelFetchKind.tls) {
-        // The list is not the only thing blocked by an unverifiable
-        // certificate: the checks and the balance read use the same address.
-        // Asking once here, with the fingerprint, is the one thing a person
-        // can act on — a red message is not.
-        unawaited(_offerTrust(base, error));
-      }
     } catch (error) {
       if (!mounted) return;
       setState(() {
@@ -442,6 +487,10 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       ProviderModelFetchKind.serverError => l10n.providerModelsFetchServer(
         status,
       ),
+      ProviderModelFetchKind.serverUnavailable =>
+        l10n.providerModelsFetchServerDown(error.message),
+      ProviderModelFetchKind.notConfigured =>
+        l10n.providerModelsFetchNotConfigured,
       ProviderModelFetchKind.unknown => error.message,
     };
   }
@@ -476,67 +525,6 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
     );
   }
 
-  /// Shows the certificate and lets the person accept exactly it.
-  ///
-  /// Nothing is accepted by closing: only the explicit action stores the
-  /// fingerprint, and only for this origin. An expired certificate is never
-  /// offered — the pin check would refuse it again, turning the dialog into
-  /// a loop.
-  Future<void> _offerTrust(
-    String baseUrl,
-    ProviderModelFetchFailure failure,
-  ) async {
-    final certificate = failure.certificate;
-    if (certificate == null || !mounted) return;
-    final problem = failure.tlsProblem;
-    if (problem != null && !providerTlsProblemCanBeTrusted(problem)) return;
-    final now = DateTime.now();
-    if (now.isBefore(certificate.startValidity) ||
-        now.isAfter(certificate.endValidity)) {
-      return;
-    }
-    final l10n = _l10nOf(context);
-    final origin = providerOrigin(baseUrl);
-    final changed = failure.trustWasPinned;
-    final accepted = await showKitConfirm(
-      context,
-      title: l10n.providerTlsTrustTitle,
-      body: changed
-          ? l10n.providerTlsTrustChangedBody
-          : l10n.providerTlsTrustBody,
-      confirmLabel: l10n.providerTlsTrustAction,
-      cancelLabel: l10n.providerTlsTrustCancel,
-      icon: AppIconography.warning,
-      details: [
-        KitTechnicalValue(l10n.providerTlsOrigin, origin, copyable: false),
-        KitTechnicalValue(
-          l10n.providerTlsIssuer,
-          certificate.issuer,
-          copyable: false,
-        ),
-        KitTechnicalValue(
-          l10n.providerTlsValidTo,
-          MaterialLocalizations.of(
-            context,
-          ).formatFullDate(certificate.endValidity.toLocal()),
-          copyable: false,
-        ),
-        KitTechnicalValue(
-          l10n.providerTlsFingerprint,
-          certificate.displayFingerprint,
-        ),
-      ],
-      confirmKey: const ValueKey('provider-tls-trust'),
-    );
-    if (!accepted || !mounted) return;
-    await widget.controller.setProviderTrust(
-      origin,
-      certificate.fingerprintSha256,
-    );
-    if (!mounted) return;
-    await _fetchModels();
-  }
-
   /// The models tab is where a list belongs, so the action on the
   /// configuration tab only opens it and starts the read: the same request,
   /// in the place a person looks first.
@@ -545,17 +533,6 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       _tab = _Tab.models;
       _visited.add(_Tab.models);
     });
-    unawaited(_fetchModels());
-  }
-
-  /// Fires once, when the models tab is first opened and there is enough on
-  /// the form to ask. Never with an empty key: that would only ever produce
-  /// "this endpoint needs an API key" on a page the person just arrived at.
-  void _autoFetchIfPossible() {
-    if (_autoFetched || _fetching || _listed.isNotEmpty) return;
-    if (_baseUrl.text.trim().isEmpty) return;
-    if (_apiKey.text.trim().isEmpty && !_hasStoredKey) return;
-    _autoFetched = true;
     unawaited(_fetchModels());
   }
 
@@ -572,21 +549,61 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
     return adopted;
   }
 
-  Future<void> _save() async {
-    if (_saving) return;
+  /// Writes this form into the server's config and reloads it once.
+  ///
+  /// Returns false with [_saveError] set. Save, the model read and the test
+  /// all start here: the server is what reads models and sends messages, so
+  /// the entry has to be on disk — with the key in it — before any of them
+  /// can run. Nothing in this flow falls back to a request from the phone.
+  Future<bool> _writeConfig({required bool requireModels}) async {
+    if (_saving) return false;
     setState(() {
       _saving = true;
       _saveError = null;
     });
     try {
       final draft = _draft();
-      draft.validate();
+      draft.validate(requireModels: requireModels);
       final resolved = _resolved ?? await _store.resolve();
       final receipt = await _store.save(
         draft,
         resolved: resolved,
-        replace: _editing,
+        // The write before a model read puts a new entry on disk, so every
+        // later save is an edit of an entry that already exists.
+        replace: _editing || _existsOnServer,
+        requireModels: requireModels,
       );
+      final reloaded = await _tryReload();
+      if (!mounted) return false;
+      setState(() {
+        _resolved = resolved;
+        _existsOnServer = true;
+        if (draft.hasKey) _savedKey = draft.apiKey;
+        _lastReceipt = receipt;
+        _reloaded = reloaded;
+        _saving = false;
+      });
+      return true;
+    } catch (error) {
+      if (!mounted) return false;
+      setState(() {
+        _saveError = error is ProviderWriteRefused
+            ? _refusedMessage(error)
+            : _messageFor(error);
+        _saving = false;
+      });
+      // A refusal may mean the file changed outside the app: re-read it so
+      // the next attempt merges into what is actually there.
+      if (error is ProviderWriteRefused) _prepare();
+      return false;
+    }
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    if (!await _writeConfig(requireModels: true)) return;
+    final draft = _draft();
+    try {
       // The provider-level switch and the balance endpoint are local
       // preferences, not part of the config: save them beside the entry.
       await widget.controller.setProviderHidden(draft.id, !_enabled);
@@ -607,30 +624,16 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
         enabled: [for (final model in draft.models) model.id],
         disabled: draft.effectiveDisabledModelIDs,
       );
-      final reloaded = await _tryReload();
-      if (!mounted) return;
-      // The reload re-reads the config, but the catalogue the app shows is
-      // its own snapshot: without this the picker keeps the pre-save list
-      // until it goes stale, which reads as "the change did nothing".
-      if (reloaded) unawaited(widget.controller.refreshCatalog());
-      setState(() {
-        _receipt = receipt;
-        _reloaded = reloaded;
-        _saving = false;
-        _resolved = resolved;
-      });
     } catch (error) {
       if (!mounted) return;
-      setState(() {
-        _saveError = error is ProviderWriteRefused
-            ? _refusedMessage(error)
-            : _messageFor(error);
-        _saving = false;
-      });
-      // A refusal may mean the file changed outside the app: re-read it so
-      // the next attempt merges into what is actually there.
-      if (error is ProviderWriteRefused) _prepare();
+      setState(() => _saveError = _messageFor(error));
     }
+    if (!mounted) return;
+    // The reload re-reads the config, but the catalogue the app shows is its
+    // own snapshot: without this the picker keeps the pre-save list until it
+    // goes stale, which reads as "the change did nothing".
+    if (_reloaded) unawaited(widget.controller.refreshCatalog());
+    setState(() => _receipt = _lastReceipt);
   }
 
   Future<void> _delete() async {
@@ -830,27 +833,31 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
     }
   }
 
+  /// Opens the real test: the server opens a session with this model, sends
+  /// one message and deletes the session again.
+  ///
+  /// The entry is written first, for the same reason the model read is: the
+  /// server can only test what its config holds.
   Future<void> _testNow() async {
     final models = _selected.toList();
-    if (models.isEmpty) return;
+    if (models.isEmpty || _saving) return;
+    final l10n = _l10nOf(context);
+    if (!_writable) {
+      setState(() => _saveError = l10n.providerProbeServerOnly);
+      return;
+    }
+    if (!await _writeConfig(requireModels: true)) return;
+    if (!mounted) return;
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ProviderProbeScreen(
+        builder: (_) => ProviderTestScreen(
+          controller: widget.controller,
+          providerID: _draft().id,
           providerName: _name.text.trim().isEmpty
               ? _id.text.trim()
               : _name.text.trim(),
-          model: models.first,
           models: models,
-          baseUrl: CustomProviderDraft.normalizeBaseUrl(
-            _baseUrl.text,
-            _protocol,
-          ),
-          protocol: _protocol,
-          apiKey: _apiKey.text,
-          resolveKey: _resolveKey,
-          headers: _headerMap(),
           autoRun: true,
-          trustFor: widget.controller.providerTrustFor,
         ),
       ),
     );
@@ -1028,11 +1035,6 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
             _tab = value;
             _visited.add(value);
           });
-          if (value == _Tab.models) {
-            WidgetsBinding.instance.addPostFrameCallback(
-              (_) => _autoFetchIfPossible(),
-            );
-          }
         },
       );
 
@@ -1277,10 +1279,18 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
         label: _fetching ? l10n.providerAddFetching : l10n.providerAddFetch,
         icon: AppIconography.retry,
         working: _fetching,
-        onPressed: _fetching || _baseUrl.text.trim().isEmpty
+        onPressed: _fetching || _baseUrl.text.trim().isEmpty || !_writable
             ? null
             : _fetchModels,
       ),
+      if (!_existsOnServer && _baseUrl.text.trim().isNotEmpty) ...[
+        SizedBox(height: _space(context) / 2),
+        Text(
+          l10n.providerAddNeedSave,
+          key: const ValueKey('custom-provider-fetch-saves'),
+          style: KitText.styleOf(context, KitTextRole.caption),
+        ),
+      ],
       if (_baseUrl.text.trim().isEmpty) ...[
         _gap(context),
         Text(
@@ -1529,17 +1539,13 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
                   icon: AppIconography.play,
                   onPressed: () => Navigator.of(context).push(
                     MaterialPageRoute(
-                      builder: (_) => ProviderProbeScreen(
+                      builder: (_) => ProviderTestScreen(
+                        controller: widget.controller,
+                        providerID: _draft().id,
                         providerName: _name.text.trim().isEmpty
                             ? _id.text.trim()
                             : _name.text.trim(),
-                        model: _selected.first,
                         models: _selected.toList(),
-                        baseUrl: _baseUrl.text.trim(),
-                        protocol: _protocol,
-                        resolveKey: _resolveKey,
-                        headers: _headerMap(),
-                        trustFor: widget.controller.providerTrustFor,
                       ),
                     ),
                   ),

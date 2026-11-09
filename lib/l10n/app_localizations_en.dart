@@ -36014,13 +36014,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerAddApiKeyHelper =>
-      'Saved in a file on the server that only OpenCode reads, not in the configuration.';
+      'Written into the server\'s configuration, which only the server\'s own account can read.';
 
   @override
   String get providerAddFetch => 'Fetch models';
 
   @override
-  String get providerAddFetching => 'Asking the endpoint…';
+  String get providerAddFetching => 'The server is reading the list…';
 
   @override
   String get providerAddFetchFailed => 'Could not read the model list';
@@ -36101,7 +36101,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerModelsHint =>
-      'Every provider the server knows, and the models it serves. Tap Test to run the five checks against one model.';
+      'Every provider the server knows, and the models it serves. Tap Test to send one real message through the server.';
 
   @override
   String get providerModelsEmpty =>
@@ -36131,14 +36131,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get providerProbeProtocol => 'Protocol';
 
   @override
-  String get providerProbeRun => 'Run the five checks';
+  String get providerProbeRun => 'Send a test message';
 
   @override
-  String get providerProbeRunning => 'Running…';
+  String get providerProbeRunning => 'Waiting for the server…';
 
   @override
   String get providerProbeNote =>
-      'One short request per check: reply, stream, tool call, system prompt, finish reason.';
+      'The server opens a session with this model, sends one short message, and deletes the session afterwards.';
 
   @override
   String get providerProbeNeedBaseUrl =>
@@ -36367,7 +36367,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerDetailModelsHint =>
-      'Ask the provider for its own model list with the address, key and protocol above, then tick what to keep. Unticked models are turned off on the server when you save — including the ones it ships with.';
+      'The server reads the endpoint\'s own model list with the configuration above, then tick what to keep. Unticked models are turned off in the config.';
 
   @override
   String get providerModelsConfigFirst => 'Fill in the API Base Url first.';
@@ -36560,7 +36560,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get providerTlsTrustedBody =>
-      'Reading models, connection checks and balance lookups accept this certificate.';
+      'The balance lookup accepts this certificate.';
 
   @override
   String get providerTlsRevoke => 'Revoke trust';
@@ -36581,4 +36581,55 @@ class AppLocalizationsEn extends AppLocalizations {
   String providerModelsRootAdopted(String url) {
     return 'The address was changed to $url, where the models answer. Messages are sent to this same root.';
   }
+
+  @override
+  String get providerProbeServerOnly =>
+      'Provider tests run inside the app\'s own server. Connect the in-app server to test a provider.';
+
+  @override
+  String get providerProbeServerDown =>
+      'The server is not answering, so nothing was tested. Start it and try again.';
+
+  @override
+  String get providerProbeServerNotLoaded =>
+      'The server has not loaded this provider. Save it again, or restart the server.';
+
+  @override
+  String providerProbeServerRejected(String message) {
+    return 'The server refused to open the test session: $message';
+  }
+
+  @override
+  String get providerProbeServerTimeout => 'The model did not answer in time.';
+
+  @override
+  String get providerProbeServerEmpty => 'The turn finished with no text.';
+
+  @override
+  String providerProbePassed(String reply) {
+    return 'Replied: $reply';
+  }
+
+  @override
+  String providerProbeServedAs(String model) {
+    return 'The server reports it answered as $model, not the model that was asked for.';
+  }
+
+  @override
+  String providerProbeElapsed(String seconds) {
+    return 'Round trip: $seconds s';
+  }
+
+  @override
+  String get providerAddNeedSave =>
+      'The server reads the list with the configuration on disk, so this saves the provider and reloads once first.';
+
+  @override
+  String providerModelsFetchServerDown(String message) {
+    return 'The server could not run the request: $message';
+  }
+
+  @override
+  String get providerModelsFetchNotConfigured =>
+      'This provider is not in the server\'s configuration yet.';
 }

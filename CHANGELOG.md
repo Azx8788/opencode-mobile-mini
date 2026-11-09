@@ -2,6 +2,40 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.12+16 — 2026-11-09
+
+Reading a provider's models and testing it were the last two things this app
+did with the person's key, from its own HTTPS client, as itself. Some gateways
+answer anything that is not a known coding client with a 200 and a sentence
+saying only OpenCode, Codex or Claude Code may use them — a "successful" read
+that lists nothing, and a test that passes against a refusal.
+
+  * **The server makes the request now, not the phone.** The provider entry is
+    written to `opencode.json` and reloaded once, then the app asks the server
+    to read the endpoint's own model list: a small script runs inside the
+    server's own environment, reads the address, key and custom headers out of
+    the config it just wrote, and asks with the identity OpenCode uses
+    (`opencode/<version>`). The key never comes back to Dart, and the app opens
+    no connection to a provider.
+  * **The key is written into the config**, as the person asked, so the server
+    can use it. The config, its temporary sibling and every backup are created
+    `0600` under `umask 077`; the key is still never logged, shown or echoed.
+  * **Testing is a real turn.** The old five hand-made requests (reply, stream,
+    tool call, system prompt, finish reason) are gone: the server opens a
+    session pinned to the provider and model, sends one short message, waits
+    for the agent loop to go idle, reads the reply, and deletes the session.
+    Nothing is left in the person's history.
+  * **No silent fallback.** If the in-app server is not answering, the provider
+    is not loaded, or the script cannot run, the form says so and stops. It
+    never retries from the phone.
+  * **Saving is now part of both actions**, because the server can only read
+    models and send messages with what its config holds. A provider with no
+    models is a valid config, so the entry is written first and the ticked
+    models after the list arrives.
+  * **The certificate trust sheet no longer covers these reads**: the server
+    does its own verification. What remains on this phone is the balance
+    lookup, which is a read of the person's own account.
+
 ## 0.3.11+15 — 2026-11-09
 
 AI Team could not start on a phone whose own server was OpenCode 2.1.1.
