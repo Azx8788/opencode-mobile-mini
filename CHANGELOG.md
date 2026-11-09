@@ -32,6 +32,11 @@ that lists nothing, and a test that passes against a refusal.
     models and send messages with what its config holds. A provider with no
     models is a valid config, so the entry is written first and the ticked
     models after the list arrives.
+  * **A failed read is retried three times**, one second, two, then four, and
+    only for failures that can change by themselves — a dropped connection, a
+    timeout, a 502, a server still starting. A refused key or a wrong path
+    answers at once. When every attempt fails the last list stays on screen
+    with a line saying so.
   * **The certificate trust sheet no longer covers these reads**: the server
     does its own verification. What remains on this phone is the balance
     lookup, which is a read of the person's own account.
