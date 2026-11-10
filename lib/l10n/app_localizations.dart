@@ -57637,6 +57637,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Kept the last list: {count} models.'**
   String providerModelsKeptPrevious(int count);
+
+  /// Generic confirm label for a small input dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get commonSave;
+
+  /// Heading over the per-model context window control
+  ///
+  /// In en, this message translates to:
+  /// **'Context window'**
+  String get providerModelsContextTitle;
+
+  /// Field label in the context window dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens'**
+  String get providerModelsContextField;
+
+  /// Hint in the context window dialog
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 1000000'**
+  String get providerModelsContextFieldHint;
+
+  /// Explanation under the context window control
+  ///
+  /// In en, this message translates to:
+  /// **'The window the model really takes. Stated per model in the configuration; left empty, the server assumes 200K and compacts early.'**
+  String get providerModelsContextHelper;
+
+  /// A model with no stated context window
+  ///
+  /// In en, this message translates to:
+  /// **'Server default'**
+  String get providerModelsContextUnset;
+
+  /// Validation for a context window below the minimum
+  ///
+  /// In en, this message translates to:
+  /// **'At least 1,024 tokens.'**
+  String get providerModelsContextTooSmall;
+
+  /// Validation for an absurd context window
+  ///
+  /// In en, this message translates to:
+  /// **'That is larger than any model takes.'**
+  String get providerModelsContextTooLarge;
+
+  /// Model picker row menu item: set the window this model really has
+  ///
+  /// In en, this message translates to:
+  /// **'Context window…'**
+  String get modelPickerContextWindow;
+
+  /// A context window was written into the config and the server re-read it
+  ///
+  /// In en, this message translates to:
+  /// **'Saved the window for {model}. The server has reloaded it.'**
+  String modelPickerContextSaved(String model);
+
+  /// The config was written and the reload call did not answer
+  ///
+  /// In en, this message translates to:
+  /// **'Saved, but the server has not reloaded yet. Restart it to apply.'**
+  String get modelPickerContextNotReloaded;
+
+  /// A built-in provider has no entry the app can edit
+  ///
+  /// In en, this message translates to:
+  /// **'This provider is not in the app’s configuration, so its window is changed where the provider was added.'**
+  String get modelPickerContextNotInConfig;
 }
 
 class _AppLocalizationsDelegate

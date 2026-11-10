@@ -10018,5 +10018,17 @@
   "providerModelsFetchServerDown": "服务端无法执行这次请求：{message}",
   "providerModelsFetchNotConfigured": "这个供应商还没有写进服务端配置。",
   "providerModelsRetrying": "{seconds} 秒后重试（第 {attempt} 次，共 3 次）…",
-  "providerModelsKeptPrevious": "已保留上次获取的列表：{count} 个模型。"
+  "providerModelsKeptPrevious": "已保留上次获取的列表：{count} 个模型。",
+  "commonSave": "保存",
+  "providerModelsContextTitle": "上下文大小",
+  "providerModelsContextField": "Token 数",
+  "providerModelsContextFieldHint": "例如 1000000",
+  "providerModelsContextHelper": "这是模型真实能容纳的上下文。会按模型写进配置；留空则服务端按 200K 处理，压缩会来得过早。",
+  "providerModelsContextUnset": "服务端默认",
+  "providerModelsContextTooSmall": "至少 1024 个 token。",
+  "providerModelsContextTooLarge": "这个数字比任何模型的窗口都大。",
+  "modelPickerContextWindow": "上下文大小…",
+  "modelPickerContextSaved": "已保存 {model} 的上下文大小，服务端已重载。",
+  "modelPickerContextNotReloaded": "已保存，但服务端还没重载。重启服务端后生效。",
+  "modelPickerContextNotInConfig": "这个供应商不在应用的配置里，只能在添加它的地方修改上下文大小。"
 }

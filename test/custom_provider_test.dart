@@ -1,6 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/domain/custom_provider.dart';
 import 'package:opencode_mobile/domain/provider_model_source.dart';
+import 'package:opencode_mobile/domain/server_gateway/value_types_catalog.dart'
+    show ProductException;
 
 void main() {
   CustomProviderDraft draft({
@@ -467,6 +469,139 @@ void main() {
             true,
           ),
         ),
+      );
+    });
+  });
+
+  group('context window', () {
+    test('a stated window is written per model in both dialects', () {
+      final draftWithWindow = draft(
+        models: const [
+          CustomProviderModel(id: 'gpt-6-sol', contextLimit: 1000000),
+          CustomProviderModel(id: 'small', contextLimit: 32768),
+        ],
+      );
+      final v2 =
+          ((draftWithWindow.toDocument(ProviderConfigFormat.v2)['providers']
+                      as Map)['my-gateway']
+                  as Map)['models']
+              as Map;
+      expect((v2['gpt-6-sol'] as Map)['limit'], {
+        'context': 1000000,
+        'output': 32000,
+      });
+      expect(((v2['small'] as Map)['limit'] as Map)['context'], 32768);
+
+      final v1 =
+          ((draftWithWindow.toDocument(ProviderConfigFormat.v1)['provider']
+                      as Map)['my-gateway']
+                  as Map)['models']
+              as Map;
+      expect(((v1['gpt-6-sol'] as Map)['limit'] as Map)['context'], 1000000);
+    });
+
+    test('a model with no stated window carries no limit at all', () {
+      // The server's own assumption is a better answer than a number the app
+      // invented: a wrong window compacts early or overflows the request.
+      final document = draft().toDocument(ProviderConfigFormat.v2);
+      final models =
+          ((document['providers'] as Map)['my-gateway'] as Map)['models']
+              as Map;
+      expect((models['deepseek-v3.2'] as Map).containsKey('limit'), isFalse);
+    });
+
+    test('the endpoint\u2019s own number is read from every spelling', () {
+      int read(Map<String, Object?> entry) =>
+          ProviderModelSource.advertisedContext(entry);
+      expect(read(const {'context_length': 1048576}), 1048576);
+      expect(read(const {'context_window': '200000'}), 200000);
+      expect(read(const {'max_model_len': 32768}), 32768);
+      expect(read(const {'max_input_tokens': 131072}), 131072);
+      expect(
+        read(const {
+          'limit': {'context': 400000},
+        }),
+        400000,
+      );
+      expect(read(const {'context_length': 0}), 0);
+      expect(read(const {}), 0);
+    });
+
+    test('changing one window leaves the rest of the entry alone', () {
+      final document = draft(
+        models: const [
+          CustomProviderModel(id: 'a', contextLimit: 200000),
+          CustomProviderModel(id: 'b'),
+        ],
+      ).toDocument(ProviderConfigFormat.v2);
+
+      final next = withModelContext(
+        document,
+        ProviderConfigFormat.v2,
+        providerID: 'my-gateway',
+        modelID: 'b',
+        context: 1000000,
+      );
+      final entry = (next['providers'] as Map)['my-gateway'] as Map;
+      expect(
+        (entry['settings'] as Map).containsKey('apiKey'),
+        isTrue,
+        reason: 'the key must survive a window change',
+      );
+      final models = entry['models'] as Map;
+      expect(((models['b'] as Map)['limit'] as Map)['context'], 1000000);
+      expect(
+        ((models['a'] as Map)['limit'] as Map)['context'],
+        200000,
+        reason: 'the other model keeps its own window',
+      );
+      // The original document is not mutated: the caller writes what it gets.
+      expect(
+        ((((document['providers'] as Map)['my-gateway'] as Map)['models']
+                    as Map)['b']
+                as Map)
+            .containsKey('limit'),
+        isFalse,
+      );
+    });
+
+    test('zero removes the limit, which is how "server decides" is written', () {
+      final document = draft(
+        models: const [CustomProviderModel(id: 'a', contextLimit: 200000)],
+      ).toDocument(ProviderConfigFormat.v2);
+      final next = withModelContext(
+        document,
+        ProviderConfigFormat.v2,
+        providerID: 'my-gateway',
+        modelID: 'a',
+        context: 0,
+      );
+      final models =
+          ((next['providers'] as Map)['my-gateway'] as Map)['models'] as Map;
+      expect((models['a'] as Map).containsKey('limit'), isFalse);
+    });
+
+    test('a model the config does not list is refused by name', () {
+      final document = draft().toDocument(ProviderConfigFormat.v2);
+      expect(
+        () => withModelContext(
+          document,
+          ProviderConfigFormat.v2,
+          providerID: 'my-gateway',
+          modelID: 'not-there',
+          context: 1000,
+        ),
+        throwsA(isA<ProductException>()),
+      );
+      expect(
+        () => withModelContext(
+          document,
+          ProviderConfigFormat.v2,
+          providerID: 'other',
+          modelID: 'deepseek-v3.2',
+          context: 1000,
+        ),
+        throwsA(isA<ProductException>()),
       );
     });
   });

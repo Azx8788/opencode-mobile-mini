@@ -36642,4 +36642,46 @@ class AppLocalizationsEn extends AppLocalizations {
   String providerModelsKeptPrevious(int count) {
     return 'Kept the last list: $count models.';
   }
+
+  @override
+  String get commonSave => 'Save';
+
+  @override
+  String get providerModelsContextTitle => 'Context window';
+
+  @override
+  String get providerModelsContextField => 'Tokens';
+
+  @override
+  String get providerModelsContextFieldHint => 'e.g. 1000000';
+
+  @override
+  String get providerModelsContextHelper =>
+      'The window the model really takes. Stated per model in the configuration; left empty, the server assumes 200K and compacts early.';
+
+  @override
+  String get providerModelsContextUnset => 'Server default';
+
+  @override
+  String get providerModelsContextTooSmall => 'At least 1,024 tokens.';
+
+  @override
+  String get providerModelsContextTooLarge =>
+      'That is larger than any model takes.';
+
+  @override
+  String get modelPickerContextWindow => 'Context window…';
+
+  @override
+  String modelPickerContextSaved(String model) {
+    return 'Saved the window for $model. The server has reloaded it.';
+  }
+
+  @override
+  String get modelPickerContextNotReloaded =>
+      'Saved, but the server has not reloaded yet. Restart it to apply.';
+
+  @override
+  String get modelPickerContextNotInConfig =>
+      'This provider is not in the app’s configuration, so its window is changed where the provider was added.';
 }

@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../../api2/server_config_reload.dart';
 import '../../builtin/builtin_linux.dart';
 import '../../builtin/builtin_provider_store.dart';
 import '../../builtin/builtin_provider_templates.dart';
@@ -16,7 +16,6 @@ import '../../domain/custom_provider_record.dart';
 import '../../domain/provider_balance.dart';
 import '../../domain/provider_model_source.dart';
 import '../../domain/provider_tls.dart';
-import '../../domain/server_trust.dart';
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import 'provider_test_screen.dart';
@@ -113,6 +112,14 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
   ResolvedProviderConfig? _resolved;
   List<CustomProviderModel> _listed = const [];
   final Set<String> _selected = {};
+
+  /// The context window each model was given, by model id.
+  ///
+  /// Kept beside the list rather than inside it because it survives a re-read:
+  /// fetching again must not throw away a number the person typed. Zero means
+  /// "not stated" — nothing is written, and the server falls back to its own
+  /// 200K assumption, which is what this map exists to avoid.
+  final Map<String, int> _contexts = {};
   String _query = '';
   bool _fetching = false;
   String? _fetchError;
@@ -217,6 +224,9 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
         for (final id in editing.disabledModels) CustomProviderModel(id: id),
       ];
       _selected.addAll(editing.models.map((model) => model.id));
+      for (final model in editing.models) {
+        if (model.contextLimit > 0) _contexts[model.id] = model.contextLimit;
+      }
       _autoID = false;
       for (final header in editing.headers) {
         _headers.add(_HeaderRow(name: header.name, value: header.value));
@@ -322,9 +332,11 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       keyFile: editing?.secretPath,
       models: [
         for (final modelID in _selected)
-          _listed.firstWhere(
-            (model) => model.id == modelID,
-            orElse: () => CustomProviderModel(id: modelID),
+          _withWindow(
+            _listed.firstWhere(
+              (model) => model.id == modelID,
+              orElse: () => CustomProviderModel(id: modelID),
+            ),
           ),
       ],
       // Everything the server knows and the person did not tick. The config
@@ -448,6 +460,14 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       final adopted = _adoptListedRoot(listing.url);
       setState(() {
         _listed = listing.models;
+        // What the endpoint says its models hold, for the ones the person has
+        // not given a number of their own. A gateway that states it saves
+        // typing; one that does not leaves the field empty on purpose.
+        for (final model in listing.models) {
+          if ((_contexts[model.id] ?? 0) <= 0 && model.contextLimit > 0) {
+            _contexts[model.id] = model.contextLimit;
+          }
+        }
         _fetching = false;
         _fetchNote = null;
         _adoptedRoot = adopted;
@@ -692,38 +712,13 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
     // The server's own trust rules, not a bare client: a remote server with a
     // certificate the person verified would otherwise fail here and turn a
     // working reload into "restart the server".
-    final HttpClient client;
-    try {
-      client = createServerHttpClient(
-        baseUrl: profile.baseUrl,
-        cleartextConfirmedOrigin: profile.cleartextConfirmedOrigin,
-        certificatePinSha256: profile.certificatePinSha256,
-      )..connectionTimeout = const Duration(seconds: 5);
-    } catch (_) {
-      return false;
-    }
-    try {
-      final url = Uri.parse('${profile.baseUrl}/api/location/reload');
-      final request = await client
-          .postUrl(url)
-          .timeout(const Duration(seconds: 5));
-      if (profile.username.isNotEmpty) {
-        final token = base64Encode(
-          utf8.encode('${profile.username}:${profile.password}'),
-        );
-        request.headers.set(HttpHeaders.authorizationHeader, 'Basic $token');
-      }
-      request.headers.contentLength = 0;
-      final response = await request.close().timeout(
-        const Duration(seconds: 8),
-      );
-      await response.drain<void>();
-      return response.statusCode >= 200 && response.statusCode < 300;
-    } catch (_) {
-      return false;
-    } finally {
-      client.close(force: true);
-    }
+    return reloadServerConfig(
+      baseUrl: profile.baseUrl,
+      password: profile.password,
+      username: profile.username.isEmpty ? 'opencode' : profile.username,
+      cleartextConfirmedOrigin: profile.cleartextConfirmedOrigin,
+      certificatePinSha256: profile.certificatePinSha256,
+    );
   }
 
   String _refusedMessage(ProviderWriteRefused error) {
@@ -766,6 +761,89 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
       _selected.add(id);
       _manualModel.clear();
     });
+  }
+
+  /// The windows worth one tap. Anything larger, or odd, goes through the
+  /// dialog on the row.
+  static const _contextPresets = <int>[
+    128000,
+    200000,
+    256000,
+    400000,
+    1000000,
+  ];
+
+  /// `200000` as people say it: `200K`, `1M`. Zero is the server's own
+  /// assumption, spelled out rather than left blank.
+  String _windowLabel(AppLocalizations l10n, int tokens) {
+    if (tokens <= 0) return l10n.providerModelsContextUnset;
+    if (tokens % 1000000 == 0) return '${tokens ~/ 1000000}M';
+    if (tokens % 1000 == 0) return '${tokens ~/ 1000}K';
+    return '$tokens';
+  }
+
+  /// The model as it will be saved: with the window this form gave it, or the
+  /// one the endpoint stated, or none at all.
+  CustomProviderModel _withWindow(CustomProviderModel model) {
+    final window = _contexts[model.id] ?? model.contextLimit;
+    return window > 0 ? model.withContext(window) : model;
+  }
+
+  /// The window to show on a row: what this form set, else what the endpoint
+  /// stated, else nothing.
+  int _windowOf(CustomProviderModel model) =>
+      _contexts[model.id] ?? model.contextLimit;
+
+  void _setWindow(String modelID, int window) {
+    setState(() {
+      if (window > 0) {
+        _contexts[modelID] = window;
+      } else {
+        _contexts.remove(modelID);
+      }
+    });
+  }
+
+  /// One number for every ticked model: the quick way out of "all of them say
+  /// 200K".
+  void _setWindowForSelected(int window) {
+    setState(() {
+      for (final id in _selected) {
+        if (window > 0) {
+          _contexts[id] = window;
+        } else {
+          _contexts.remove(id);
+        }
+      }
+    });
+  }
+
+  Future<void> _editWindow(CustomProviderModel model) async {
+    final l10n = _l10nOf(context);
+    final current = _windowOf(model);
+    final typed = await showKitInputDialog(
+      context,
+      title: l10n.providerModelsContextTitle,
+      label: l10n.providerModelsContextField,
+      hint: l10n.providerModelsContextFieldHint,
+      helper: l10n.providerModelsContextHelper,
+      confirmLabel: l10n.commonSave,
+      initial: current > 0 ? '$current' : '',
+      kind: KitFieldKind.number,
+      maxLength: 9,
+      dialogKey: const ValueKey('custom-provider-window-dialog'),
+      fieldKey: const ValueKey('custom-provider-window-field'),
+      confirmKey: const ValueKey('custom-provider-window-confirm'),
+      validate: (value) {
+        final window = int.tryParse(value.trim().replaceAll(',', '')) ?? 0;
+        if (window <= 0) return null; // empty or 0 clears it
+        if (window < 1024) return l10n.providerModelsContextTooSmall;
+        if (window > 20000000) return l10n.providerModelsContextTooLarge;
+        return null;
+      },
+    );
+    if (typed == null || !mounted) return;
+    _setWindow(model.id, int.tryParse(typed.trim().replaceAll(',', '')) ?? 0);
   }
 
   void _addHeader() {
@@ -1401,6 +1479,48 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
             ],
           ),
         ),
+        // One number for every ticked model, then per-row editing below: the
+        // common case is "all of this gateway holds a million", the exception
+        // is one small model among them.
+        Padding(
+          padding: EdgeInsets.only(bottom: _space(context)),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                l10n.providerModelsContextTitle,
+                style: KitText.styleOf(context, KitTextRole.caption),
+              ),
+              const SizedBox(height: 6),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  for (final window in _contextPresets)
+                    KitButton.tertiary(
+                      key: ValueKey('custom-provider-window-all-$window'),
+                      label: _windowLabel(l10n, window),
+                      onPressed: _selected.isEmpty
+                          ? null
+                          : () => _setWindowForSelected(window),
+                    ),
+                  KitButton.tertiary(
+                    key: const ValueKey('custom-provider-window-all-default'),
+                    label: l10n.providerModelsContextUnset,
+                    onPressed: _selected.isEmpty
+                        ? null
+                        : () => _setWindowForSelected(0),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 6),
+              Text(
+                l10n.providerModelsContextHelper,
+                style: KitText.styleOf(context, KitTextRole.caption),
+              ),
+            ],
+          ),
+        ),
         KitRowGroup(
           children: [
             // Capped for rendering only: Select all works on the filtered
@@ -1415,14 +1535,39 @@ class _CustomProviderScreenState extends State<CustomProviderScreen> {
                     : TextSpan(text: model.id),
                 selected: _selected.contains(model.id),
                 onTap: () => _toggle(model.id, !_selected.contains(model.id)),
-                trailing: Icon(
-                  _selected.contains(model.id)
-                      ? AppIconography.checkboxChecked
-                      : AppIconography.checkboxEmpty,
-                  size: 20,
-                  color: _selected.contains(model.id)
-                      ? KitTokens.of(context).accent
-                      : KitTokens.of(context).muted,
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // The window is per model, so it is edited on the row: a
+                    // gateway serves a 32K model beside a 1M one, and one
+                    // number for all of them is the bug this replaces.
+                    GestureDetector(
+                      key: ValueKey('custom-provider-window-${model.id}'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => _editWindow(model),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Text(
+                          _windowLabel(l10n, _windowOf(model)),
+                          style: KitText.styleOf(context, KitTextRole.caption)
+                              .copyWith(
+                                color: _windowOf(model) > 0
+                                    ? null
+                                    : KitTokens.of(context).muted,
+                              ),
+                        ),
+                      ),
+                    ),
+                    Icon(
+                      _selected.contains(model.id)
+                          ? AppIconography.checkboxChecked
+                          : AppIconography.checkboxEmpty,
+                      size: 20,
+                      color: _selected.contains(model.id)
+                          ? KitTokens.of(context).accent
+                          : KitTokens.of(context).muted,
+                    ),
+                  ],
                 ),
               ),
           ],

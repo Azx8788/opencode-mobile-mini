@@ -545,9 +545,51 @@ class ProviderModelSource {
           ? entry['display_name'] ?? entry['displayName'] ?? entry['label']
           : null;
       models.add(
-        CustomProviderModel(id: id, name: name is String ? name : null),
+        CustomProviderModel(
+          id: id,
+          name: name is String ? name : null,
+          contextLimit: entry is Map<String, Object?>
+              ? advertisedContext(entry)
+              : 0,
+        ),
       );
     }
     return CustomProviderDraft.normalizeModels(models);
+  }
+
+  /// The window an endpoint advertises for one model, or 0 when it says
+  /// nothing.
+  ///
+  /// Gateways spell it every way there is: NewAPI and OpenRouter send
+  /// `context_length`, some send `context_window` or `max_context_length`,
+  /// vLLM sends `max_model_len`, and OpenCode's own catalogue nests it under
+  /// `limit.context`. All of them are worth reading, because the number saves
+  /// the person from typing a window the endpoint already knows — and a window
+  /// nobody stated is what makes every session compact at 200K.
+  static int advertisedContext(Map<String, Object?> entry) {
+    int read(Object? value) => switch (value) {
+      final num number when number > 0 => number.toInt(),
+      final String text => int.tryParse(text.trim()) ?? 0,
+      _ => 0,
+    };
+
+    for (final key in const [
+      'context_length',
+      'context_window',
+      'max_context_length',
+      'max_model_len',
+      'max_input_tokens',
+    ]) {
+      final value = read(entry[key]);
+      if (value > 0) return value;
+    }
+    for (final key in const ['limit', 'top_provider', 'meta']) {
+      final nested = entry[key];
+      if (nested is Map) {
+        final value = read(nested['context'] ?? nested['context_length']);
+        if (value > 0) return value;
+      }
+    }
+    return 0;
   }
 }

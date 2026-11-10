@@ -44809,5 +44809,58 @@
         "type": "int"
       }
     }
+  },
+  "commonSave": "Save",
+  "@commonSave": {
+    "description": "Generic confirm label for a small input dialog"
+  },
+  "providerModelsContextTitle": "Context window",
+  "@providerModelsContextTitle": {
+    "description": "Heading over the per-model context window control"
+  },
+  "providerModelsContextField": "Tokens",
+  "@providerModelsContextField": {
+    "description": "Field label in the context window dialog"
+  },
+  "providerModelsContextFieldHint": "e.g. 1000000",
+  "@providerModelsContextFieldHint": {
+    "description": "Hint in the context window dialog"
+  },
+  "providerModelsContextHelper": "The window the model really takes. Stated per model in the configuration; left empty, the server assumes 200K and compacts early.",
+  "@providerModelsContextHelper": {
+    "description": "Explanation under the context window control"
+  },
+  "providerModelsContextUnset": "Server default",
+  "@providerModelsContextUnset": {
+    "description": "A model with no stated context window"
+  },
+  "providerModelsContextTooSmall": "At least 1,024 tokens.",
+  "@providerModelsContextTooSmall": {
+    "description": "Validation for a context window below the minimum"
+  },
+  "providerModelsContextTooLarge": "That is larger than any model takes.",
+  "@providerModelsContextTooLarge": {
+    "description": "Validation for an absurd context window"
+  },
+  "modelPickerContextWindow": "Context window…",
+  "@modelPickerContextWindow": {
+    "description": "Model picker row menu item: set the window this model really has"
+  },
+  "modelPickerContextSaved": "Saved the window for {model}. The server has reloaded it.",
+  "@modelPickerContextSaved": {
+    "description": "A context window was written into the config and the server re-read it",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "modelPickerContextNotReloaded": "Saved, but the server has not reloaded yet. Restart it to apply.",
+  "@modelPickerContextNotReloaded": {
+    "description": "The config was written and the reload call did not answer"
+  },
+  "modelPickerContextNotInConfig": "This provider is not in the app’s configuration, so its window is changed where the provider was added.",
+  "@modelPickerContextNotInConfig": {
+    "description": "A built-in provider has no entry the app can edit"
   }
 }

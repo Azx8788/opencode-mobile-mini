@@ -6,6 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:opencode_mobile/ui/kit/kit_buttons.dart';
 import 'package:opencode_mobile/ui/kit/kit_chip.dart';
+import 'package:opencode_mobile/ui/kit/kit_dialog.dart' show showKitInputDialog;
+import 'package:opencode_mobile/ui/kit/kit_field.dart' show KitFieldKind;
 import 'package:opencode_mobile/ui/kit/kit_choice_list.dart' show KitChoice;
 import 'package:opencode_mobile/ui/kit/kit_choice_tiles.dart';
 import 'package:opencode_mobile/ui/kit/kit_icon_button.dart';
@@ -25,6 +27,9 @@ import 'package:opencode_mobile/ui/kit/kit_tokens.dart';
 
 import '../../domain/models.dart';
 import '../../domain/model_recommendations.dart';
+import '../../api2/server_config_reload.dart';
+import '../../builtin/builtin_linux.dart';
+import '../../builtin/builtin_provider_store.dart';
 import '../../domain/provider_presentation.dart';
 import '../../domain/product_repository.dart';
 import '../../state/connection.dart';
@@ -429,6 +434,10 @@ class _ModelCatalogViewState extends State<ModelCatalogView>
   String _draftVariant = '';
   bool _applying = false;
   String? _saveError;
+
+  /// The last answer to "set this model's window": what was written, or why it
+  /// could not be. Shown above the list until the next attempt.
+  String? _contextNotice;
   ModelRef? _observedModel;
   String _observedVariant = '';
   String _draftAgent = '';

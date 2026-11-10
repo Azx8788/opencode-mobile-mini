@@ -179,13 +179,50 @@ List<CustomProviderHeader> readProviderHeaders(Object? raw) {
 
 /// One model the endpoint listed.
 class CustomProviderModel {
-  const CustomProviderModel({required this.id, this.name});
+  const CustomProviderModel({
+    required this.id,
+    this.name,
+    this.contextLimit = 0,
+    this.outputLimit = 0,
+  });
 
   final String id;
 
   /// The endpoint's display name, when it sent one (`display_name` on
   /// Anthropic-shaped lists, `name` on some gateways).
   final String? name;
+
+  /// The window this model accepts, in tokens.
+  ///
+  /// Zero means "not stated", and then nothing is written to the config — the
+  /// server falls back to its own assumption of 200K, which is wrong for a
+  /// model that takes a million: the session compacts again and again while
+  /// the model could have held the whole thing.
+  final int contextLimit;
+
+  /// The answer budget written beside the window. Zero means "derive one".
+  final int outputLimit;
+
+  bool get hasLimit => contextLimit > 0;
+
+  /// What the config states for this model's output.
+  ///
+  /// v1's schema requires both numbers when either is present, so a window
+  /// never travels alone: the stated budget, else a third of the window within
+  /// the usual 32K ceiling.
+  int get effectiveOutputLimit => outputLimit > 0
+      ? outputLimit
+      : contextLimit <= 0
+      ? 0
+      : (contextLimit ~/ 3).clamp(1024, 32000);
+
+  CustomProviderModel withContext(int context, {int? output}) =>
+      CustomProviderModel(
+        id: id,
+        name: name,
+        contextLimit: context,
+        outputLimit: output ?? outputLimit,
+      );
 
   String get label => (name?.trim().isNotEmpty ?? false) ? name!.trim() : id;
 
@@ -367,7 +404,12 @@ class CustomProviderDraft {
     return [
       for (final model in models)
         if (model.id.trim().isNotEmpty && seen.add(model.id.trim()))
-          CustomProviderModel(id: model.id.trim(), name: model.name),
+          CustomProviderModel(
+            id: model.id.trim(),
+            name: model.name,
+            contextLimit: model.contextLimit,
+            outputLimit: model.outputLimit,
+          ),
     ];
   }
 
@@ -541,6 +583,13 @@ class CustomProviderDraft {
           'attachment': protocol != ProviderProtocol.chatCompletions,
           // Responses takes its sampling knobs per request, not per model.
           'temperature': protocol != ProviderProtocol.responses,
+          // Stated only when the form knows it. v1 wants both numbers, so
+          // the budget is derived when it was not asked for.
+          if (model.hasLimit)
+            'limit': {
+              'context': model.contextLimit,
+              'output': model.effectiveOutputLimit,
+            },
         },
     },
   };
@@ -586,6 +635,13 @@ class CustomProviderDraft {
             'output': const ['text'],
             if (protocol != ProviderProtocol.responses) 'temperature': true,
           },
+          // The window the model really has, so the session is not compacted
+          // at the server's 200K assumption.
+          if (model.hasLimit)
+            'limit': {
+              'context': model.contextLimit,
+              'output': model.effectiveOutputLimit,
+            },
         },
       // The built-in catalogue is merged, never replaced: a model that is
       // already there and left out of the map above stays visible. Turning
@@ -654,6 +710,66 @@ class CustomProviderDraft {
     ProviderConfigFormat.v1 => 'provider',
     ProviderConfigFormat.v2 => 'providers',
   };
+}
+
+/// The config document with one model's context window replaced.
+///
+/// Only that model's `limit` changes. The key, the headers, the package name
+/// and every other model are carried through exactly as they were read —
+/// a window is a property of the model, and changing it must not be a reason
+/// to rebuild an entry the person spent time on.
+///
+/// A window of zero removes `limit`, which is how "the server decides" is
+/// written. Throws [ProductException] when the provider or the model is not in
+/// the document, because then there is nothing to change.
+Map<String, Object?> withModelContext(
+  Map<String, Object?> document,
+  ProviderConfigFormat format, {
+  required String providerID,
+  required String modelID,
+  required int context,
+  int output = 0,
+}) {
+  final root = format == ProviderConfigFormat.v1 ? 'provider' : 'providers';
+  final providers = document[root];
+  if (providers is! Map || !providers.containsKey(providerID)) {
+    throw ProductException(
+      'No provider named "$providerID" is in the configuration',
+    );
+  }
+  final entry = providers[providerID];
+  if (entry is! Map) {
+    throw ProductException('The entry for "$providerID" is not an object');
+  }
+  final models = entry['models'];
+  if (models is! Map || !models.containsKey(modelID)) {
+    throw ProductException(
+      'The provider "$providerID" does not list the model "$modelID"',
+    );
+  }
+  final model = models[modelID];
+  final next = <String, Object?>{};
+  if (model is Map) model.forEach((key, value) => next['$key'] = value);
+  if (context > 0) {
+    next['limit'] = <String, Object?>{
+      'context': context,
+      'output': output > 0
+          ? output
+          : (context ~/ 3).clamp(1024, 32000),
+    };
+  } else {
+    next.remove('limit');
+  }
+  final nextModels = <String, Object?>{};
+  models.forEach((key, value) => nextModels['$key'] = value);
+  nextModels[modelID] = next;
+  final nextEntry = <String, Object?>{};
+  entry.forEach((key, value) => nextEntry['$key'] = value);
+  nextEntry['models'] = nextModels;
+  final nextProviders = <String, Object?>{};
+  providers.forEach((key, value) => nextProviders['$key'] = value);
+  nextProviders[providerID] = nextEntry;
+  return <String, Object?>{...document, root: nextProviders};
 }
 
 /// Custom headers, minus the rows an HTTP client cannot send.

@@ -34599,4 +34599,44 @@ class AppLocalizationsZh extends AppLocalizations {
   String providerModelsKeptPrevious(int count) {
     return '已保留上次获取的列表：$count 个模型。';
   }
+
+  @override
+  String get commonSave => '保存';
+
+  @override
+  String get providerModelsContextTitle => '上下文大小';
+
+  @override
+  String get providerModelsContextField => 'Token 数';
+
+  @override
+  String get providerModelsContextFieldHint => '例如 1000000';
+
+  @override
+  String get providerModelsContextHelper =>
+      '这是模型真实能容纳的上下文。会按模型写进配置；留空则服务端按 200K 处理，压缩会来得过早。';
+
+  @override
+  String get providerModelsContextUnset => '服务端默认';
+
+  @override
+  String get providerModelsContextTooSmall => '至少 1024 个 token。';
+
+  @override
+  String get providerModelsContextTooLarge => '这个数字比任何模型的窗口都大。';
+
+  @override
+  String get modelPickerContextWindow => '上下文大小…';
+
+  @override
+  String modelPickerContextSaved(String model) {
+    return '已保存 $model 的上下文大小，服务端已重载。';
+  }
+
+  @override
+  String get modelPickerContextNotReloaded => '已保存，但服务端还没重载。重启服务端后生效。';
+
+  @override
+  String get modelPickerContextNotInConfig =>
+      '这个供应商不在应用的配置里，只能在添加它的地方修改上下文大小。';
 }
