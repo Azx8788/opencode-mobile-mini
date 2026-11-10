@@ -542,9 +542,11 @@ class AppLog {
       if (await public.exists() && await public.length() > 0) return;
       final content = await privateFile.readAsString();
       if (content.isEmpty) return;
-      _publicSink?.write(content);
+      // Write directly rather than through the append sink: the sink may not
+      // have created the day's file yet, and writeAsString creates it. The
+      // sink keeps appending new lines afterwards on the same file.
+      await public.writeAsString(content, mode: FileMode.append, flush: true);
       _publicWritten += content.length;
-      await _publicSink?.flush();
     } catch (_) {}
   }
 
