@@ -205,6 +205,7 @@ class AppLog {
     await _chain;
     try {
       await _sink?.flush();
+      await _publicSink?.flush();
     } catch (_) {}
   }
 
@@ -536,7 +537,9 @@ class AppLog {
     final public = _publicFile;
     if (!_publicEnabled || privateFile == null || public == null) return;
     try {
-      if (await public.length() > 0) return;
+      // A just-opened append sink may not have created the file yet, so
+      // "empty" also covers "not there".
+      if (await public.exists() && await public.length() > 0) return;
       final content = await privateFile.readAsString();
       if (content.isEmpty) return;
       _publicSink?.write(content);
