@@ -106,7 +106,10 @@ class InternalStorageProvider : DocumentsProvider() {
         val file = resolve(documentId)
         if (file == root()) throw FileNotFoundException("Cannot delete the root")
         deleteRecursively(file)
-        revokeDocumentPermission(DocumentsContract.buildDocumentUri(authority(), documentId))
+        // revokeDocumentPermission takes the URI as a string, not a Uri.
+        revokeDocumentPermission(
+            DocumentsContract.buildDocumentUri(authority(), documentId).toString(),
+        )
     }
 
     override fun renameDocument(documentId: String, displayName: String): String? {
@@ -114,7 +117,10 @@ class InternalStorageProvider : DocumentsProvider() {
         if (file == root()) throw FileNotFoundException("Cannot rename the root")
         val target = File(file.parentFile, safeName(displayName))
         if (!file.renameTo(target)) throw FileNotFoundException("Could not rename $displayName")
-        revokeDocumentPermission(DocumentsContract.buildDocumentUri(authority(), documentId))
+        // revokeDocumentPermission takes the URI as a string, not a Uri.
+        revokeDocumentPermission(
+            DocumentsContract.buildDocumentUri(authority(), documentId).toString(),
+        )
         return childIdOf(parentIdOf(documentId), target.name)
     }
 
