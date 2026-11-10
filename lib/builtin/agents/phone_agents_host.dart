@@ -239,6 +239,11 @@ final class BuiltinPhoneAgents implements PhoneAgentHost {
         _ => 'The endpoint could not be saved',
       });
     }
+    // The settings file just changed. A status read already running was
+    // started against the old file, so a new read must not share its answer
+    // (the same reason [signOut] forgets one). The running read is left to
+    // finish; the next one queues behind it and reads the new file.
+    _probes.remove(agentId);
   }
 
   /// Android runs one status check per profile at a time and refuses a

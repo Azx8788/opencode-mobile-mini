@@ -2,6 +2,23 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.12+16 — 2026-11-10
+
+Picking a provider for Claude Code wrote the gateway into its settings and
+then put the sign-in page back, still reading the answer from before the
+write. The person was left one step short of the conversation they had just
+set the agent up for.
+
+  * **The sign-in state is read again after the settings file changes.** A
+    status read already running when the provider was saved was started
+    against the old file, so a new read no longer shares its answer; the
+    sign-in page asks the agent again instead of trusting the held result.
+  * **A saved provider goes on to the new conversation.** When the gateway
+    is what signs the agent in, using it now closes the sheet the same way a
+    finished sign-in does, instead of stopping on the sign-in page. Editing
+    the gateway of an agent that was already signed in still stays on the
+    page.
+
 ## 0.3.11+15 — 2026-11-10
 
 Claude Code read its gateway from a form of its own, so a key typed once in

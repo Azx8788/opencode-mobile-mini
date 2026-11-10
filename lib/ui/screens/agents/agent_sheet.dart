@@ -159,19 +159,47 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
   }
 
   /// The gateway form. Saving it changes the row's sign-in truth, so the
-  /// step is re-read instead of guessed.
+  /// step is re-read instead of guessed: the sign-in answer held before the
+  /// form opened was read from a settings file that no longer exists.
   Future<void> _openEndpoint() async {
     final id = _agentId;
     if (id == null) return;
+    final wasSignedIn =
+        _agents.agentSignInState(id)?.phase == AgentSignInPhase.signedIn;
     final changed = await showAgentProviderSheet(context, agentId: id);
     if (!mounted || changed != true) return;
     _signInKicked = false;
-    setState(() => _readingSignIn = false);
+    setState(() {
+      _readingSignIn = false;
+      _notice = null;
+    });
     await _readEndpoint();
     if (!mounted) return;
-    await _agents.refreshAgentRows();
+    // The forced read skips the "already inspected" shortcut: that answer
+    // predates the write and would put the sign-in page back.
+    await _beginSignIn(force: true);
     if (!mounted) return;
-    _enter(AgentSheetStep.signIn);
+    // The step's own work is done above; entering it through [_enter] would
+    // start a second read and clear a failure notice this one just set.
+    setState(() => _step = AgentSheetStep.signIn);
+    // A saved gateway is this agent's sign-in (the status probe says so
+    // without asking for an account), so go on to the new conversation the
+    // person was setting the agent up for, exactly as a finished sign-in
+    // does. Editing the gateway of an agent that was already signed in stays
+    // on the page. If the status read failed, the page stays and says why.
+    if (wasSignedIn) return;
+    if (!(_endpoint?.configured ?? false)) return;
+    final signedIn =
+        _agents.agentSignInState(id)?.phase == AgentSignInPhase.signedIn;
+    if (!signedIn) return;
+    // Selecting an agent needs a row that is ready for chat: a stopped host
+    // or a usage limit keeps its own page and its own way forward.
+    final row = _agents.agentRows.where((row) => row.id == id).firstOrNull;
+    if (row?.chatSelectable != true) return;
+    // A person using TalkBack or Switch Access is not moved off the page;
+    // "Use {agent}" is the way on, as after a terminal sign-in.
+    if (MediaQuery.accessibleNavigationOf(context)) return;
+    await _choose(id);
   }
 
   @override
@@ -411,11 +439,15 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
 
   /// Entering the step reads whether the agent is signed in already; the
   /// sign-in itself runs on its own terminal ([_openSignIn]).
-  Future<void> _beginSignIn() async {
+  ///
+  /// [force] re-reads after the agent's settings file changed, where the
+  /// answer already held is about the old file and must not stand in for
+  /// the new one.
+  Future<void> _beginSignIn({bool force = false}) async {
     final id = _agentId;
     if (_signInKicked) return;
     final state = id == null ? null : _agents.agentSignInState(id);
-    if (id == null || (state != null && state.inspected)) {
+    if (id == null || (!force && state != null && state.inspected)) {
       setState(() => _readingSignIn = false);
       return;
     }
