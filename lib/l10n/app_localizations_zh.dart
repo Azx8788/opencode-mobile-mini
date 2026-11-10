@@ -24280,6 +24280,49 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get agentsEndpointProvidersTitle => '选择供应商';
+
+  @override
+  String get agentsEndpointProviderAction => '使用供应商';
+
+  @override
+  String agentsEndpointProviderIntro(String agent) {
+    return '让 $agent 使用你在设置里已保存的供应商。Claude Code 使用 Anthropic Messages 协议，所以供应商地址会去掉版本路径，密钥写入智能体自己的设置。';
+  }
+
+  @override
+  String get agentsEndpointProvidersReading => '正在读取供应商…';
+
+  @override
+  String get agentsEndpointProvidersEmpty => '还没有供应商。去设置里添加，或使用自定义网关。';
+
+  @override
+  String get agentsEndpointProvidersUnreadable =>
+      '供应商配置带注释或无法读取。请用自定义网关，或在服务器上编辑。';
+
+  @override
+  String get agentsEndpointProviderNoKey => '读不到这个供应商的密钥。请先在设置里补上。';
+
+  @override
+  String get agentsEndpointProviderExternalKey => '这个供应商的密钥由服务器管理，这里无法复用。';
+
+  @override
+  String get agentsEndpointProviderBadAddress => '这个供应商的地址对 Claude Code 无效。';
+
+  @override
+  String get agentsEndpointProviderNoModels =>
+      '这个供应商没有配置模型。请在设置里挑一个，或用智能体的默认模型。';
+
+  @override
+  String get agentsEndpointProviderPickModel => '请为这个供应商挑一个模型。';
+
+  @override
+  String get agentsEndpointProviderUse => '使用供应商';
+
+  @override
+  String get agentsEndpointProviderCustomGateway => '自定义网关…';
+
+  @override
   String agentsSignInTitle(String agent) {
     return '使用 $agent 登录';
   }
@@ -34637,6 +34680,48 @@ class AppLocalizationsZh extends AppLocalizations {
   String get modelPickerContextNotReloaded => '已保存，但服务端还没重载。重启服务端后生效。';
 
   @override
-  String get modelPickerContextNotInConfig =>
-      '这个供应商不在应用的配置里，只能在添加它的地方修改上下文大小。';
+  String get modelPickerContextNotInConfig => '这个供应商不在应用的配置里，只能在添加它的地方修改上下文大小。';
+
+  @override
+  String get appLogLabel => '运行日志';
+
+  @override
+  String get appLogPrivateTitle => '私有日志目录';
+
+  @override
+  String get appLogPublicTitle => '公共日志目录';
+
+  @override
+  String get appLogPublicOff => '未启用：需要存储授权';
+
+  @override
+  String get appLogPathUnavailable => '尚未就绪';
+
+  @override
+  String get appLogGrantTitle => '允许存储访问';
+
+  @override
+  String get appLogGrantBody => '开启后日志会同时写到公共目录，任何文件管理器都能查看。';
+
+  @override
+  String get appLogOpenTitle => '打开应用内部存储';
+
+  @override
+  String get appLogBrowseTitle => '浏览应用内部存储';
+
+  @override
+  String get appLogBrowseBody => '通过系统文件管理器读取和写入应用的私有文件。';
+
+  @override
+  String get appLogBrowseWarning =>
+      '这会把应用的整个私有目录开放给文件管理器，包括服务器密钥、API key 和登录令牌。只在你信任的文件管理器中使用。';
+
+  @override
+  String get appLogBrowseConfirm => '继续';
+
+  @override
+  String get appLogBrowseCancel => '取消';
+
+  @override
+  String get appLogBrowseKeys => '服务器密钥、API key 和登录令牌';
 }

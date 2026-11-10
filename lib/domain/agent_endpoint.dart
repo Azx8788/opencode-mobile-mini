@@ -67,6 +67,54 @@ final class AgentEndpoint {
     ).toString();
   }
 
+  /// The base URL Claude Code wants for a provider's saved address.
+  ///
+  /// Claude Code appends `/v1/messages` itself, so the base URL must not end
+  /// in `/v1` or `/v1beta` — otherwise the request becomes
+  /// `…/v1/v1/messages`. A provider's saved address keeps that version path
+  /// (OpenCode's AI SDK appends its own endpoint suffix on top of it), and
+  /// new-api / one-api serve `/v1/messages` on the same host as
+  /// `/v1/chat/completions`. Stripping the trailing version segment turns
+  /// `https://host/v1` into `https://host`, which Claude Code turns into
+  /// `https://host/v1/messages`.
+  ///
+  /// A path that does not end in a version segment is left as typed: a
+  /// gateway that uses an `/anthropic` prefix keeps it, and a bare host
+  /// stays bare. `/v1beta` is checked before `/v1` so the longer match wins.
+  static String claudeCodeBaseUrl(String providerBaseUrl) {
+    final text = providerBaseUrl.trim();
+    if (text.isEmpty) {
+      throw const ProductException('Enter the endpoint\u2019s base URL');
+    }
+    final uri = Uri.tryParse(text);
+    if (uri == null ||
+        (uri.scheme != 'https' && uri.scheme != 'http') ||
+        uri.host.isEmpty) {
+      throw const ProductException(
+        'Use an address like https://gateway.example.com',
+      );
+    }
+    var path = uri.path;
+    while (path.endsWith('/') && path.length > 1) {
+      path = path.substring(0, path.length - 1);
+    }
+    for (final segment in const ['/v1beta', '/v1']) {
+      if (path.toLowerCase().endsWith(segment)) {
+        path = path.substring(0, path.length - segment.length);
+        break;
+      }
+    }
+    while (path.endsWith('/') && path.length > 1) {
+      path = path.substring(0, path.length - 1);
+    }
+    return Uri(
+      scheme: uri.scheme,
+      host: uri.host,
+      port: uri.hasPort ? uri.port : null,
+      path: path,
+    ).toString();
+  }
+
   static String? _apiKey(String? value) {
     if (value == null) return null;
     final text = value.trim();

@@ -40754,6 +40754,84 @@ abstract class AppLocalizations {
   /// **'Using {host}'**
   String agentsEndpointConfigured(String host);
 
+  /// Provider picker sheet title and the edit-gateway action label
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a provider'**
+  String get agentsEndpointProvidersTitle;
+
+  /// Sign-in step action: reuse a provider saved in Settings
+  ///
+  /// In en, this message translates to:
+  /// **'Use a provider'**
+  String get agentsEndpointProviderAction;
+
+  /// Provider picker sheet explanation
+  ///
+  /// In en, this message translates to:
+  /// **'Point {agent} at a provider you already saved in Settings. Claude Code speaks the Anthropic Messages protocol, so the provider\'s address has its version path stripped and its key is written to the agent\'s own settings.'**
+  String agentsEndpointProviderIntro(String agent);
+
+  /// Provider picker: loading the list
+  ///
+  /// In en, this message translates to:
+  /// **'Reading providers…'**
+  String get agentsEndpointProvidersReading;
+
+  /// Provider picker: no saved providers
+  ///
+  /// In en, this message translates to:
+  /// **'No providers yet. Add one in Settings, or use a custom gateway.'**
+  String get agentsEndpointProvidersEmpty;
+
+  /// Provider picker: the config file cannot be listed
+  ///
+  /// In en, this message translates to:
+  /// **'The provider configuration has comments or could not be read. Use a custom gateway, or edit it on the server.'**
+  String get agentsEndpointProvidersUnreadable;
+
+  /// Provider picker: a row's key is missing or unreadable
+  ///
+  /// In en, this message translates to:
+  /// **'The key for this provider could not be read. Add it in Settings first.'**
+  String get agentsEndpointProviderNoKey;
+
+  /// Provider picker: external key mode cannot be reused
+  ///
+  /// In en, this message translates to:
+  /// **'This provider\'s key is managed by the server, so it cannot be reused here.'**
+  String get agentsEndpointProviderExternalKey;
+
+  /// Provider picker: the derived address failed validation
+  ///
+  /// In en, this message translates to:
+  /// **'This provider\'s address is not valid for Claude Code.'**
+  String get agentsEndpointProviderBadAddress;
+
+  /// Provider picker: the selected provider has no enabled models
+  ///
+  /// In en, this message translates to:
+  /// **'This provider has no models configured. Pick one in Settings, or continue with the agent\'s default.'**
+  String get agentsEndpointProviderNoModels;
+
+  /// Provider picker: a model is required before saving
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a model for this provider.'**
+  String get agentsEndpointProviderPickModel;
+
+  /// Provider picker: primary action
+  ///
+  /// In en, this message translates to:
+  /// **'Use provider'**
+  String get agentsEndpointProviderUse;
+
+  /// Provider picker: open the hand-typed gateway form
+  ///
+  /// In en, this message translates to:
+  /// **'Custom gateway…'**
+  String get agentsEndpointProviderCustomGateway;
+
   /// Sign-in step title
   ///
   /// In en, this message translates to:
@@ -57709,6 +57787,90 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This provider is not in the app’s configuration, so its window is changed where the provider was added.'**
   String get modelPickerContextNotInConfig;
+
+  /// No description provided for @appLogLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Running log'**
+  String get appLogLabel;
+
+  /// No description provided for @appLogPrivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private log folder'**
+  String get appLogPrivateTitle;
+
+  /// No description provided for @appLogPublicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Public log folder'**
+  String get appLogPublicTitle;
+
+  /// No description provided for @appLogPublicOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off: storage access is needed'**
+  String get appLogPublicOff;
+
+  /// No description provided for @appLogPathUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not ready yet'**
+  String get appLogPathUnavailable;
+
+  /// No description provided for @appLogGrantTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow storage access'**
+  String get appLogGrantTitle;
+
+  /// No description provided for @appLogGrantBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets the log also write to shared storage, where any file manager can read it.'**
+  String get appLogGrantBody;
+
+  /// No description provided for @appLogOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the app storage'**
+  String get appLogOpenTitle;
+
+  /// No description provided for @appLogBrowseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse the app storage'**
+  String get appLogBrowseTitle;
+
+  /// No description provided for @appLogBrowseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and write the app\'s private files through the system file manager.'**
+  String get appLogBrowseBody;
+
+  /// No description provided for @appLogBrowseWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This opens the app\'s whole private folder to the file manager, including server keys, API keys and sign-in tokens. Use it only with a file manager you trust.'**
+  String get appLogBrowseWarning;
+
+  /// No description provided for @appLogBrowseConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get appLogBrowseConfirm;
+
+  /// No description provided for @appLogBrowseCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get appLogBrowseCancel;
+
+  /// No description provided for @appLogBrowseKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'server keys, API keys and sign-in tokens'**
+  String get appLogBrowseKeys;
 }
 
 class _AppLocalizationsDelegate

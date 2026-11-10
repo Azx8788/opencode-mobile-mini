@@ -119,6 +119,61 @@ void main() {
     });
   });
 
+  // A provider's saved base URL keeps its `/v1` (OpenCode's AI SDK appends its
+  // own endpoint suffix on top of it); Claude Code appends `/v1/messages`
+  // itself, so the version segment is stripped before it is handed over.
+  group('claudeCodeBaseUrl', () {
+    test('strips a trailing /v1 from a new-api style address', () {
+      expect(AgentEndpoint.claudeCodeBaseUrl('https://host/v1'), 'https://host');
+    });
+
+    test('strips a trailing /v1beta', () {
+      expect(
+        AgentEndpoint.claudeCodeBaseUrl('https://host/v1beta'),
+        'https://host',
+      );
+    });
+
+    test('strips /v1 after a prefix, keeping the prefix', () {
+      expect(
+        AgentEndpoint.claudeCodeBaseUrl('https://api.minimaxi.com/anthropic/v1'),
+        'https://api.minimaxi.com/anthropic',
+      );
+    });
+
+    test('keeps a non-version path such as an /anthropic prefix', () {
+      expect(
+        AgentEndpoint.claudeCodeBaseUrl('https://host/anthropic'),
+        'https://host/anthropic',
+      );
+    });
+
+    test('keeps a bare host', () {
+      expect(AgentEndpoint.claudeCodeBaseUrl('https://host'), 'https://host');
+    });
+
+    test('keeps a port', () {
+      expect(
+        AgentEndpoint.claudeCodeBaseUrl('http://192.168.1.9:8080/v1'),
+        'http://192.168.1.9:8080',
+      );
+    });
+
+    test('strips a trailing slash before the version segment', () {
+      expect(
+        AgentEndpoint.claudeCodeBaseUrl('https://host/v1/'),
+        'https://host',
+      );
+    });
+
+    test('refuses an empty address', () {
+      expect(
+        () => AgentEndpoint.claudeCodeBaseUrl(''),
+        throwsA(isA<Exception>()),
+      );
+    });
+  });
+
   group('the settings writer', () {
     late Directory root;
     late Directory home;

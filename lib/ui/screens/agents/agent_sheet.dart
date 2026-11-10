@@ -15,8 +15,8 @@ import '../../app_iconography.dart';
 import '../../app_theme.dart' show AppStatusTone;
 import '../../kit/kit.dart';
 import '../chats/chats_host.dart';
-import 'agent_endpoint_sheet.dart';
 import 'agent_error_notice.dart';
+import 'agent_provider_sheet.dart';
 import 'agent_sign_in_terminal.dart';
 import 'agents_text.dart';
 import 'phone_check_view.dart';
@@ -163,7 +163,7 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
   Future<void> _openEndpoint() async {
     final id = _agentId;
     if (id == null) return;
-    final changed = await showAgentEndpointSheet(context, agentId: id);
+    final changed = await showAgentProviderSheet(context, agentId: id);
     if (!mounted || changed != true) return;
     _signInKicked = false;
     setState(() => _readingSignIn = false);
@@ -1035,13 +1035,13 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
         if (gateway)
           KitAction(
             key: const ValueKey('agents-endpoint-edit'),
-            label: l10n.agentsEndpointTitle,
+            label: l10n.agentsEndpointProvidersTitle,
             onPressed: _signingOut ? null : () => unawaited(_openEndpoint()),
           ),
         if (!gateway && !signedIn && _supportsEndpoint(id) && !hostKey)
           KitAction(
             key: const ValueKey('agents-endpoint-add'),
-            label: l10n.agentsEndpointAction,
+            label: l10n.agentsEndpointProviderAction,
             onPressed: _signingOut ? null : () => unawaited(_openEndpoint()),
           ),
         if (canSignOut)

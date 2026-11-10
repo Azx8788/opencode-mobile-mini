@@ -30639,6 +30639,63 @@
       }
     }
   },
+  "agentsEndpointProvidersTitle": "Choose a provider",
+  "@agentsEndpointProvidersTitle": {
+    "description": "Provider picker sheet title and the edit-gateway action label"
+  },
+  "agentsEndpointProviderAction": "Use a provider",
+  "@agentsEndpointProviderAction": {
+    "description": "Sign-in step action: reuse a provider saved in Settings"
+  },
+  "agentsEndpointProviderIntro": "Point {agent} at a provider you already saved in Settings. Claude Code speaks the Anthropic Messages protocol, so the provider's address has its version path stripped and its key is written to the agent's own settings.",
+  "@agentsEndpointProviderIntro": {
+    "description": "Provider picker sheet explanation",
+    "placeholders": {
+      "agent": {
+        "type": "String"
+      }
+    }
+  },
+  "agentsEndpointProvidersReading": "Reading providers…",
+  "@agentsEndpointProvidersReading": {
+    "description": "Provider picker: loading the list"
+  },
+  "agentsEndpointProvidersEmpty": "No providers yet. Add one in Settings, or use a custom gateway.",
+  "@agentsEndpointProvidersEmpty": {
+    "description": "Provider picker: no saved providers"
+  },
+  "agentsEndpointProvidersUnreadable": "The provider configuration has comments or could not be read. Use a custom gateway, or edit it on the server.",
+  "@agentsEndpointProvidersUnreadable": {
+    "description": "Provider picker: the config file cannot be listed"
+  },
+  "agentsEndpointProviderNoKey": "The key for this provider could not be read. Add it in Settings first.",
+  "@agentsEndpointProviderNoKey": {
+    "description": "Provider picker: a row's key is missing or unreadable"
+  },
+  "agentsEndpointProviderExternalKey": "This provider's key is managed by the server, so it cannot be reused here.",
+  "@agentsEndpointProviderExternalKey": {
+    "description": "Provider picker: external key mode cannot be reused"
+  },
+  "agentsEndpointProviderBadAddress": "This provider's address is not valid for Claude Code.",
+  "@agentsEndpointProviderBadAddress": {
+    "description": "Provider picker: the derived address failed validation"
+  },
+  "agentsEndpointProviderNoModels": "This provider has no models configured. Pick one in Settings, or continue with the agent's default.",
+  "@agentsEndpointProviderNoModels": {
+    "description": "Provider picker: the selected provider has no enabled models"
+  },
+  "agentsEndpointProviderPickModel": "Pick a model for this provider.",
+  "@agentsEndpointProviderPickModel": {
+    "description": "Provider picker: a model is required before saving"
+  },
+  "agentsEndpointProviderUse": "Use provider",
+  "@agentsEndpointProviderUse": {
+    "description": "Provider picker: primary action"
+  },
+  "agentsEndpointProviderCustomGateway": "Custom gateway…",
+  "@agentsEndpointProviderCustomGateway": {
+    "description": "Provider picker: open the hand-typed gateway form"
+  },
   "agentsSignInTitle": "Sign in with {agent}",
   "@agentsSignInTitle": {
     "description": "Sign-in step title",
@@ -44862,5 +44919,19 @@
   "modelPickerContextNotInConfig": "This provider is not in the app’s configuration, so its window is changed where the provider was added.",
   "@modelPickerContextNotInConfig": {
     "description": "A built-in provider has no entry the app can edit"
-  }
+  },
+  "appLogLabel": "Running log",
+  "appLogPrivateTitle": "Private log folder",
+  "appLogPublicTitle": "Public log folder",
+  "appLogPublicOff": "Off: storage access is needed",
+  "appLogPathUnavailable": "Not ready yet",
+  "appLogGrantTitle": "Allow storage access",
+  "appLogGrantBody": "Lets the log also write to shared storage, where any file manager can read it.",
+  "appLogOpenTitle": "Open the app storage",
+  "appLogBrowseTitle": "Browse the app storage",
+  "appLogBrowseBody": "Read and write the app's private files through the system file manager.",
+  "appLogBrowseWarning": "This opens the app's whole private folder to the file manager, including server keys, API keys and sign-in tokens. Use it only with a file manager you trust.",
+  "appLogBrowseConfirm": "Continue",
+  "appLogBrowseCancel": "Cancel",
+  "appLogBrowseKeys": "server keys, API keys and sign-in tokens"
 }

@@ -2,6 +2,51 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.13+17 — 2026-11-10
+
+Every model was effectively 200K tokens, the log could only be read with a
+cable, and the app's own files were invisible to a file manager.
+
+  * **A model's context window is now the model's own.** The provider form
+    reads the window the endpoint states (`context_length`, `context_window`,
+    `max_context_length`, `max_model_len`, `max_input_tokens`, or a nested
+    `limit.context` — gateways spell it every way there is), offers one-tap
+    presets for the models that are ticked, and a dialog on any single row.
+    The number is written per model into both config dialects as
+    `limit: {context, output}` and read back when the provider is opened
+    again. Left empty it writes nothing, which is the honest default: a
+    window the app invented either compacts early or overflows the request.
+  * **A conversation can change it too.** The model picker's row menu writes
+    the window into the entry the provider was added with and asks the server
+    to re-read its config, so the next reply uses it — without a restart and
+    without touching anything else in the entry. It is offered only for the
+    server whose config the app can write.
+  * **The log mirrors to shared storage.** With "All files access" granted,
+    every line is also appended to `/storage/emulated/0/OpenCodeMini/logs`,
+    one JSON object per line, one file per day, the same seven-day window and
+    eight-megabyte cap as the private copy. The private copy is always
+    written; the public one is best-effort and never affects it. Granting
+    access mid-run starts the mirror without a restart.
+  * **The app's private storage opens through the system picker.** A
+    DocumentsProvider exposes the app's files directory read and write, so a
+    file manager the person authorizes can browse, open, copy, rename, create
+    and delete everything under it. Every document id is canonicalized and
+    refused when it leaves the directory. A warning before the first open
+    names what the tree contains: server keys, API keys and sign-in tokens.
+  * **App diagnostics shows where the log is.** The page lists the private
+    and public folders, offers the storage grant, and opens either the log
+    folder or the whole private tree.
+  * **Claude Code picks a provider from Settings.** The sign-in step lists the
+    providers this phone already has, derives each one's address for Claude
+    Code (its trailing `/v1` or `/v1beta` stripped, because Claude Code
+    appends `/v1/messages` itself), and writes the chosen provider's key and a
+    picked model into the agent's own settings in one call. A provider saved as
+    OpenAI on a new-api / one-api gateway serves `/v1/messages` on the same
+    host, so it is offered too — the whole point of reusing the provider is not
+    to configure it twice. A provider whose key the app cannot read is shown,
+    not hidden: the row is disabled with the reason, and a hand-typed gateway
+    stays one tap away.
+
 ## 0.3.12+16 — 2026-11-09
 
 Reading a provider's models and testing it were the last two things this app
