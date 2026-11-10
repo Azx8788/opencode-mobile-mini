@@ -24280,6 +24280,52 @@ class AppLocalizationsZh extends AppLocalizations {
   }
 
   @override
+  String get agentsEndpointProvidersTitle => '选择供应商';
+
+  @override
+  String get agentsEndpointProviderAction => '使用供应商';
+
+  @override
+  String agentsEndpointProviderIntro(String agent) {
+    return '让 $agent 使用你在设置里已保存的供应商。Claude Code 使用 Anthropic Messages 协议，所以供应商地址会去掉版本路径，密钥写入智能体自己的设置。';
+  }
+
+  @override
+  String get agentsEndpointProvidersReading => '正在读取供应商…';
+
+  @override
+  String get agentsEndpointProvidersEmpty =>
+      '还没有供应商。去设置里添加，或使用自定义网关。';
+
+  @override
+  String get agentsEndpointProvidersUnreadable =>
+      '供应商配置带注释或无法读取。请用自定义网关，或在服务器上编辑。';
+
+  @override
+  String get agentsEndpointProviderNoKey => '读不到这个供应商的密钥。请先在设置里补上。';
+
+  @override
+  String get agentsEndpointProviderExternalKey =>
+      '这个供应商的密钥由服务器管理，这里无法复用。';
+
+  @override
+  String get agentsEndpointProviderBadAddress =>
+      '这个供应商的地址对 Claude Code 无效。';
+
+  @override
+  String get agentsEndpointProviderNoModels =>
+      '这个供应商没有配置模型。请在设置里挑一个，或用智能体的默认模型。';
+
+  @override
+  String get agentsEndpointProviderPickModel => '请为这个供应商挑一个模型。';
+
+  @override
+  String get agentsEndpointProviderUse => '使用供应商';
+
+  @override
+  String get agentsEndpointProviderCustomGateway => '自定义网关…';
+
+  @override
   String agentsSignInTitle(String agent) {
     return '使用 $agent 登录';
   }

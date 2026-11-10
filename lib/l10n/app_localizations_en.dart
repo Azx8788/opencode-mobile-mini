@@ -25797,6 +25797,54 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get agentsEndpointProvidersTitle => 'Choose a provider';
+
+  @override
+  String get agentsEndpointProviderAction => 'Use a provider';
+
+  @override
+  String agentsEndpointProviderIntro(String agent) {
+    return 'Point $agent at a provider you already saved in Settings. Claude Code speaks the Anthropic Messages protocol, so the provider\'s address has its version path stripped and its key is written to the agent\'s own settings.';
+  }
+
+  @override
+  String get agentsEndpointProvidersReading => 'Reading providers…';
+
+  @override
+  String get agentsEndpointProvidersEmpty =>
+      'No providers yet. Add one in Settings, or use a custom gateway.';
+
+  @override
+  String get agentsEndpointProvidersUnreadable =>
+      'The provider configuration has comments or could not be read. Use a custom gateway, or edit it on the server.';
+
+  @override
+  String get agentsEndpointProviderNoKey =>
+      'The key for this provider could not be read. Add it in Settings first.';
+
+  @override
+  String get agentsEndpointProviderExternalKey =>
+      'This provider\'s key is managed by the server, so it cannot be reused here.';
+
+  @override
+  String get agentsEndpointProviderBadAddress =>
+      'This provider\'s address is not valid for Claude Code.';
+
+  @override
+  String get agentsEndpointProviderNoModels =>
+      'This provider has no models configured. Pick one in Settings, or continue with the agent\'s default.';
+
+  @override
+  String get agentsEndpointProviderPickModel =>
+      'Pick a model for this provider.';
+
+  @override
+  String get agentsEndpointProviderUse => 'Use provider';
+
+  @override
+  String get agentsEndpointProviderCustomGateway => 'Custom gateway…';
+
+  @override
   String agentsSignInTitle(String agent) {
     return 'Sign in with $agent';
   }

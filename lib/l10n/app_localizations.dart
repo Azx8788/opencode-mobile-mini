@@ -40754,6 +40754,84 @@ abstract class AppLocalizations {
   /// **'Using {host}'**
   String agentsEndpointConfigured(String host);
 
+  /// Provider picker sheet title and the edit-gateway action label
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a provider'**
+  String get agentsEndpointProvidersTitle;
+
+  /// Sign-in step action: reuse a provider saved in Settings
+  ///
+  /// In en, this message translates to:
+  /// **'Use a provider'**
+  String get agentsEndpointProviderAction;
+
+  /// Provider picker sheet explanation
+  ///
+  /// In en, this message translates to:
+  /// **'Point {agent} at a provider you already saved in Settings. Claude Code speaks the Anthropic Messages protocol, so the provider's address has its version path stripped and its key is written to the agent's own settings.'**
+  String agentsEndpointProviderIntro(String agent);
+
+  /// Provider picker: loading the list
+  ///
+  /// In en, this message translates to:
+  /// **'Reading providers…'**
+  String get agentsEndpointProvidersReading;
+
+  /// Provider picker: no saved providers
+  ///
+  /// In en, this message translates to:
+  /// **'No providers yet. Add one in Settings, or use a custom gateway.'**
+  String get agentsEndpointProvidersEmpty;
+
+  /// Provider picker: the config file cannot be listed
+  ///
+  /// In en, this message translates to:
+  /// **'The provider configuration has comments or could not be read. Use a custom gateway, or edit it on the server.'**
+  String get agentsEndpointProvidersUnreadable;
+
+  /// Provider picker: a row's key is missing or unreadable
+  ///
+  /// In en, this message translates to:
+  /// **'The key for this provider could not be read. Add it in Settings first.'**
+  String get agentsEndpointProviderNoKey;
+
+  /// Provider picker: external key mode cannot be reused
+  ///
+  /// In en, this message translates to:
+  /// **'This provider's key is managed by the server, so it cannot be reused here.'**
+  String get agentsEndpointProviderExternalKey;
+
+  /// Provider picker: the derived address failed validation
+  ///
+  /// In en, this message translates to:
+  /// **'This provider's address is not valid for Claude Code.'**
+  String get agentsEndpointProviderBadAddress;
+
+  /// Provider picker: the selected provider has no enabled models
+  ///
+  /// In en, this message translates to:
+  /// **'This provider has no models configured. Pick one in Settings, or continue with the agent's default.'**
+  String get agentsEndpointProviderNoModels;
+
+  /// Provider picker: a model is required before saving
+  ///
+  /// In en, this message translates to:
+  /// **'Pick a model for this provider.'**
+  String get agentsEndpointProviderPickModel;
+
+  /// Provider picker: primary action
+  ///
+  /// In en, this message translates to:
+  /// **'Use provider'**
+  String get agentsEndpointProviderUse;
+
+  /// Provider picker: open the hand-typed gateway form
+  ///
+  /// In en, this message translates to:
+  /// **'Custom gateway…'**
+  String get agentsEndpointProviderCustomGateway;
+
   /// Sign-in step title
   ///
   /// In en, this message translates to:

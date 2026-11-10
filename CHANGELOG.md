@@ -2,6 +2,25 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.11+15 — 2026-11-10
+
+Claude Code read its gateway from a form of its own, so a key typed once in
+Settings had to be typed again here. It now offers the providers already
+saved in Settings, and only asks for a hand-typed gateway when none fits.
+
+  * **Claude Code picks a provider from Settings.** The sign-in step lists
+    the providers this phone already has, derives each one's address for
+    Claude Code (its trailing `/v1` or `/v1beta` stripped, because Claude
+    Code appends `/v1/messages` itself), and writes the chosen provider's key
+    and a picked model into the agent's own settings in one call. A provider
+    saved as OpenAI on a new-api / one-api gateway serves `/v1/messages` on
+    the same host, so it is offered too — the whole point of reusing the
+    provider is not to configure it twice.
+  * **A provider whose key the app cannot read is shown, not hidden.** An
+    external key or a missing key file disables the row with the reason, and
+    a hand-typed gateway stays one tap away as the fallback for anything that
+    is not in Settings.
+
 ## 0.3.10+14 — 2026-11-09
 
 ColorOS and some other Chinese ROMs still replaced the keyboard with their
