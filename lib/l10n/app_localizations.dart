@@ -6841,6 +6841,48 @@ abstract class AppLocalizations {
   /// **'App diagnostics'**
   String get e7SettingsUi88;
 
+  /// The running log's folder, its public mirror and the ways to open them.
+  String get appLogLabel;
+
+  /// The app-private folder that always receives the log.
+  String get appLogPrivateTitle;
+
+  /// The shared-storage folder the mirror writes to when access is granted.
+  String get appLogPublicTitle;
+
+  /// Shown when the public mirror is off because storage access is missing.
+  String get appLogPublicOff;
+
+  /// Shown while the private log folder has not opened yet.
+  String get appLogPathUnavailable;
+
+  /// Row that asks for "All files access" so the public mirror can start.
+  String get appLogGrantTitle;
+
+  /// Why the public mirror needs storage access.
+  String get appLogGrantBody;
+
+  /// Row that opens the system picker at the app's storage root.
+  String get appLogOpenTitle;
+
+  /// Row that opens the same picker after a warning about what it exposes.
+  String get appLogBrowseTitle;
+
+  /// What the browse row does.
+  String get appLogBrowseBody;
+
+  /// The warning shown before the browse row opens the whole private folder.
+  String get appLogBrowseWarning;
+
+  /// Confirm label on the browse warning.
+  String get appLogBrowseConfirm;
+
+  /// Cancel label on the browse warning.
+  String get appLogBrowseCancel;
+
+  /// The kinds of secret the browse warning names.
+  String get appLogBrowseKeys;
+
   /// Settings and appearance user interface.
   ///
   /// In en, this message translates to:

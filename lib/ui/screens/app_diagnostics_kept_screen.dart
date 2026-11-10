@@ -14,6 +14,7 @@ import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
 import '../app_theme.dart';
 import '../kit/kit.dart';
+import 'app_log_section.dart';
 import 'crash_reports_section.dart';
 import 'exit_history_section.dart';
 import 'perf_trace_section.dart';
@@ -234,6 +235,7 @@ class _AppDiagnosticsKeptScreenState extends State<AppDiagnosticsKeptScreen>
                     message: copy.reportProblemClearFailed,
                   ),
                 ),
+              const AppLogSection(),
               if (errors.isNotEmpty)
                 KitRowGroup(
                   label: copy.reportProblemErrorsLabel(errors.length),

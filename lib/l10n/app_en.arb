@@ -44772,5 +44772,19 @@
         "type": "String"
       }
     }
-  }
+  },
+  "appLogLabel": "Running log",
+  "appLogPrivateTitle": "Private log folder",
+  "appLogPublicTitle": "Public log folder",
+  "appLogPublicOff": "Off: storage access is needed",
+  "appLogPathUnavailable": "Not ready yet",
+  "appLogGrantTitle": "Allow storage access",
+  "appLogGrantBody": "Lets the log also write to shared storage, where any file manager can read it.",
+  "appLogOpenTitle": "Open the app storage",
+  "appLogBrowseTitle": "Browse the app storage",
+  "appLogBrowseBody": "Read and write the app's private files through the system file manager.",
+  "appLogBrowseWarning": "This opens the app's whole private folder to the file manager, including server keys, API keys and sign-in tokens. Use it only with a file manager you trust.",
+  "appLogBrowseConfirm": "Continue",
+  "appLogBrowseCancel": "Cancel",
+  "appLogBrowseKeys": "server keys, API keys and sign-in tokens"
 }

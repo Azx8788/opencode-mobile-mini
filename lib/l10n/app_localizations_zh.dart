@@ -3677,6 +3677,48 @@ class AppLocalizationsZh extends AppLocalizations {
   String get e7SettingsUi88 => '应用诊断';
 
   @override
+  String get appLogLabel => '运行日志';
+
+  @override
+  String get appLogPrivateTitle => '私有日志目录';
+
+  @override
+  String get appLogPublicTitle => '公共日志目录';
+
+  @override
+  String get appLogPublicOff => '未启用：需要存储授权';
+
+  @override
+  String get appLogPathUnavailable => '尚未就绪';
+
+  @override
+  String get appLogGrantTitle => '允许存储访问';
+
+  @override
+  String get appLogGrantBody => '开启后日志会同时写到公共目录，任何文件管理器都能查看。';
+
+  @override
+  String get appLogOpenTitle => '打开应用内部存储';
+
+  @override
+  String get appLogBrowseTitle => '浏览应用内部存储';
+
+  @override
+  String get appLogBrowseBody => '通过系统文件管理器读取和写入应用的私有文件。';
+
+  @override
+  String get appLogBrowseWarning => '这会把应用的整个私有目录开放给文件管理器，包括服务器密钥、API key 和登录令牌。只在你信任的文件管理器中使用。';
+
+  @override
+  String get appLogBrowseConfirm => '继续';
+
+  @override
+  String get appLogBrowseCancel => '取消';
+
+  @override
+  String get appLogBrowseKeys => '服务器密钥、API key 和登录令牌';
+
+  @override
   String get e7SettingsUi92 => '隐私与数据使用';
 
   @override

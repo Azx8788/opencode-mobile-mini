@@ -3993,6 +3993,48 @@ class AppLocalizationsEn extends AppLocalizations {
   String get e7SettingsUi88 => 'App diagnostics';
 
   @override
+  String get appLogLabel => 'Running log';
+
+  @override
+  String get appLogPrivateTitle => 'Private log folder';
+
+  @override
+  String get appLogPublicTitle => 'Public log folder';
+
+  @override
+  String get appLogPublicOff => 'Off: storage access is needed';
+
+  @override
+  String get appLogPathUnavailable => 'Not ready yet';
+
+  @override
+  String get appLogGrantTitle => 'Allow storage access';
+
+  @override
+  String get appLogGrantBody => 'Lets the log also write to shared storage, where any file manager can read it.';
+
+  @override
+  String get appLogOpenTitle => 'Open the app storage';
+
+  @override
+  String get appLogBrowseTitle => 'Browse the app storage';
+
+  @override
+  String get appLogBrowseBody => "Read and write the app's private files through the system file manager.";
+
+  @override
+  String get appLogBrowseWarning => "This opens the app's whole private folder to the file manager, including server keys, API keys and sign-in tokens. Use it only with a file manager you trust.";
+
+  @override
+  String get appLogBrowseConfirm => 'Continue';
+
+  @override
+  String get appLogBrowseCancel => 'Cancel';
+
+  @override
+  String get appLogBrowseKeys => 'server keys, API keys and sign-in tokens';
+
+  @override
   String get e7SettingsUi92 => 'Privacy and data use';
 
   @override

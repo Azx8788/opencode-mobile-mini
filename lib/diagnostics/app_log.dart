@@ -38,6 +38,17 @@ class AppLog {
   static const int _flushEvery = 40;
   static const int _maxFieldChars = 2000;
 
+  /// The phone's shared storage root, matching PhoneStorageFolders.root.
+  /// Duplicated here so the diagnostics layer does not import the platform
+  /// folder browser and its transitive dependencies.
+  static const String _sharedRoot = '/storage/emulated/0';
+
+  /// Where the public mirror of the log is written when "All files access"
+  /// is on. Lets the person read the log from any file manager without
+  /// `adb pull` or the share sheet. The private log in the app support
+  /// directory is always written; this is an extra sink, not a replacement.
+  static const String _publicLogDir = '$_sharedRoot/OpenCodeMini/logs';
+
   static Directory? _directory;
   static IOSink? _sink;
   static File? _file;
@@ -52,6 +63,16 @@ class AppLog {
   static bool _ready = false;
   static bool _enabled = false;
 
+  static Directory? _publicDirectory;
+  static IOSink? _publicSink;
+  static File? _publicFile;
+  static String? _publicDay;
+  static int _publicWritten = 0;
+  static int _publicSinceFlush = 0;
+  static bool _publicEnabled = false;
+  static bool _publicProbed = false;
+  static Future<void>? _publicProbeFuture;
+
   /// True once [start] found a writable folder.
   static bool get isEnabled => _enabled;
 
@@ -65,11 +86,23 @@ class AppLog {
   /// launches can still be split apart.
   static String get runId => _runId;
 
+  /// The shared-storage folder the public mirror writes to, when enabled.
+  static String? get publicDirectoryPath => _publicDirectory?.path;
+
+  /// True once the public mirror is actively writing to shared storage.
+  static bool get publicEnabled => _publicEnabled;
+
+  /// Completes once the current public-mirror probe has run. Tests await
+  /// this instead of sleeping; production code never reads it.
+  static Future<void> get publicProbeDone =>
+      _publicProbeFuture ?? Future<void>.value();
+
   /// Opens the log. Safe to call once, from `main`, after the binding is up.
   ///
   /// [directory] and [clock] exist for tests; production passes neither.
   static Future<void> start({
     Directory? directory,
+    Directory? publicDirectory,
     DateTime Function()? clock,
     String? runId,
   }) async {
@@ -94,25 +127,44 @@ class AppLog {
       _ready = true;
       _buffer.clear();
     }
+    // The public mirror is best-effort: it needs "All files access", which
+    // the person may not have granted yet. A failure here never affects the
+    // private log, which already holds the launch steps. The settings screen
+    // calls [refreshPublicLog] after a grant so the mirror starts mid-run.
+    _publicProbeFuture = _tryEnablePublic(publicDirectory);
+    unawaited(_publicProbeFuture);
   }
 
   /// Closes the file. Tests use this to start over in a clean folder.
   static Future<void> stop() async {
+    await _publicProbeFuture;
     await _chain;
     try {
       await _sink?.flush();
       await _sink?.close();
     } catch (_) {}
+    try {
+      await _publicSink?.flush();
+      await _publicSink?.close();
+    } catch (_) {}
     _sink = null;
     _file = null;
     _day = null;
     _directory = null;
+    _publicSink = null;
+    _publicFile = null;
+    _publicDay = null;
+    _publicDirectory = null;
     _started = false;
     _ready = false;
     _enabled = false;
+    _publicEnabled = false;
+    _publicProbed = false;
     _buffer.clear();
     _written = 0;
     _sinceFlush = 0;
+    _publicWritten = 0;
+    _publicSinceFlush = 0;
   }
 
   static void debug(
@@ -280,25 +332,54 @@ class AppLog {
 
   static void _write(String line) {
     _chain = _chain.then((_) async {
-      if (_sink == null) return;
-      try {
-        // Midnight rollover: the file name carries the day, so a long-running
-        // session starts a new one instead of writing into yesterday's.
-        if (_stamp(_clock()) != _day) await _open(_clock());
-        final sink = _sink;
-        if (sink == null) return;
-        if (_written + line.length > maxFileBytes) {
-          await _rotateFull();
-          return;
-        }
-        sink.writeln(line);
-        _written += line.length + 1;
-        if (++_sinceFlush >= _flushEvery) {
-          _sinceFlush = 0;
-          await sink.flush();
-        }
-      } catch (_) {}
+      await _writeLinePrivate(line);
+      await _writeLinePublic(line);
     });
+  }
+
+  static Future<void> _writeLinePrivate(String line) async {
+    if (_sink == null) return;
+    try {
+      // Midnight rollover: the file name carries the day, so a long-running
+      // session starts a new one instead of writing into yesterday's.
+      if (_stamp(_clock()) != _day) await _open(_clock());
+      final sink = _sink;
+      if (sink == null) return;
+      if (_written + line.length > maxFileBytes) {
+        await _rotateFull();
+        return;
+      }
+      sink.writeln(line);
+      _written += line.length + 1;
+      if (++_sinceFlush >= _flushEvery) {
+        _sinceFlush = 0;
+        await sink.flush();
+      }
+    } catch (_) {}
+  }
+
+  /// The public mirror: the same shape as the private write, but any failure
+  /// only disables the mirror. The private log is never touched.
+  static Future<void> _writeLinePublic(String line) async {
+    if (!_publicEnabled || _publicSink == null) return;
+    try {
+      if (_stamp(_clock()) != _publicDay) await _openPublic(_clock());
+      final sink = _publicSink;
+      if (sink == null) return;
+      if (_publicWritten + line.length > maxFileBytes) {
+        await _rotateFullPublic();
+        return;
+      }
+      sink.writeln(line);
+      _publicWritten += line.length + 1;
+      if (++_publicSinceFlush >= _flushEvery) {
+        _publicSinceFlush = 0;
+        await sink.flush();
+      }
+    } catch (_) {
+      _publicEnabled = false;
+      _publicSink = null;
+    }
   }
 
   static Future<void> _drain() async {
@@ -390,6 +471,148 @@ class AppLog {
         } catch (_) {}
       }
     } catch (_) {}
+  }
+
+  /// Probes the shared-storage folder and turns the public mirror on when it
+  /// is writable. Called once from [start] and again from [refreshPublicLog]
+  /// after the person grants "All files access" in system settings.
+  static Future<void> _tryEnablePublic(Directory? directory) async {
+    if (_publicProbed) return;
+    _publicProbed = true;
+    if (!_enabled) return;
+    try {
+      final dir = directory ?? Directory(_publicLogDir);
+      await dir.create(recursive: true);
+      // Prove the folder is writable, then remove the probe so it never
+      // shows up in the folder as a stray file.
+      final probe = File('${dir.path}/.probe');
+      await probe.writeAsString('probe\n', flush: true);
+      await probe.delete();
+      _publicDirectory = dir;
+      _publicEnabled = true;
+      await _prunePublic();
+      await _openPublic(_clock());
+      await _replayPrivateToPublic();
+    } catch (_) {
+      _publicEnabled = false;
+      _publicSink = null;
+      _publicDirectory = null;
+    }
+  }
+
+  static Future<void> _openPublic(DateTime now) async {
+    final dir = _publicDirectory;
+    if (!_publicEnabled || dir == null) return;
+    final day = _stamp(now);
+    if (_publicDay == day && _publicSink != null) return;
+    try {
+      await _publicSink?.flush();
+      await _publicSink?.close();
+    } catch (_) {}
+    _publicSink = null;
+    File file = File('${dir.path}/app-$day.log');
+    var index = 0;
+    while (await file.exists() && await file.length() >= maxFileBytes) {
+      index++;
+      file = File('${dir.path}/app-$day.$index.log');
+    }
+    try {
+      _publicSink = file.openWrite(mode: FileMode.append);
+      _publicFile = file;
+      _publicDay = day;
+      _publicWritten = (await file.exists()) ? await file.length() : 0;
+      _publicSinceFlush = 0;
+    } catch (_) {
+      _publicEnabled = false;
+    }
+  }
+
+  /// Copies today's private file into a fresh public one, so the public log
+  /// also holds the launch steps written before the probe finished. Only runs
+  /// when the public file is empty, which is the first time the mirror opens
+  /// on a given day.
+  static Future<void> _replayPrivateToPublic() async {
+    final privateFile = _file;
+    final public = _publicFile;
+    if (!_publicEnabled || privateFile == null || public == null) return;
+    try {
+      if (await public.length() > 0) return;
+      final content = await privateFile.readAsString();
+      if (content.isEmpty) return;
+      _publicSink?.write(content);
+      _publicWritten += content.length;
+      await _publicSink?.flush();
+    } catch (_) {}
+  }
+
+  /// The public twin of [_rotateFull]; a failure disables the mirror only.
+  static Future<void> _rotateFullPublic() async {
+    try {
+      _publicSink?.writeln(
+        jsonEncode({
+          't': _clock().toIso8601String(),
+          'lvl': 'warn',
+          'run': _runId,
+          'src': 'applog',
+          'msg': 'log file reached maxFileBytes; continuing in a new file',
+        }),
+      );
+      await _publicSink?.flush();
+      await _publicSink?.close();
+    } catch (_) {}
+    _publicSink = null;
+    _publicFile = null;
+    final dir = _publicDirectory;
+    if (!_publicEnabled || dir == null) return;
+    final day = _publicDay ?? _stamp(_clock());
+    var index = 1;
+    File next;
+    do {
+      next = File('${dir.path}/app-$day.$index.log');
+      index++;
+    } while (await next.exists());
+    try {
+      _publicSink = next.openWrite(mode: FileMode.append);
+      _publicFile = next;
+      _publicWritten = 0;
+      _publicSinceFlush = 0;
+    } catch (_) {
+      _publicEnabled = false;
+    }
+  }
+
+  static Future<void> _prunePublic() async {
+    final dir = _publicDirectory;
+    if (dir == null) return;
+    final cutoff = _clock().subtract(const Duration(days: keepDays));
+    try {
+      await for (final entity in dir.list()) {
+        if (entity is! File || !entity.path.endsWith('.log')) continue;
+        try {
+          if ((await entity.lastModified()).isBefore(cutoff)) {
+            await entity.delete();
+          }
+        } catch (_) {}
+      }
+    } catch (_) {}
+  }
+
+  /// Re-probes the public folder. Call after the person grants "All files
+  /// access" in system settings; harmless when the mirror is already on.
+  static Future<void> refreshPublicLog() async {
+    if (!_started) return;
+    await _chain;
+    try {
+      await _publicSink?.flush();
+      await _publicSink?.close();
+    } catch (_) {}
+    _publicSink = null;
+    _publicFile = null;
+    _publicDay = null;
+    _publicEnabled = false;
+    _publicProbed = false;
+    _publicProbeFuture = _tryEnablePublic(null);
+    await _publicProbeFuture;
   }
 
   static String _stamp(DateTime at) =>

@@ -115,7 +115,8 @@ jobs:
             test/provider_parameter_test.dart \
             test/model_switch_fit_test.dart \
             test/mini_l10n_catalogue_test.dart \
-            test/agent_endpoint_test.dart
+            test/agent_endpoint_test.dart \
+            test/app_log_test.dart
 
       - name: Build arm64 release APK
         run: flutter build apk --release --target-platform android-arm64

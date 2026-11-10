@@ -9,14 +9,20 @@ import 'package:opencode_mobile/diagnostics/app_log.dart';
 
 void main() {
   late Directory dir;
+  late Directory publicDir;
   var now = DateTime(2026, 11, 1, 10, 0, 0);
 
-  Future<void> open() =>
-      AppLog.start(directory: dir, clock: () => now, runId: 'test-run');
+  Future<void> open() => AppLog.start(
+    directory: dir,
+    publicDirectory: publicDir,
+    clock: () => now,
+    runId: 'test-run',
+  );
 
   setUp(() async {
     now = DateTime(2026, 11, 1, 10, 0, 0);
     dir = await Directory.systemTemp.createTemp('applog-test');
+    publicDir = await Directory.systemTemp.createTemp('applog-public');
     await AppLog.stop();
     await open();
   });
@@ -25,6 +31,9 @@ void main() {
     await AppLog.stop();
     try {
       await dir.delete(recursive: true);
+    } catch (_) {}
+    try {
+      await publicDir.delete(recursive: true);
     } catch (_) {}
   });
 
@@ -108,5 +117,67 @@ void main() {
     final text = await AppLog.currentFile!.readAsString();
     expect(text, contains('logged during startup'));
     expect(readLines(text).single['run'], 'early-run');
+  });
+
+  test('the public mirror gets the same lines as the private log', () async {
+    await AppLog.publicProbeDone;
+    expect(AppLog.publicEnabled, isTrue);
+    expect(AppLog.publicDirectoryPath, publicDir.path);
+
+    AppLog.info('app', 'mirrored line', {'step': 'mirror'});
+    await AppLog.flush();
+
+    final publicFile = File('${publicDir.path}/app-2026-11-01.log');
+    expect(await publicFile.exists(), isTrue);
+    expect(await publicFile.readAsString(), contains('mirrored line'));
+    expect(
+      await AppLog.currentFile!.readAsString(),
+      contains('mirrored line'),
+    );
+  });
+
+  test('an unwritable public folder leaves the private log alone', () async {
+    await AppLog.stop();
+    // No publicDirectory: the probe targets the real /storage/emulated/0,
+    // which does not exist in the test environment.
+    await AppLog.start(directory: dir, clock: () => now, runId: 'private-run');
+    await AppLog.publicProbeDone;
+    expect(AppLog.publicEnabled, isFalse);
+
+    AppLog.info('app', 'private only');
+    await AppLog.flush();
+    expect(
+      await AppLog.currentFile!.readAsString(),
+      contains('private only'),
+    );
+  });
+
+  test('a fresh public file replays what the private log already holds', () async {
+    await AppLog.publicProbeDone;
+    AppLog.info('app', 'before replay');
+    await AppLog.flush();
+
+    // Drop the public file to force the replay path on the next probe.
+    final publicFile = File('${publicDir.path}/app-2026-11-01.log');
+    if (await publicFile.exists()) await publicFile.delete();
+    await AppLog.refreshPublicLog();
+    await AppLog.flush();
+
+    expect(await publicFile.readAsString(), contains('before replay'));
+  });
+
+  test('the public file rolls over at midnight like the private one', () async {
+    await AppLog.publicProbeDone;
+    AppLog.info('app', 'public before midnight');
+    await AppLog.flush();
+
+    now = DateTime(2026, 11, 2, 0, 0, 1);
+    AppLog.info('app', 'public after midnight');
+    await AppLog.flush();
+
+    final day1 = File('${publicDir.path}/app-2026-11-01.log');
+    final day2 = File('${publicDir.path}/app-2026-11-02.log');
+    expect(await day1.readAsString(), contains('public before midnight'));
+    expect(await day2.readAsString(), contains('public after midnight'));
   });
 }

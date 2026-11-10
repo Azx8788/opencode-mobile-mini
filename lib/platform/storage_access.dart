@@ -83,6 +83,22 @@ class StorageAccessBridge {
       WidgetsBinding.instance.removeObserver(watcher);
     }
   }
+
+  /// Opens the system file picker at the app's own storage root, where the
+  /// native InternalStorageProvider exposes the private files directory to a
+  /// file manager the person authorizes. False when no activity can handle
+  /// the picker.
+  static Future<bool> openInternalStorage() async {
+    if (!supported) return false;
+    try {
+      final how = await _channel.invokeMethod<String>('openInternalStorage');
+      return how == 'opened';
+    } on PlatformException {
+      return false;
+    } on MissingPluginException {
+      return false;
+    }
+  }
 }
 
 class _ResumeWatcher with WidgetsBindingObserver {

@@ -2,6 +2,29 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.12+16 — 2026-11-10
+
+The running log lived only in the app's private folder, so reading it meant
+`adb pull` or the share sheet. It now also writes to shared storage, and the
+app's private files can be opened from a file manager through the system
+picker.
+
+  * **The log mirrors to shared storage.** With "All files access" granted,
+    every line is also appended to `/storage/emulated/0/OpenCodeMini/logs`,
+    one JSON object per line, one file per day, the same seven-day window and
+    eight-megabyte cap as the private copy. The private copy is always
+    written; the public one is best-effort and never affects it. Granting
+    access mid-run starts the mirror without a restart.
+  * **The app's private storage opens through the system picker.** A
+    DocumentsProvider exposes the app's files directory read and write, so a
+    file manager the person authorizes can browse, open, copy, rename, create
+    and delete everything under it. Every document id is canonicalized and
+    refused when it leaves the directory. A warning before the first open
+    names what the tree contains: server keys, API keys and sign-in tokens.
+  * **App diagnostics shows where the log is.** The page lists the private
+    and public folders, offers the storage grant, and opens either the log
+    folder or the whole private tree.
+
 ## 0.3.11+15 — 2026-11-10
 
 Claude Code read its gateway from a form of its own, so a key typed once in
