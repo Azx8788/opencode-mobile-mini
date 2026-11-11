@@ -40769,7 +40769,7 @@ abstract class AppLocalizations {
   /// Provider picker sheet explanation
   ///
   /// In en, this message translates to:
-  /// **'Point {agent} at a provider you already saved in Settings. Claude Code speaks the Anthropic Messages protocol, so the provider's address has its version path stripped and its key is written to the agent's own settings.'**
+  /// **'Point {agent} at a provider you already saved in Settings. Claude Code speaks the Anthropic Messages protocol, so the provider\'s address has its version path stripped and its key is written to the agent\'s own settings.'**
   String agentsEndpointProviderIntro(String agent);
 
   /// Provider picker: loading the list
@@ -40799,19 +40799,19 @@ abstract class AppLocalizations {
   /// Provider picker: external key mode cannot be reused
   ///
   /// In en, this message translates to:
-  /// **'This provider's key is managed by the server, so it cannot be reused here.'**
+  /// **'This provider\'s key is managed by the server, so it cannot be reused here.'**
   String get agentsEndpointProviderExternalKey;
 
   /// Provider picker: the derived address failed validation
   ///
   /// In en, this message translates to:
-  /// **'This provider's address is not valid for Claude Code.'**
+  /// **'This provider\'s address is not valid for Claude Code.'**
   String get agentsEndpointProviderBadAddress;
 
   /// Provider picker: the selected provider has no enabled models
   ///
   /// In en, this message translates to:
-  /// **'This provider has no models configured. Pick one in Settings, or continue with the agent's default.'**
+  /// **'This provider has no models configured. Pick one in Settings, or continue with the agent\'s default.'**
   String get agentsEndpointProviderNoModels;
 
   /// Provider picker: a model is required before saving
@@ -56687,7 +56687,7 @@ abstract class AppLocalizations {
   /// No description provided for @providerAddApiKeyHelper.
   ///
   /// In en, this message translates to:
-  /// **'Saved in a file on the server that only OpenCode reads, not in the configuration.'**
+  /// **'Written into the server\'s configuration, which only the server\'s own account can read.'**
   String get providerAddApiKeyHelper;
 
   /// No description provided for @providerAddFetch.
@@ -56699,7 +56699,7 @@ abstract class AppLocalizations {
   /// No description provided for @providerAddFetching.
   ///
   /// In en, this message translates to:
-  /// **'Asking the endpoint…'**
+  /// **'The server is reading the list…'**
   String get providerAddFetching;
 
   /// No description provided for @providerAddFetchFailed.
@@ -56837,7 +56837,7 @@ abstract class AppLocalizations {
   /// Explains that the list comes from the server catalogue and each model can be tested
   ///
   /// In en, this message translates to:
-  /// **'Every provider the server knows, and the models it serves. Tap Test to run the five checks against one model.'**
+  /// **'Every provider the server knows, and the models it serves. Tap Test to send one real message through the server.'**
   String get providerModelsHint;
 
   /// Shown when the server catalogue has no providers
@@ -56891,19 +56891,19 @@ abstract class AppLocalizations {
   /// Button that starts the provider self-check
   ///
   /// In en, this message translates to:
-  /// **'Run the five checks'**
+  /// **'Send a test message'**
   String get providerProbeRun;
 
   /// Button label while the self-check is in flight
   ///
   /// In en, this message translates to:
-  /// **'Running…'**
+  /// **'Waiting for the server…'**
   String get providerProbeRunning;
 
   /// Explains what the five probes are
   ///
   /// In en, this message translates to:
-  /// **'One short request per check: reply, stream, tool call, system prompt, finish reason.'**
+  /// **'The server opens a session with this model, sends one short message, and deletes the session afterwards.'**
   String get providerProbeNote;
 
   /// Shown when Run is tapped with an empty base URL
@@ -57275,7 +57275,7 @@ abstract class AppLocalizations {
   /// Models tab explanation
   ///
   /// In en, this message translates to:
-  /// **'Ask the provider for its own model list with the address, key and protocol above, then tick what to keep. Unticked models are turned off on the server when you save — including the ones it ships with.'**
+  /// **'The server reads the endpoint\'s own model list with the configuration above, then tick what to keep. Unticked models are turned off in the config.'**
   String get providerDetailModelsHint;
 
   /// Models tab when no address
@@ -57599,7 +57599,7 @@ abstract class AppLocalizations {
   /// 供应商证书信任：providerTlsTrustedBody
   ///
   /// In en, this message translates to:
-  /// **'Reading models, connection checks and balance lookups accept this certificate.'**
+  /// **'The balance lookup accepts this certificate.'**
   String get providerTlsTrustedBody;
 
   /// 供应商证书信任：providerTlsRevoke
@@ -57631,6 +57631,246 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'The address was changed to {url}, where the models answer. Messages are sent to this same root.'**
   String providerModelsRootAdopted(String url);
+
+  /// Shown instead of the test when the connected server is not the one the app runs
+  ///
+  /// In en, this message translates to:
+  /// **'Provider tests run inside the app\'s own server. Connect the in-app server to test a provider.'**
+  String get providerProbeServerOnly;
+
+  /// Provider test failure: the server could not be reached
+  ///
+  /// In en, this message translates to:
+  /// **'The server is not answering, so nothing was tested. Start it and try again.'**
+  String get providerProbeServerDown;
+
+  /// Provider test failure: the provider is not in the server's runtime
+  ///
+  /// In en, this message translates to:
+  /// **'The server has not loaded this provider. Save it again, or restart the server.'**
+  String get providerProbeServerNotLoaded;
+
+  /// Provider test failure: the server rejected the session
+  ///
+  /// In en, this message translates to:
+  /// **'The server refused to open the test session: {message}'**
+  String providerProbeServerRejected(String message);
+
+  /// Provider test failure: no answer in time
+  ///
+  /// In en, this message translates to:
+  /// **'The model did not answer in time.'**
+  String get providerProbeServerTimeout;
+
+  /// Provider test failure: an empty reply
+  ///
+  /// In en, this message translates to:
+  /// **'The turn finished with no text.'**
+  String get providerProbeServerEmpty;
+
+  /// Provider test passed, with what the model said
+  ///
+  /// In en, this message translates to:
+  /// **'Replied: {reply}'**
+  String providerProbePassed(String reply);
+
+  /// Provider test note: the model the server says it used
+  ///
+  /// In en, this message translates to:
+  /// **'The server reports it answered as {model}, not the model that was asked for.'**
+  String providerProbeServedAs(String model);
+
+  /// Provider test: how long the turn took
+  ///
+  /// In en, this message translates to:
+  /// **'Round trip: {seconds} s'**
+  String providerProbeElapsed(String seconds);
+
+  /// Hint under Fetch models before the provider has been written
+  ///
+  /// In en, this message translates to:
+  /// **'The server reads the list with the configuration on disk, so this saves the provider and reloads once first.'**
+  String get providerAddNeedSave;
+
+  /// Model list failure: the in-app server could not make the request
+  ///
+  /// In en, this message translates to:
+  /// **'The server could not run the request: {message}'**
+  String providerModelsFetchServerDown(String message);
+
+  /// Model list failure: the provider is missing from the config
+  ///
+  /// In en, this message translates to:
+  /// **'This provider is not in the server\'s configuration yet.'**
+  String get providerModelsFetchNotConfigured;
+
+  /// A transient model-read failure is being retried
+  ///
+  /// In en, this message translates to:
+  /// **'Retrying in {seconds}s (attempt {attempt} of 3)…'**
+  String providerModelsRetrying(int attempt, int seconds);
+
+  /// Every retry failed, so the previous list stays
+  ///
+  /// In en, this message translates to:
+  /// **'Kept the last list: {count} models.'**
+  String providerModelsKeptPrevious(int count);
+
+  /// Generic confirm label for a small input dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Save'**
+  String get commonSave;
+
+  /// Heading over the per-model context window control
+  ///
+  /// In en, this message translates to:
+  /// **'Context window'**
+  String get providerModelsContextTitle;
+
+  /// Field label in the context window dialog
+  ///
+  /// In en, this message translates to:
+  /// **'Tokens'**
+  String get providerModelsContextField;
+
+  /// Hint in the context window dialog
+  ///
+  /// In en, this message translates to:
+  /// **'e.g. 1000000'**
+  String get providerModelsContextFieldHint;
+
+  /// Explanation under the context window control
+  ///
+  /// In en, this message translates to:
+  /// **'The window the model really takes. Stated per model in the configuration; left empty, the server assumes 200K and compacts early.'**
+  String get providerModelsContextHelper;
+
+  /// A model with no stated context window
+  ///
+  /// In en, this message translates to:
+  /// **'Server default'**
+  String get providerModelsContextUnset;
+
+  /// Validation for a context window below the minimum
+  ///
+  /// In en, this message translates to:
+  /// **'At least 1,024 tokens.'**
+  String get providerModelsContextTooSmall;
+
+  /// Validation for an absurd context window
+  ///
+  /// In en, this message translates to:
+  /// **'That is larger than any model takes.'**
+  String get providerModelsContextTooLarge;
+
+  /// Model picker row menu item: set the window this model really has
+  ///
+  /// In en, this message translates to:
+  /// **'Context window…'**
+  String get modelPickerContextWindow;
+
+  /// A context window was written into the config and the server re-read it
+  ///
+  /// In en, this message translates to:
+  /// **'Saved the window for {model}. The server has reloaded it.'**
+  String modelPickerContextSaved(String model);
+
+  /// The config was written and the reload call did not answer
+  ///
+  /// In en, this message translates to:
+  /// **'Saved, but the server has not reloaded yet. Restart it to apply.'**
+  String get modelPickerContextNotReloaded;
+
+  /// A built-in provider has no entry the app can edit
+  ///
+  /// In en, this message translates to:
+  /// **'This provider is not in the app’s configuration, so its window is changed where the provider was added.'**
+  String get modelPickerContextNotInConfig;
+
+  /// No description provided for @appLogLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Running log'**
+  String get appLogLabel;
+
+  /// No description provided for @appLogPrivateTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Private log folder'**
+  String get appLogPrivateTitle;
+
+  /// No description provided for @appLogPublicTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Public log folder'**
+  String get appLogPublicTitle;
+
+  /// No description provided for @appLogPublicOff.
+  ///
+  /// In en, this message translates to:
+  /// **'Off: storage access is needed'**
+  String get appLogPublicOff;
+
+  /// No description provided for @appLogPathUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Not ready yet'**
+  String get appLogPathUnavailable;
+
+  /// No description provided for @appLogGrantTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Allow storage access'**
+  String get appLogGrantTitle;
+
+  /// No description provided for @appLogGrantBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Lets the log also write to shared storage, where any file manager can read it.'**
+  String get appLogGrantBody;
+
+  /// No description provided for @appLogOpenTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Open the app storage'**
+  String get appLogOpenTitle;
+
+  /// No description provided for @appLogBrowseTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Browse the app storage'**
+  String get appLogBrowseTitle;
+
+  /// No description provided for @appLogBrowseBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Read and write the app\'s private files through the system file manager.'**
+  String get appLogBrowseBody;
+
+  /// No description provided for @appLogBrowseWarning.
+  ///
+  /// In en, this message translates to:
+  /// **'This opens the app\'s whole private folder to the file manager, including server keys, API keys and sign-in tokens. Use it only with a file manager you trust.'**
+  String get appLogBrowseWarning;
+
+  /// No description provided for @appLogBrowseConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get appLogBrowseConfirm;
+
+  /// No description provided for @appLogBrowseCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get appLogBrowseCancel;
+
+  /// No description provided for @appLogBrowseKeys.
+  ///
+  /// In en, this message translates to:
+  /// **'server keys, API keys and sign-in tokens'**
+  String get appLogBrowseKeys;
 }
 
 class _AppLocalizationsDelegate

@@ -44096,9 +44096,9 @@
   "providerAddBaseUrlHelper": "As the endpoint's documentation prints it. A pasted /chat/completions, /responses or /messages is removed; the rest of the path stays.",
   "providerAddModels": "Models",
   "providerAddApiKey": "API key",
-  "providerAddApiKeyHelper": "Saved in a file on the server that only OpenCode reads, not in the configuration.",
+  "providerAddApiKeyHelper": "Written into the server's configuration, which only the server's own account can read.",
   "providerAddFetch": "Fetch models",
-  "providerAddFetching": "Asking the endpoint…",
+  "providerAddFetching": "The server is reading the list…",
   "providerAddFetchFailed": "Could not read the model list",
   "providerAddModelsFound": "{count} models",
   "@providerAddModelsFound": {
@@ -44145,7 +44145,7 @@
   "@providerModelsTitle": {
     "description": "Title of the page that lists every provider and its models"
   },
-  "providerModelsHint": "Every provider the server knows, and the models it serves. Tap Test to run the five checks against one model.",
+  "providerModelsHint": "Every provider the server knows, and the models it serves. Tap Test to send one real message through the server.",
   "@providerModelsHint": {
     "description": "Explains that the list comes from the server catalogue and each model can be tested"
   },
@@ -44186,15 +44186,15 @@
   "@providerProbeProtocol": {
     "description": "Field label: which wire format the provider speaks"
   },
-  "providerProbeRun": "Run the five checks",
+  "providerProbeRun": "Send a test message",
   "@providerProbeRun": {
     "description": "Button that starts the provider self-check"
   },
-  "providerProbeRunning": "Running…",
+  "providerProbeRunning": "Waiting for the server…",
   "@providerProbeRunning": {
     "description": "Button label while the self-check is in flight"
   },
-  "providerProbeNote": "One short request per check: reply, stream, tool call, system prompt, finish reason.",
+  "providerProbeNote": "The server opens a session with this model, sends one short message, and deletes the session afterwards.",
   "@providerProbeNote": {
     "description": "Explains what the five probes are"
   },
@@ -44501,7 +44501,7 @@
   "@providerHeadersEmpty": {
     "description": "Empty custom headers state"
   },
-  "providerDetailModelsHint": "Ask the provider for its own model list with the address, key and protocol above, then tick what to keep. Unticked models are turned off on the server when you save — including the ones it ships with.",
+  "providerDetailModelsHint": "The server reads the endpoint's own model list with the configuration above, then tick what to keep. Unticked models are turned off in the config.",
   "@providerDetailModelsHint": {
     "description": "Models tab explanation"
   },
@@ -44739,7 +44739,7 @@
   "@providerTlsTrusted": {
     "description": "供应商证书信任：providerTlsTrusted"
   },
-  "providerTlsTrustedBody": "Reading models, connection checks and balance lookups accept this certificate.",
+  "providerTlsTrustedBody": "The balance lookup accepts this certificate.",
   "@providerTlsTrustedBody": {
     "description": "供应商证书信任：providerTlsTrustedBody"
   },
@@ -44772,5 +44772,166 @@
         "type": "String"
       }
     }
-  }
+  },
+  "providerProbeServerOnly": "Provider tests run inside the app's own server. Connect the in-app server to test a provider.",
+  "@providerProbeServerOnly": {
+    "description": "Shown instead of the test when the connected server is not the one the app runs"
+  },
+  "providerProbeServerDown": "The server is not answering, so nothing was tested. Start it and try again.",
+  "@providerProbeServerDown": {
+    "description": "Provider test failure: the server could not be reached"
+  },
+  "providerProbeServerNotLoaded": "The server has not loaded this provider. Save it again, or restart the server.",
+  "@providerProbeServerNotLoaded": {
+    "description": "Provider test failure: the provider is not in the server's runtime"
+  },
+  "providerProbeServerRejected": "The server refused to open the test session: {message}",
+  "@providerProbeServerRejected": {
+    "description": "Provider test failure: the server rejected the session",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "providerProbeServerTimeout": "The model did not answer in time.",
+  "@providerProbeServerTimeout": {
+    "description": "Provider test failure: no answer in time"
+  },
+  "providerProbeServerEmpty": "The turn finished with no text.",
+  "@providerProbeServerEmpty": {
+    "description": "Provider test failure: an empty reply"
+  },
+  "providerProbePassed": "Replied: {reply}",
+  "@providerProbePassed": {
+    "description": "Provider test passed, with what the model said",
+    "placeholders": {
+      "reply": {
+        "type": "String"
+      }
+    }
+  },
+  "providerProbeServedAs": "The server reports it answered as {model}, not the model that was asked for.",
+  "@providerProbeServedAs": {
+    "description": "Provider test note: the model the server says it used",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "providerProbeElapsed": "Round trip: {seconds} s",
+  "@providerProbeElapsed": {
+    "description": "Provider test: how long the turn took",
+    "placeholders": {
+      "seconds": {
+        "type": "String"
+      }
+    }
+  },
+  "providerAddNeedSave": "The server reads the list with the configuration on disk, so this saves the provider and reloads once first.",
+  "@providerAddNeedSave": {
+    "description": "Hint under Fetch models before the provider has been written"
+  },
+  "providerModelsFetchServerDown": "The server could not run the request: {message}",
+  "@providerModelsFetchServerDown": {
+    "description": "Model list failure: the in-app server could not make the request",
+    "placeholders": {
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "providerModelsFetchNotConfigured": "This provider is not in the server's configuration yet.",
+  "@providerModelsFetchNotConfigured": {
+    "description": "Model list failure: the provider is missing from the config"
+  },
+  "providerModelsRetrying": "Retrying in {seconds}s (attempt {attempt} of 3)…",
+  "@providerModelsRetrying": {
+    "description": "A transient model-read failure is being retried",
+    "placeholders": {
+      "attempt": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "providerModelsKeptPrevious": "Kept the last list: {count} models.",
+  "@providerModelsKeptPrevious": {
+    "description": "Every retry failed, so the previous list stays",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "commonSave": "Save",
+  "@commonSave": {
+    "description": "Generic confirm label for a small input dialog"
+  },
+  "providerModelsContextTitle": "Context window",
+  "@providerModelsContextTitle": {
+    "description": "Heading over the per-model context window control"
+  },
+  "providerModelsContextField": "Tokens",
+  "@providerModelsContextField": {
+    "description": "Field label in the context window dialog"
+  },
+  "providerModelsContextFieldHint": "e.g. 1000000",
+  "@providerModelsContextFieldHint": {
+    "description": "Hint in the context window dialog"
+  },
+  "providerModelsContextHelper": "The window the model really takes. Stated per model in the configuration; left empty, the server assumes 200K and compacts early.",
+  "@providerModelsContextHelper": {
+    "description": "Explanation under the context window control"
+  },
+  "providerModelsContextUnset": "Server default",
+  "@providerModelsContextUnset": {
+    "description": "A model with no stated context window"
+  },
+  "providerModelsContextTooSmall": "At least 1,024 tokens.",
+  "@providerModelsContextTooSmall": {
+    "description": "Validation for a context window below the minimum"
+  },
+  "providerModelsContextTooLarge": "That is larger than any model takes.",
+  "@providerModelsContextTooLarge": {
+    "description": "Validation for an absurd context window"
+  },
+  "modelPickerContextWindow": "Context window…",
+  "@modelPickerContextWindow": {
+    "description": "Model picker row menu item: set the window this model really has"
+  },
+  "modelPickerContextSaved": "Saved the window for {model}. The server has reloaded it.",
+  "@modelPickerContextSaved": {
+    "description": "A context window was written into the config and the server re-read it",
+    "placeholders": {
+      "model": {
+        "type": "String"
+      }
+    }
+  },
+  "modelPickerContextNotReloaded": "Saved, but the server has not reloaded yet. Restart it to apply.",
+  "@modelPickerContextNotReloaded": {
+    "description": "The config was written and the reload call did not answer"
+  },
+  "modelPickerContextNotInConfig": "This provider is not in the app’s configuration, so its window is changed where the provider was added.",
+  "@modelPickerContextNotInConfig": {
+    "description": "A built-in provider has no entry the app can edit"
+  },
+  "appLogLabel": "Running log",
+  "appLogPrivateTitle": "Private log folder",
+  "appLogPublicTitle": "Public log folder",
+  "appLogPublicOff": "Off: storage access is needed",
+  "appLogPathUnavailable": "Not ready yet",
+  "appLogGrantTitle": "Allow storage access",
+  "appLogGrantBody": "Lets the log also write to shared storage, where any file manager can read it.",
+  "appLogOpenTitle": "Open the app storage",
+  "appLogBrowseTitle": "Browse the app storage",
+  "appLogBrowseBody": "Read and write the app's private files through the system file manager.",
+  "appLogBrowseWarning": "This opens the app's whole private folder to the file manager, including server keys, API keys and sign-in tokens. Use it only with a file manager you trust.",
+  "appLogBrowseConfirm": "Continue",
+  "appLogBrowseCancel": "Cancel",
+  "appLogBrowseKeys": "server keys, API keys and sign-in tokens"
 }

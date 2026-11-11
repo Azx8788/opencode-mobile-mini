@@ -134,7 +134,11 @@ fn stale_future_boot_and_generation_replay_fail_closed() {
     fixture.payload["issuedAtElapsedMs"] = json!(attestation::elapsed_ms().unwrap() + 10000);
     fixture.sign();
     assert_eq!(fixture.error(), "attestationStale");
-    fixture.payload["issuedAtElapsedMs"] = json!(1);
+    // CLOCK_BOOTTIME starts at zero, so a receipt stamped just after boot is
+    // only stale once the host has been up for two minutes. Derive the stamp
+    // from the same clock so short-lived CI runners see the same result.
+    let past_the_window = attestation::elapsed_ms().unwrap().saturating_sub(120_001);
+    fixture.payload["issuedAtElapsedMs"] = json!(past_the_window);
     fixture.sign();
     assert_eq!(fixture.error(), "attestationStale");
     fixture.payload["issuedAtElapsedMs"] = json!(attestation::elapsed_ms().unwrap());

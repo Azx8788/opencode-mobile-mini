@@ -2,13 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 
-import '../../domain/custom_provider.dart';
 import '../../domain/models.dart' show ModelRef;
 import '../../domain/server_gateway/value_types_core.dart'
     show CatalogModel, CatalogProvider;
 import '../../l10n/app_localizations.dart';
 import '../../state/connection.dart';
-import 'provider_probe_screen.dart';
+import 'provider_test_screen.dart';
 
 AppLocalizations _l10nOf(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -127,12 +126,12 @@ class _ProviderSection extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           TextButton(
-            onPressed: () => openProviderProbe(
+            onPressed: () => openProviderTest(
               context,
+              controller: controller,
               providerName: provider.name.isEmpty ? provider.id : provider.name,
-              model: model.id,
               providerID: provider.id,
-              trustFor: controller.providerTrustFor,
+              model: model.id,
             ),
             child: Text(l10n.providerModelsTest),
           ),
@@ -148,68 +147,27 @@ class _ProviderSection extends StatelessWidget {
   }
 }
 
-/// Opens the three checks, pre-filling what can be known from the provider id.
+/// Opens the real test for one model: the server opens a session with it,
+/// sends one short message, and deletes the session again.
 ///
-/// The base URL is a convenience, not a claim: providers the server owns do
-/// not expose their endpoint through the catalogue, so the well-known ones
-/// are filled in and everything else starts empty. The key is never read
-/// from the server — the check asks for it and keeps it in memory only.
-Future<void> openProviderProbe(
+/// Nothing is prefilled from the provider id any more. The test does not ask
+/// this app for an address or a key — the server uses the entry in its own
+/// config, which is the only configuration a real request will use either.
+Future<void> openProviderTest(
   BuildContext context, {
+  required ConnectionController controller,
+  required String providerID,
   required String providerName,
   required String model,
-  required String providerID,
-  String? Function(String origin)? trustFor,
 }) {
   return Navigator.of(context).push(
     MaterialPageRoute(
-      builder: (_) => ProviderProbeScreen(
+      builder: (_) => ProviderTestScreen(
+        controller: controller,
+        providerID: providerID,
         providerName: providerName,
-        model: model,
-        baseUrl: providerProbeBaseUrl(providerID),
-        protocol: providerProbeProtocol(providerID),
-        trustFor: trustFor,
+        models: [model],
       ),
     ),
   );
 }
-
-/// Well-known endpoints, matched on the provider id OpenCode uses.
-String providerProbeBaseUrl(String providerID) {
-  final id = providerID.toLowerCase();
-  for (final entry in _knownBaseUrls.entries) {
-    if (id == entry.key || id.startsWith('${entry.key}-')) return entry.value;
-  }
-  return '';
-}
-
-ProviderProtocol providerProbeProtocol(String providerID) {
-  final id = providerID.toLowerCase();
-  if (id.contains('anthropic') || id.contains('claude')) {
-    return ProviderProtocol.anthropic;
-  }
-  if (id.contains('google') || id.contains('gemini')) {
-    return ProviderProtocol.google;
-  }
-  if (id == 'openai' || id.startsWith('openai-')) {
-    return ProviderProtocol.responses;
-  }
-  return ProviderProtocol.chatCompletions;
-}
-
-const _knownBaseUrls = <String, String>{
-  'openai': 'https://api.openai.com/v1',
-  'anthropic': 'https://api.anthropic.com/v1',
-  'google': 'https://generativelanguage.googleapis.com/v1beta',
-  'gemini': 'https://generativelanguage.googleapis.com/v1beta',
-  'openrouter': 'https://openrouter.ai/api/v1',
-  'agentrouter': 'https://agentrouter.org/v1',
-  'modelscope': 'https://api-inference.modelscope.cn/v1',
-  'deepseek': 'https://api.deepseek.com/v1',
-  'groq': 'https://api.groq.com/openai/v1',
-  'mistral': 'https://api.mistral.ai/v1',
-  'xai': 'https://api.x.ai/v1',
-  'moonshotai': 'https://api.moonshot.cn/v1',
-  'zai': 'https://open.bigmodel.cn/api/paas/v4',
-  'zhipuai': 'https://open.bigmodel.cn/api/paas/v4',
-};

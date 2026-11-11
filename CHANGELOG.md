@@ -2,6 +2,51 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.13+17 — 2026-11-10
+
+Every model was effectively 200K tokens, the log could only be read with a
+cable, and the app's own files were invisible to a file manager.
+
+  * **A model's context window is now the model's own.** The provider form
+    reads the window the endpoint states (`context_length`, `context_window`,
+    `max_context_length`, `max_model_len`, `max_input_tokens`, or a nested
+    `limit.context` — gateways spell it every way there is), offers one-tap
+    presets for the models that are ticked, and a dialog on any single row.
+    The number is written per model into both config dialects as
+    `limit: {context, output}` and read back when the provider is opened
+    again. Left empty it writes nothing, which is the honest default: a
+    window the app invented either compacts early or overflows the request.
+  * **A conversation can change it too.** The model picker's row menu writes
+    the window into the entry the provider was added with and asks the server
+    to re-read its config, so the next reply uses it — without a restart and
+    without touching anything else in the entry. It is offered only for the
+    server whose config the app can write.
+  * **The log mirrors to shared storage.** With "All files access" granted,
+    every line is also appended to `/storage/emulated/0/OpenCodeMini/logs`,
+    one JSON object per line, one file per day, the same seven-day window and
+    eight-megabyte cap as the private copy. The private copy is always
+    written; the public one is best-effort and never affects it. Granting
+    access mid-run starts the mirror without a restart.
+  * **The app's private storage opens through the system picker.** A
+    DocumentsProvider exposes the app's files directory read and write, so a
+    file manager the person authorizes can browse, open, copy, rename, create
+    and delete everything under it. Every document id is canonicalized and
+    refused when it leaves the directory. A warning before the first open
+    names what the tree contains: server keys, API keys and sign-in tokens.
+  * **App diagnostics shows where the log is.** The page lists the private
+    and public folders, offers the storage grant, and opens either the log
+    folder or the whole private tree.
+  * **Claude Code picks a provider from Settings.** The sign-in step lists the
+    providers this phone already has, derives each one's address for Claude
+    Code (its trailing `/v1` or `/v1beta` stripped, because Claude Code
+    appends `/v1/messages` itself), and writes the chosen provider's key and a
+    picked model into the agent's own settings in one call. A provider saved as
+    OpenAI on a new-api / one-api gateway serves `/v1/messages` on the same
+    host, so it is offered too — the whole point of reusing the provider is not
+    to configure it twice. A provider whose key the app cannot read is shown,
+    not hidden: the row is disabled with the reason, and a hand-typed gateway
+    stays one tap away.
+
 ## 0.3.12+16 — 2026-11-10
 
 Picking a provider for Claude Code wrote the gateway into its settings and
@@ -19,24 +64,60 @@ set the agent up for.
     the gateway of an agent that was already signed in still stays on the
     page.
 
-## 0.3.11+15 — 2026-11-10
+Reading a provider's models and testing it were the last two things this app
+did with the person's key, from its own HTTPS client, as itself. Some gateways
+answer anything that is not a known coding client with a 200 and a sentence
+saying only OpenCode, Codex or Claude Code may use them — a "successful" read
+that lists nothing, and a test that passes against a refusal.
 
-Claude Code read its gateway from a form of its own, so a key typed once in
-Settings had to be typed again here. It now offers the providers already
-saved in Settings, and only asks for a hand-typed gateway when none fits.
+  * **The server makes the request now, not the phone.** The provider entry is
+    written to `opencode.json` and reloaded once, then the app asks the server
+    to read the endpoint's own model list: a small script runs inside the
+    server's own environment, reads the address, key and custom headers out of
+    the config it just wrote, and asks with the identity OpenCode uses
+    (`opencode/<version>`). The key never comes back to Dart, and the app opens
+    no connection to a provider.
+  * **The key is written into the config**, as the person asked, so the server
+    can use it. The config, its temporary sibling and every backup are created
+    `0600` under `umask 077`; the key is still never logged, shown or echoed.
+  * **Testing is a real turn.** The old five hand-made requests (reply, stream,
+    tool call, system prompt, finish reason) are gone: the server opens a
+    session pinned to the provider and model, sends one short message, waits
+    for the agent loop to go idle, reads the reply, and deletes the session.
+    Nothing is left in the person's history.
+  * **No silent fallback.** If the in-app server is not answering, the provider
+    is not loaded, or the script cannot run, the form says so and stops. It
+    never retries from the phone.
+  * **Saving is now part of both actions**, because the server can only read
+    models and send messages with what its config holds. A provider with no
+    models is a valid config, so the entry is written first and the ticked
+    models after the list arrives.
+  * **A failed read is retried three times**, one second, two, then four, and
+    only for failures that can change by themselves — a dropped connection, a
+    timeout, a 502, a server still starting. A refused key or a wrong path
+    answers at once. When every attempt fails the last list stays on screen
+    with a line saying so.
+  * **The certificate trust sheet no longer covers these reads**: the server
+    does its own verification. What remains on this phone is the balance
+    lookup, which is a read of the person's own account.
 
-  * **Claude Code picks a provider from Settings.** The sign-in step lists
-    the providers this phone already has, derives each one's address for
-    Claude Code (its trailing `/v1` or `/v1beta` stripped, because Claude
-    Code appends `/v1/messages` itself), and writes the chosen provider's key
-    and a picked model into the agent's own settings in one call. A provider
-    saved as OpenAI on a new-api / one-api gateway serves `/v1/messages` on
-    the same host, so it is offered too — the whole point of reusing the
-    provider is not to configure it twice.
-  * **A provider whose key the app cannot read is shown, not hidden.** An
-    external key or a missing key file disables the row with the reason, and
-    a hand-typed gateway stays one tap away as the fallback for anything that
-    is not in Settings.
+## 0.3.11+15 — 2026-11-09
+
+AI Team could not start on a phone whose own server was OpenCode 2.1.1.
+
+  * **The engine and the app disagreed about the server version.** The phone
+    engine still accepted only 2.0.29, while the app installs and runs 2.1.1.
+    The protected restart therefore ended with `unsupported_server_version`
+    and the setup page said the team could not begin work, even though the
+    engine itself was answering.
+  * **The engine now accepts the two server versions it has been tested
+    against**, 2.0.29 for phones that have not taken the update and 2.1.1 for
+    current installs. It still validates the live `/openapi.json` contract
+    before any session or prompt request, and reports the version the server
+    actually runs instead of a fixed one.
+  * **A 2.1.1 driver schema is now part of the engine tests**, captured from
+    the real server, so a future server update that drops an operation fails
+    the build rather than the team.
 
 ## 0.3.10+14 — 2026-11-09
 

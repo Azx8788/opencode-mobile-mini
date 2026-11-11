@@ -100,6 +100,14 @@ extension _ModelCatalogSections on _ModelCatalogViewState {
           (model) => model.contextLimit <= 0 && model.cost == null,
         );
     return [
+      // What the last window edit did, before anything about the catalog: it
+      // answers the tap that just happened.
+      if (_contextNotice case final notice?)
+        KitNotice(
+          key: const Key('model-picker-context-notice'),
+          icon: AppIconography.info,
+          message: notice,
+        ),
       // A row, not a notice or a dialog: what is wrong and the one fix, in
       // the sheet itself.
       if (unloaded.isNotEmpty)

@@ -1,10 +1,15 @@
 /// Fetches the model list an endpoint advertises.
 ///
-/// This is the one part of adding a provider that needs no server support:
-/// it is a plain HTTPS call from the phone using the key the person is
-/// already typing. It matters because a hand-written config fails most often
-/// on model ids — a gateway renames or aliases them freely — so reading the
-/// endpoint's own list is more reliable than any documented list.
+/// This file holds the policy of that read, not the socket: which spellings of
+/// `/models` to try, which auth scheme first, and what a 401, a 404 or a web
+/// page means. The request itself is made by the server
+/// (`ProviderServerModelSource`), because the key is in the server's config and
+/// a gateway that serves only known coding clients answers a phone with a 200
+/// and a refusal. There is no transport of the phone's own here, on purpose.
+///
+/// The read matters because a hand-written config fails most often on model
+/// ids — a gateway renames or aliases them freely — so reading the endpoint's
+/// own list is more reliable than any documented list.
 ///
 /// Gateways built on NewAPI and OneAPI answer `GET {base}/models` in the
 /// OpenAI shape (`{"data":[{"id":...}]}`), some put it under `/v1` while the
@@ -57,6 +62,15 @@ enum ProviderModelFetchKind {
 
   /// The endpoint answered, but with a status that is not a model list.
   serverError,
+
+  /// The request never left the server: the app's own OpenCode is not
+  /// running, or its environment cannot run the read. Never retried from the
+  /// phone — that is the whole point of doing it there.
+  serverUnavailable,
+
+  /// The provider is not in the server's configuration (yet), so there is
+  /// nothing to read a model list with.
+  notConfigured,
 
   /// Anything else, reported with its text.
   unknown,
@@ -130,6 +144,58 @@ class ProviderHttpAnswer {
   final String body;
 }
 
+/// Whether a failed read is worth repeating.
+///
+/// A wrong address, a refused key or an empty list answers the same way every
+/// time; a dropped connection, a gateway that answered 502, or a server that
+/// was still starting may not. Retrying those three would only make the person
+/// wait seven seconds for the same sentence.
+bool providerModelFetchIsTransient(ProviderModelFetchKind kind) =>
+    switch (kind) {
+      ProviderModelFetchKind.network ||
+      ProviderModelFetchKind.timeout ||
+      ProviderModelFetchKind.serverError ||
+      ProviderModelFetchKind.serverUnavailable ||
+      ProviderModelFetchKind.unknown => true,
+      _ => false,
+    };
+
+/// How long to wait before each retry: one second, then two, then four.
+///
+/// Three retries, and then the list stays as it was. A gateway that is down
+/// for longer than seven seconds is not going to be fixed by a fourth press
+/// of the same button.
+const providerModelFetchBackoff = <Duration>[
+  Duration(seconds: 1),
+  Duration(seconds: 2),
+  Duration(seconds: 4),
+];
+
+/// Reads a model list, repeating a failure that could go away by itself.
+///
+/// [onRetry] is told which retry is starting and how long the wait is, so the
+/// form can say "attempt 2 of 4" instead of a button that looks stuck.
+Future<ProviderModelListing> readProviderModelsWithRetry(
+  Future<ProviderModelListing> Function() read, {
+  void Function(int attempt, Duration wait)? onRetry,
+  Future<void> Function(Duration)? wait,
+}) async {
+  final sleep = wait ?? Future<void>.delayed;
+  for (var attempt = 0; ; attempt++) {
+    try {
+      return await read();
+    } on ProviderModelFetchFailure catch (error) {
+      final worthRetrying =
+          attempt < providerModelFetchBackoff.length &&
+          providerModelFetchIsTransient(error.kind);
+      if (!worthRetrying) rethrow;
+      final pause = providerModelFetchBackoff[attempt];
+      onRetry?.call(attempt + 1, pause);
+      await sleep(pause);
+    }
+  }
+}
+
 /// Signature of the transport, so tests can answer without a socket.
 typedef ProviderHttpGet =
     Future<ProviderHttpAnswer> Function(
@@ -140,13 +206,13 @@ typedef ProviderHttpGet =
 
 class ProviderModelSource {
   ProviderModelSource({
-    ProviderHttpGet? get,
+    required ProviderHttpGet get,
     this.overallBudget = const Duration(seconds: 50),
   }) : _get = get;
 
-  /// A test transport; null means the real one, built per call so it can
-  /// carry the trust this fetch was given.
-  final ProviderHttpGet? _get;
+  /// Where one request goes. Required: this app has no transport of its own
+  /// for a provider, by design — the server's key never leaves the server.
+  final ProviderHttpGet _get;
 
   /// The whole read, not one request. A gateway that hangs on the first
   /// spelling must not keep the button spinning for a minute.
@@ -162,7 +228,6 @@ class ProviderModelSource {
     String? apiKey,
     Map<String, String> headers = const {},
     Duration timeout = const Duration(seconds: 20),
-    String? trustedFingerprint,
     void Function(List<String> trace)? onTrace,
   }) async {
     final base = _cleanBase(baseUrl);
@@ -179,17 +244,10 @@ class ProviderModelSource {
     final trace = <String>[];
     final clock = Stopwatch()..start();
     ProviderModelFetchFailure? best;
-    // A transport supplied by a test never touches TLS; the default one reads
-    // the trust this call was given.
-    final get =
-        _get ??
-        (url, requestHeaders, requestTimeout) => _defaultGet(
-          url,
-          requestHeaders,
-          requestTimeout,
-          trustedFingerprint: trustedFingerprint,
-        );
-    final pinned = (trustedFingerprint ?? '').trim().isNotEmpty;
+    final get = _get;
+    // A transport may carry a pin of its own; this one cannot, because the
+    // certificate is the server's to verify now.
+    const pinned = false;
 
     for (final url in urls) {
       for (final sent in attempts) {
@@ -302,6 +360,10 @@ class ProviderModelSource {
             path: url.path,
           );
         } catch (error) {
+          // A transport that already knows what went wrong (the in-server one
+          // classifies TLS, timeouts and an unavailable server itself) must
+          // not be flattened into "unknown".
+          if (error is ProviderModelFetchFailure) rethrow;
           best = ProviderModelFetchFailure(
             '$error',
             trace: List.unmodifiable(trace),
@@ -483,52 +545,51 @@ class ProviderModelSource {
           ? entry['display_name'] ?? entry['displayName'] ?? entry['label']
           : null;
       models.add(
-        CustomProviderModel(id: id, name: name is String ? name : null),
+        CustomProviderModel(
+          id: id,
+          name: name is String ? name : null,
+          contextLimit: entry is Map<String, Object?>
+              ? advertisedContext(entry)
+              : 0,
+        ),
       );
     }
     return CustomProviderDraft.normalizeModels(models);
   }
 
-  static Future<ProviderHttpAnswer> _defaultGet(
-    Uri url,
-    Map<String, String> headers,
-    Duration timeout, {
-    String? trustedFingerprint,
-  }) async {
-    X509Certificate? rejected;
-    final client = createProviderHttpClient(
-      trustedFingerprint: trustedFingerprint,
-      connectionTimeout: timeout,
-      onUntrustedCertificate: (certificate) => rejected = certificate,
-    );
-    try {
-      final request = await client.getUrl(url).timeout(timeout);
-      request.followRedirects = true;
-      headers.forEach(request.headers.set);
-      request.headers.set(HttpHeaders.acceptEncodingHeader, 'identity');
-      final response = await request.close().timeout(timeout);
-      final bytes = await response
-          .fold<List<int>>(<int>[], (all, chunk) => all..addAll(chunk))
-          .timeout(timeout);
-      // `allowMalformed`: a gateway that answers in GBK, or an HTML error
-      // page, must not turn into "the base URL is not a valid address".
-      return ProviderHttpAnswer(
-        statusCode: response.statusCode,
-        body: utf8.decode(bytes, allowMalformed: true),
-      );
-    } on HandshakeException catch (error) {
-      // `close(force: true)` below runs before this rethrow leaves the
-      // method; the certificate is retained in the exception itself.
-      if (rejected != null) {
-        throw ProviderTlsException(
-          error.message,
-          certificate: rejected!,
-          problem: classifyProviderTlsFailure(error),
-        );
-      }
-      rethrow;
-    } finally {
-      client.close(force: true);
+  /// The window an endpoint advertises for one model, or 0 when it says
+  /// nothing.
+  ///
+  /// Gateways spell it every way there is: NewAPI and OpenRouter send
+  /// `context_length`, some send `context_window` or `max_context_length`,
+  /// vLLM sends `max_model_len`, and OpenCode's own catalogue nests it under
+  /// `limit.context`. All of them are worth reading, because the number saves
+  /// the person from typing a window the endpoint already knows — and a window
+  /// nobody stated is what makes every session compact at 200K.
+  static int advertisedContext(Map<String, Object?> entry) {
+    int read(Object? value) => switch (value) {
+      final num number when number > 0 => number.toInt(),
+      final String text => int.tryParse(text.trim()) ?? 0,
+      _ => 0,
+    };
+
+    for (final key in const [
+      'context_length',
+      'context_window',
+      'max_context_length',
+      'max_model_len',
+      'max_input_tokens',
+    ]) {
+      final value = read(entry[key]);
+      if (value > 0) return value;
     }
+    for (final key in const ['limit', 'top_provider', 'meta']) {
+      final nested = entry[key];
+      if (nested is Map) {
+        final value = read(nested['context'] ?? nested['context_length']);
+        if (value > 0) return value;
+      }
+    }
+    return 0;
   }
 }

@@ -238,10 +238,18 @@ CustomProviderRecord? _recordFrom(
       continue;
     }
     final name = data is Map ? data['name'] : null;
+    final limit = data is Map ? data['limit'] : null;
+    final context = limit is Map ? limit['context'] : null;
+    final output = limit is Map ? limit['output'] : null;
     models.add(
       CustomProviderModel(
         id: id,
         name: name is String && name.trim().isNotEmpty ? name.trim() : null,
+        // Both dialects carry the window here, so a provider opened for
+        // editing shows the number that was saved rather than a blank field
+        // that would be written back as the server's 200K default.
+        contextLimit: context is num && context > 0 ? context.toInt() : 0,
+        outputLimit: output is num && output > 0 ? output.toInt() : 0,
       ),
     );
   }

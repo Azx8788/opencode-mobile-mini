@@ -12,7 +12,11 @@ use std::{
     time::{Duration, Instant},
 };
 use tokio::sync::OnceCell;
-const VERSION: &str = "2.0.29";
+/// OpenCode 2 servers this driver has been tested against. The app installs
+/// and runs 2.1.1; 2.0.29 is kept for phones that have not taken the update.
+/// A version outside this list is refused before any request beyond
+/// `/api/info` and `/openapi.json` is sent.
+const SUPPORTED_VERSIONS: &[&str] = &["2.0.29", "2.1.1"];
 const MAX_RESPONSE: usize = 8 * 1024 * 1024;
 const FRESHNESS: Duration = Duration::from_secs(30);
 
@@ -25,15 +29,16 @@ pub struct OpenCode2Client {
     schema: OnceCell<u64>,
     accepted: Mutex<BTreeMap<String, String>>,
 }
-pub(crate) fn validate_info(info: &Value) -> Result<(), ProtocolError> {
-    if info["version"] != VERSION
+pub(crate) fn validate_info(info: &Value) -> Result<&str, ProtocolError> {
+    let version = info["version"].as_str().unwrap_or_default();
+    if !SUPPORTED_VERSIONS.contains(&version)
         || !info["pid"].is_u64()
         || !info["urls"].is_array()
         || !info.pointer("/paths/tmp").is_some_and(Value::is_string)
     {
         return Err(ProtocolError("unsupported_server_version"));
     }
-    Ok(())
+    Ok(version)
 }
 impl OpenCode2Client {
     pub fn new(url: &str, username: &str, password: &str) -> Result<Self, ProtocolError> {
@@ -142,10 +147,15 @@ impl OpenCode2Client {
         })
     }
     async fn ready(&self) -> Result<(), ProtocolError> {
+        self.ready_version().await.map(|_| ())
+    }
+    /// Validates identity and reports the version the running server actually
+    /// is, so a supported 2.1.1 server is not described as 2.0.29.
+    async fn ready_version(&self) -> Result<String, ProtocolError> {
         let info = self
             .request(Method::GET, "/api/info", None, &[], None)
             .await?;
-        validate_info(&info)?;
+        let version = validate_info(&info)?.to_owned();
         let pid = info["pid"]
             .as_u64()
             .ok_or(ProtocolError("invalid_response"))?;
@@ -163,12 +173,12 @@ impl OpenCode2Client {
         if *verified_pid != pid {
             return Err(ProtocolError("server_identity_changed"));
         }
-        Ok(())
+        Ok(version)
     }
     pub async fn verify(&self) -> Result<Value, ProtocolError> {
-        self.ready().await?;
+        let version = self.ready_version().await?;
         Ok(
-            json!({"healthy":true,"version":VERSION,"pinnedVersion":true,"openapiVerified":true,
+            json!({"healthy":true,"version":version,"pinnedVersion":true,"openapiVerified":true,
             "capabilities":{"sessionDriver":true,"readOnlyPermissions":true,"executionDriver":true,
             "knownPersonDirectoryStatus":true,"globalStatusObserver":true,"globalAdmissionAuthority":false,
             "chatAdmission":false,"execution":false,"oc2":true},"blockers":["global_status_unavailable"]}),
@@ -1118,8 +1128,17 @@ mod tests {
         ))
         .unwrap()
     }
+    fn spec_211() -> Value {
+        serde_json::from_str(include_str!(
+            "../tests/fixtures/oc2-2.1.1-driver-openapi.json"
+        ))
+        .unwrap()
+    }
+    fn info_for(version: &str) -> Value {
+        json!({"version":version,"pid":1,"urls":[],"paths":{"tmp":"/tmp"}})
+    }
     fn info() -> Value {
-        json!({"version":"2.0.29","pid":1,"urls":[],"paths":{"tmp":"/tmp"}})
+        info_for("2.0.29")
     }
     #[test]
     fn usage_omits_missing_fields_and_preserves_known_zero() {
@@ -1136,11 +1155,16 @@ mod tests {
     }
 
     #[test]
-    fn only_proven_version_and_complete_schema_are_accepted() {
-        assert!(validate_info(&info()).is_ok());
-        let mut unsupported = info();
-        unsupported["version"] = json!("2.0.28");
-        assert!(validate_info(&unsupported).is_err());
+    fn only_proven_versions_and_complete_schema_are_accepted() {
+        for version in SUPPORTED_VERSIONS {
+            assert_eq!(validate_info(&info_for(version)).unwrap(), *version);
+        }
+        for version in ["2.0.28", "2.2.0", "2.1.1-dev"] {
+            assert!(
+                validate_info(&info_for(version)).is_err(),
+                "accepted {version}"
+            );
+        }
         let original = spec();
         assert!(validate_openapi(&original).is_ok());
         for (path, method, _) in OPERATIONS {
@@ -1151,6 +1175,39 @@ mod tests {
         let mut changed = original;
         changed["components"]["schemas"]["Permission.Effect"]["enum"] = json!(["allow", "ask"]);
         assert!(validate_openapi(&changed).is_err());
+    }
+
+    #[test]
+    fn two_point_one_one_driver_schema_is_accepted() {
+        let original = spec_211();
+        assert!(validate_openapi(&original).is_ok());
+        for (path, method, _) in OPERATIONS {
+            let mut changed = original.clone();
+            changed["paths"][path][method]["operationId"] = json!("changed");
+            assert!(validate_openapi(&changed).is_err(), "{path}");
+        }
+    }
+
+    #[tokio::test]
+    async fn verify_reports_the_running_supported_version() {
+        use axum::{extract::Request, Router};
+        let router = Router::new().fallback(|request: Request| async move {
+            axum::Json(match request.uri().path() {
+                "/api/info" => info_for("2.1.1"),
+                "/openapi.json" => spec_211(),
+                _ => panic!("unexpected route"),
+            })
+        });
+        let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+        let task = tokio::spawn(async move { axum::serve(listener, router).await.unwrap() });
+        let client =
+            OpenCode2Client::new(&format!("http://{addr}"), "opencode", "fixture-only").unwrap();
+        let verified = client.verify().await.unwrap();
+        assert_eq!(verified["version"], "2.1.1");
+        assert_eq!(verified["pinnedVersion"], true);
+        assert_eq!(verified["capabilities"]["executionDriver"], true);
+        task.abort();
     }
     #[test]
     fn policy_is_exact_replacement_and_shell_is_oc2_action() {

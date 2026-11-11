@@ -63,6 +63,21 @@
         android:enableOnBackInvokedCallback="true"
         android:manageSpaceActivity=".ManageSpaceActivity"
         android:networkSecurityConfig="@xml/network_security_config">
+        <!-- The Storage Access Framework root behind "Browse app storage".
+             Exposes filesDir read/write through the system file picker; see
+             InternalStorageProvider.kt. MANAGE_DOCUMENTS keeps direct queries
+             to the system documents UI; a file manager asks through the
+             picker, which is the system asking the person to grant access. -->
+        <provider
+            android:name=".InternalStorageProvider"
+            android:authorities="${applicationId}.internalstorage"
+            android:exported="true"
+            android:grantUriPermissions="true"
+            android:permission="android.permission.MANAGE_DOCUMENTS">
+            <intent-filter>
+                <action android:name="android.content.action.DOCUMENTS_PROVIDER" />
+            </intent-filter>
+        </provider>
         <receiver android:name=".ScheduledPromptReceiver" android:exported="false">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED"/>

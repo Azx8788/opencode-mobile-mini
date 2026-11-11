@@ -34,7 +34,10 @@ jobs:
           fi
 
       - name: Test the engine on the host
-        run: cargo test --manifest-path engine/phone/Cargo.toml --locked
+        env:
+          OC_ENGINE_TEST_ROOT: ${{ runner.temp }}/aiteam-engine-tests
+          OC_PHONE_PROOF_ROOT: ${{ runner.temp }}/aiteam-phone-proof
+        run: cargo test --manifest-path engine/phone/Cargo.toml --locked --no-fail-fast -- --test-threads=1
 
       - name: Build and stage the arm64 engine
         run: |
@@ -48,6 +51,17 @@ jobs:
           export ANDROID_NDK_HOME="$NDK_DIR"
           export OC_ENGINE_BUILD_DIR="$RUNNER_TEMP/aiteam-engine-build"
           engine/phone/tool/build-android.sh --stage-android
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path("android/app/src/main/assets/aiteam-engine-manifest.json")
+          manifest = json.loads(path.read_text())
+          abis = manifest.get("abis", {})
+          if "arm64-v8a" not in abis:
+              raise SystemExit("arm64-v8a engine manifest entry missing")
+          manifest["abis"] = {"arm64-v8a": abis["arm64-v8a"]}
+          path.write_text(json.dumps(manifest, indent=2) + "\n")
+          PY
 
       - name: Upload the arm64 engine and its manifest
         uses: actions/upload-artifact@v4

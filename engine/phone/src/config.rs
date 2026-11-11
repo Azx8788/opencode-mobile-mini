@@ -221,12 +221,18 @@ mod tests {
     use super::*;
     use std::os::unix::fs::PermissionsExt;
 
+    fn scratch_root() -> PathBuf {
+        std::env::var_os("OC_ENGINE_TEST_ROOT")
+            .map(PathBuf::from)
+            .unwrap_or_else(|| PathBuf::from("/home/eslam/Storage/tmp/aiteam-phone-engine-tests"))
+    }
+
     #[test]
     fn config_read_normalizes_alias_and_rejects_linked_credentials() {
         use std::os::unix::fs::symlink;
-        let scratch = Path::new("/home/eslam/Storage/tmp/aiteam-phone-engine-tests");
-        fs::create_dir_all(scratch).unwrap();
-        let temp = tempfile::tempdir_in(scratch).unwrap();
+        let scratch = scratch_root();
+        fs::create_dir_all(&scratch).unwrap();
+        let temp = tempfile::tempdir_in(&scratch).unwrap();
         let real = temp.path().join("data/data/app/files");
         let private = real.join("private");
         fs::create_dir_all(&private).unwrap();
@@ -265,9 +271,9 @@ mod tests {
     #[test]
     fn trusted_android_style_ancestor_is_resolved_but_descendant_symlink_is_refused() {
         use std::os::unix::fs::symlink;
-        let scratch = Path::new("/home/eslam/Storage/tmp/aiteam-phone-engine-tests");
-        fs::create_dir_all(scratch).unwrap();
-        let temp = tempfile::tempdir_in(scratch).unwrap();
+        let scratch = scratch_root();
+        fs::create_dir_all(&scratch).unwrap();
+        let temp = tempfile::tempdir_in(&scratch).unwrap();
         let real = temp.path().join("data/data/app/files");
         fs::create_dir_all(&real).unwrap();
         let alias = temp.path().join("data/user0");
@@ -306,9 +312,9 @@ mod tests {
     }
     #[test]
     fn first_start_allows_missing_worker_root_but_never_a_boolean_proof() {
-        let scratch = Path::new("/home/eslam/Storage/tmp/aiteam-phone-engine-tests");
-        fs::create_dir_all(scratch).unwrap();
-        let temp = tempfile::tempdir_in(scratch).unwrap();
+        let scratch = scratch_root();
+        fs::create_dir_all(&scratch).unwrap();
+        let temp = tempfile::tempdir_in(&scratch).unwrap();
         let private = temp.path().join("private");
         fs::create_dir(&private).unwrap();
         let token = private.join("auth.token");

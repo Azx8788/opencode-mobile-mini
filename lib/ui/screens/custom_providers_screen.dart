@@ -15,7 +15,7 @@ import '../app_theme.dart' show AppStatusTone;
 import '../kit/kit.dart';
 import 'custom_provider_screen.dart';
 import 'provider_models_screen.dart';
-import 'provider_probe_screen.dart';
+import 'provider_test_screen.dart';
 
 AppLocalizations _l10nOf(BuildContext context) =>
     lookupAppLocalizations(Localizations.localeOf(context));
@@ -150,31 +150,24 @@ class _CustomProvidersScreenState extends State<CustomProvidersScreen> {
     if (saved == true && mounted) await _load();
   }
 
+  /// Tests the saved provider with a real turn inside the server.
+  ///
+  /// The key is not read here any more, and not sent anywhere: the server
+  /// opens the session with its own config, which is the only place the key
+  /// needs to be.
   Future<void> _test(CustomProviderRecord record) async {
     final l10n = _l10nOf(context);
     if (record.models.isEmpty) {
       _say(l10n.providerManageNoModel);
       return;
     }
-    var key = record.apiKey;
-    final secretPath = record.secretPath;
-    if ((key == null || key.isEmpty) && secretPath != null) {
-      key = await _store.readSecret(secretPath);
-    }
-    if (!mounted) return;
-    final resolvedKey = key;
-    if (resolvedKey == null || resolvedKey.isEmpty) {
-      _say(l10n.providerManageNoKey);
-      return;
-    }
     await Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => ProviderProbeScreen(
+        builder: (_) => ProviderTestScreen(
+          controller: widget.controller,
+          providerID: record.id,
           providerName: record.name,
-          model: record.models.first.id,
-          baseUrl: record.baseUrl,
-          protocol: record.protocol,
-          apiKey: resolvedKey,
+          models: [for (final model in record.models) model.id],
           autoRun: true,
         ),
       ),

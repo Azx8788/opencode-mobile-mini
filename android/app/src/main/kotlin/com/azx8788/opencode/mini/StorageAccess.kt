@@ -8,6 +8,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
+import android.provider.DocumentsContract
 import android.provider.Settings
 import android.util.Log
 import io.flutter.plugin.common.BinaryMessenger
@@ -40,6 +41,7 @@ object StorageAccess {
                 when (call.method) {
                     "status" -> result.success(status(activity))
                     "open" -> open(activity, result)
+                    "openInternalStorage" -> openInternalStorage(activity, result)
                     else -> result.notImplemented()
                 }
             } catch (error: Exception) {
@@ -87,6 +89,26 @@ object StorageAccess {
             arrayOf(Manifest.permission.READ_EXTERNAL_STORAGE, Manifest.permission.WRITE_EXTERNAL_STORAGE),
             REQUEST,
         )
+    }
+
+    /**
+     * Opens the system picker at the app's own storage root, where
+     * [InternalStorageProvider] exposes filesDir read/write. The picker is how
+     * a file manager asks the person to grant access; the provider itself
+     * stays behind MANAGE_DOCUMENTS. Answers `opened`, or `unavailable` when
+     * no activity handles the intent.
+     */
+    private fun openInternalStorage(activity: Activity, result: MethodChannel.Result) {
+        val authority = "${activity.packageName}.internalstorage"
+        val rootUri = DocumentsContract.buildRootUri(authority, InternalStorageProvider.ROOT_ID)
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT_TREE)
+            .putExtra(DocumentsContract.EXTRA_INITIAL_URI, rootUri)
+        try {
+            activity.startActivity(intent)
+            result.success("opened")
+        } catch (_: ActivityNotFoundException) {
+            result.success("unavailable")
+        }
     }
 
     /** True when [requestCode] was this request (API 29 and older). */

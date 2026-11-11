@@ -290,6 +290,85 @@ extension _ModelCatalogModels on _ModelCatalogViewState {
     );
   }
 
+  /// Whether this server's config is one the app can write: the in-app one
+  /// lives in the app's own rootfs. A remote server's file is not reachable
+  /// from here, so the row does not offer an action that would write to the
+  /// wrong machine.
+  bool get _canEditWindow =>
+      BuiltinLinux.managesServerUrl(widget.controller.profile?.baseUrl);
+
+  /// Sets the window this model really has, in the config the server reads.
+  ///
+  /// A window is a property of the model, and only the person (or the
+  /// endpoint, when it states one) knows it. A config that states none makes
+  /// the server assume 200K for every model — a 1M-token model then compacts
+  /// at 200K, over and over, on a conversation it could have held whole. The
+  /// number goes into the entry the provider was added with, then the server
+  /// re-reads its config so it takes effect without a restart.
+  Future<void> _editContextWindow(CatalogModel model) async {
+    final typed = await showKitInputDialog(
+      context,
+      title: _strings.providerModelsContextTitle,
+      label: _strings.providerModelsContextField,
+      hint: _strings.providerModelsContextFieldHint,
+      helper: _strings.providerModelsContextHelper,
+      confirmLabel: _strings.commonSave,
+      initial: model.contextLimit > 0 ? '${model.contextLimit}' : '',
+      kind: KitFieldKind.number,
+      maxLength: 9,
+      dialogKey: ValueKey(
+        'model-context-dialog-${model.providerID}-${model.id}',
+      ),
+      fieldKey: const Key('model-context-field'),
+      confirmKey: const Key('model-context-confirm'),
+      validate: (value) {
+        final window = int.tryParse(value.trim().replaceAll(',', '')) ?? 0;
+        if (window <= 0) return null; // empty or 0: let the server decide
+        if (window < 1024) return _strings.providerModelsContextTooSmall;
+        if (window > 20000000) return _strings.providerModelsContextTooLarge;
+        return null;
+      },
+    );
+    if (typed == null || !mounted) return;
+    final window = int.tryParse(typed.trim().replaceAll(',', '')) ?? 0;
+    final profile = widget.controller.profile;
+    try {
+      await BuiltinProviderStore(
+        linux: BuiltinLinux(),
+      ).setModelContext(model.providerID, model.id, context: window);
+      final reloaded = profile == null
+          ? false
+          : await reloadServerConfig(
+              baseUrl: profile.baseUrl,
+              password: profile.password,
+              username: profile.username.isEmpty
+                  ? 'opencode'
+                  : profile.username,
+              cleartextConfirmedOrigin: profile.cleartextConfirmedOrigin,
+              certificatePinSha256: profile.certificatePinSha256,
+            );
+      if (reloaded && mounted) await widget.controller.reloadProviderRuntime();
+      if (!mounted) return;
+      _set(() {
+        _contextNotice = reloaded
+            ? _strings.modelPickerContextSaved(model.name)
+            : _strings.modelPickerContextNotReloaded;
+      });
+    } on ProviderWriteRefused catch (error) {
+      if (!mounted) return;
+      _set(() {
+        _contextNotice = error.reason == 'missing'
+            ? _strings.modelPickerContextNotInConfig
+            : error.message;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      _set(() {
+        _contextNotice = '$error';
+      });
+    }
+  }
+
   Widget _modelRow(
     BuildContext context,
     CatalogModel model,
@@ -351,6 +430,15 @@ extension _ModelCatalogModels on _ModelCatalogViewState {
             label: favoriteLabel,
             icon: favorite ? AppIconography.starFilled : AppIconography.star,
             onSelected: () => _toggleFavorite(reference),
+          ),
+        // The window the row prints is the server's assumption unless the
+        // config states one; this is where the person states it.
+        if (model.enabled && _canEditWindow)
+          KitMenuItem(
+            key: ValueKey('model-context-${model.providerID}-${model.id}'),
+            label: _strings.modelPickerContextWindow,
+            icon: AppIconography.settingsGear,
+            onSelected: () => unawaited(_editContextWindow(model)),
           ),
         KitMenuItem.copy(
           label: _strings.modelPickerCopyId,

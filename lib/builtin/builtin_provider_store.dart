@@ -24,6 +24,8 @@ import 'dart:convert';
 import '../diagnostics/app_log.dart';
 import '../domain/custom_provider.dart';
 import '../domain/custom_provider_record.dart';
+import '../domain/server_gateway/value_types_catalog.dart'
+    show ProductException;
 import 'builtin_linux.dart';
 
 /// What the server already has on disk.
@@ -138,6 +140,11 @@ class BuiltinProviderStore {
   static const _v1Path = '.config/opencode/opencode.json';
 
   String _absolute(String relative) => '$_home/$relative';
+
+  /// The absolute path of the file this server reads, for a caller that has
+  /// to name it outside this class (the in-server model read does).
+  String pathOf(ResolvedProviderConfig resolved) =>
+      _absolute(resolved.relativePath);
 
   /// Finds the file the server would read.
   ///
@@ -277,11 +284,16 @@ fi
   ///
   /// [replace] is the edit path: an entry with the same id is overwritten
   /// instead of refused. A draft whose key box was left empty keeps the key
-  /// file the config already points at.
+  /// the config already has.
+  ///
+  /// [requireModels] is false for the write that has to happen before a model
+  /// list exists: the server reads the endpoint's own list from the entry, so
+  /// the entry goes to disk first and the chosen models are written after.
   Future<ProviderWriteReceipt> save(
     CustomProviderDraft draft, {
     ResolvedProviderConfig? resolved,
     bool replace = false,
+    bool requireModels = true,
   }) async {
     final target = resolved ?? await resolve();
     final snapshot = await read(target);
@@ -298,6 +310,7 @@ fi
         snapshot.document,
         target.format,
         replace: replace,
+        requireModels: requireModels,
       );
     } on Exception catch (error) {
       throw ProviderWriteRefused('$error', reason: 'merge');
@@ -427,6 +440,69 @@ echo DONE
     );
   }
 
+  /// Writes one model's context window into an entry that is already on disk.
+  ///
+  /// Nothing else in the file changes: the key, the headers, the package name
+  /// and the other models are carried through as they were read, so a window
+  /// can be corrected from a conversation without rebuilding the entry. A
+  /// window of zero removes the `limit` record, which is how "let the server
+  /// decide" is written.
+  Future<ProviderWriteReceipt> setModelContext(
+    String providerID,
+    String modelID, {
+    required int context,
+    int output = 0,
+    ResolvedProviderConfig? resolved,
+  }) async {
+    final target = resolved ?? await resolve();
+    final snapshot = await read(target);
+    if (snapshot.hasComments) {
+      throw const ProviderWriteRefused(
+        'The server\u2019s configuration has comments, so it cannot be '
+        'changed automatically',
+        reason: 'jsonc',
+      );
+    }
+    final document = snapshot.document;
+    if (document == null) {
+      throw const ProviderWriteRefused(
+        'There is no provider configuration to change',
+        reason: 'missing',
+      );
+    }
+    final Map<String, Object?> next;
+    try {
+      next = withModelContext(
+        document,
+        target.format,
+        providerID: providerID,
+        modelID: modelID,
+        context: context,
+        output: output,
+      );
+    } on ProductException catch (error) {
+      throw ProviderWriteRefused(error.message, reason: 'missing');
+    }
+    final backup = await _writeDocument(
+      next,
+      path: snapshot.path,
+      exists: snapshot.exists,
+    );
+    AppLog.info('provider', 'model context window changed', {
+      'provider': providerID,
+      'model': modelID,
+      'context': context,
+      'backup': backup != null,
+    });
+    return ProviderWriteReceipt(
+      configPath: snapshot.path,
+      backupPath: backup,
+      keyFileWritten: false,
+      providerID: providerID,
+      format: target.format,
+    );
+  }
+
   /// Reads the key file an entry points at, or null when it is not there.
   ///
   /// Only the list's explicit "test" action asks for this: a key that cannot
@@ -474,11 +550,14 @@ fi
     final writeScript =
         '''
 set -eu
+umask 077
 f='$path'
 mkdir -p "\$(dirname "\$f")"
-${backup != null ? "cp \"\$f\" '$backup'" : ''}
+${backup != null ? "cp \"\$f\" '$backup'\nchmod 600 '$backup'" : ''}
 printf '%s' '$encoded' | base64 -d > "\$f.tmp.$stamp"
+chmod 600 "\$f.tmp.$stamp"
 mv "\$f.tmp.$stamp" "\$f"
+chmod 600 "\$f"
 echo DONE
 ''';
     final written = await _run(writeScript, const Duration(seconds: 45));
