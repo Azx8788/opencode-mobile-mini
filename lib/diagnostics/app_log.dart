@@ -611,6 +611,9 @@ class AppLog {
   /// access" in system settings; harmless when the mirror is already on.
   static Future<void> refreshPublicLog() async {
     if (!_started) return;
+    // Let the probe start() kicked off finish first, so the two never
+    // interleave their writes to the same static state.
+    await _publicProbeFuture;
     await _chain;
     try {
       await _publicSink?.flush();

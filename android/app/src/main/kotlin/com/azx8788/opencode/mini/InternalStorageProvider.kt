@@ -4,7 +4,6 @@ import android.database.Cursor
 import android.database.MatrixCursor
 import android.os.CancellationSignal
 import android.os.ParcelFileDescriptor
-import android.provider.DocumentsContract
 import android.provider.DocumentsContract.Document
 import android.provider.DocumentsContract.Root
 import android.provider.DocumentsProvider
@@ -44,8 +43,8 @@ class InternalStorageProvider : DocumentsProvider() {
         row.add(Root.COLUMN_DOCUMENT_ID, ROOT_ID)
         row.add(Root.COLUMN_TITLE, "OpenCode Mini")
         row.add(Root.COLUMN_SUMMARY, "The app's private files")
-        row.add(Root.COLUMN_FLAGS, Root.FLAG_LOCAL_ONLY)
-        row.add(Root.COLUMN_ICON, 0)
+        row.add(Root.COLUMN_FLAGS, Root.FLAG_LOCAL_ONLY or Root.FLAG_SUPPORTS_CREATE)
+        row.add(Root.COLUMN_ICON, R.mipmap.ic_launcher)
         return cursor
     }
 
@@ -106,10 +105,7 @@ class InternalStorageProvider : DocumentsProvider() {
         val file = resolve(documentId)
         if (file == root()) throw FileNotFoundException("Cannot delete the root")
         deleteRecursively(file)
-        // revokeDocumentPermission takes the URI as a string, not a Uri.
-        revokeDocumentPermission(
-            DocumentsContract.buildDocumentUri(authority(), documentId).toString(),
-        )
+        revokeDocumentPermission(documentId)
     }
 
     override fun renameDocument(documentId: String, displayName: String): String? {
@@ -117,16 +113,11 @@ class InternalStorageProvider : DocumentsProvider() {
         if (file == root()) throw FileNotFoundException("Cannot rename the root")
         val target = File(file.parentFile, safeName(displayName))
         if (!file.renameTo(target)) throw FileNotFoundException("Could not rename $displayName")
-        // revokeDocumentPermission takes the URI as a string, not a Uri.
-        revokeDocumentPermission(
-            DocumentsContract.buildDocumentUri(authority(), documentId).toString(),
-        )
+        revokeDocumentPermission(documentId)
         return childIdOf(parentIdOf(documentId), target.name)
     }
 
     private fun root(): File = requireNotNull(context).filesDir.canonicalFile
-
-    private fun authority(): String = "${requireNotNull(context).packageName}.internalstorage"
 
     private fun resolve(documentId: String): File {
         val base = root()

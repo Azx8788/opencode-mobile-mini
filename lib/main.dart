@@ -51,6 +51,7 @@ import 'domain/connection_status.dart';
 import 'domain/server_gateway.dart' show ProductException;
 import 'l10n/app_localizations.dart';
 import 'platform/launch_shortcut.dart';
+import 'platform/storage_access.dart';
 import 'platform/session_link.dart';
 import 'state/session_address_controller.dart'
     show SessionAddressFailure, sessionAddressProvider;
@@ -258,6 +259,9 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
   final _routeTracker = _TopRouteTracker();
   final _routeTiming = PerfTraceNavigatorObserver();
 
+  /// True while a public-log probe runs; see _refreshPublicLogIfNeeded.
+  bool _publicLogProbeBusy = false;
+
   /// The app's own condition in every screen's one status line (added to
   /// KitStatusScope above the navigator): a share or a launch waiting for
   /// the server, and what became of one that could not open. It replaced
@@ -311,6 +315,9 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       unawaited(_controller.restoreBackgroundLiveMode());
       unawaited(_consumeScheduledPromptOpen());
+      // Public log mirror and the storage provider both need All files
+      // access; ask for it right away so the mirror works from launch.
+      unawaited(_requestAllFilesAccess());
     });
   }
 
@@ -323,6 +330,7 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       case AppLifecycleState.resumed:
         unawaited(_resumeAndConsumeCodingAlert());
         unawaited(_consumeScheduledPromptOpen());
+        unawaited(_refreshPublicLogIfNeeded());
       case AppLifecycleState.hidden:
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
@@ -355,6 +363,33 @@ class _OcAppState extends ConsumerState<OcApp> with WidgetsBindingObserver {
       _controller.resumeFromLifecycle(),
     ]);
     if (looksLikeInAppServer(profile)) await healing.connectIfNeeded(profile!);
+  }
+
+  /// Asks for "All files access" once per launch when it is off: the public
+  /// log mirror and the storage provider both need it. The person grants it
+  /// in system settings; [_refreshPublicLogIfNeeded] picks it up on return.
+  Future<void> _requestAllFilesAccess() async {
+    final access = await StorageAccessBridge.status();
+    if (access != StorageAccess.granted) {
+      await StorageAccessBridge.request();
+    }
+    await _refreshPublicLogIfNeeded();
+  }
+
+  /// Starts the public log mirror after the person comes back from granting
+  /// All files access, wherever in the app they are. One probe at a time
+  /// keeps a resumed launch from racing the first-launch request.
+  Future<void> _refreshPublicLogIfNeeded() async {
+    if (_publicLogProbeBusy || AppLog.publicEnabled) return;
+    _publicLogProbeBusy = true;
+    try {
+      final access = await StorageAccessBridge.status();
+      if (access == StorageAccess.granted) {
+        await AppLog.refreshPublicLog();
+      }
+    } finally {
+      _publicLogProbeBusy = false;
+    }
   }
 
   /// Shows [status] as the app's line. A [lasting] one stays until its
