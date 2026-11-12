@@ -1,16 +1,22 @@
 /// Reads and writes the in-app server's own `opencode.json`.
 ///
-/// The in-app server runs in a rootfs under the app's private storage, and
-/// the app can already run shell inside it ([BuiltinLinux.run]) — so a
-/// provider can be saved without any new platform code, and without the
-/// experimental file API that a remote server would need.
+/// The server runs in a rootfs under the app's private storage. Its **reads**
+/// still run shell inside that rootfs ([BuiltinLinux.run]) — a script that
+/// prints one file is easy to reason about and to test. Its **writes** do not:
+/// every save goes through [BuiltinLinux.writeServerFile], one native call
+/// that checks each path segment, writes a temp file with the key's own mode
+/// and renames it over the target.
 ///
-/// Two rules shape the shell here:
+/// That split is deliberate. A write used to be a shell script too, which
+/// meant a save waited for the installer lock and surfaced as an unclassified
+/// `builtin_linux` failure whenever the phone was busy. A file write needs no
+/// guest process, and a rename either happened or did not.
 ///
-///  * Content crosses the boundary base64-encoded. A config carries quotes,
-///    newlines and — on Windows-authored machines — full-width punctuation;
-///    quoting all of that through `sh -c` is a class of bug that can be
-///    avoided, not debugged.
+/// Two rules shape the rest:
+///
+///  * Content crosses the native boundary base64-encoded by the channel, not
+///    quoted through `sh -c`: a config carries quotes, newlines and — on
+///    Windows-authored machines — full-width punctuation.
 ///  * A file is replaced by writing a sibling and renaming it, so a failure
 ///    mid-write leaves the previous config intact.
 ///
@@ -35,6 +41,7 @@ class ProviderConfigSnapshot {
     required this.exists,
     required this.document,
     required this.hasComments,
+    this.raw,
   });
 
   final String path;
@@ -46,6 +53,11 @@ class ProviderConfigSnapshot {
   /// A `.jsonc` file was found where the JSON would be, or the JSON would not
   /// parse. Either way, merging is refused.
   final bool hasComments;
+
+  /// The bytes as they were read. A backup is this text, not a re-encoding of
+  /// [document]: re-encoding would drop the person's own ordering and
+  /// spacing from the copy that exists to preserve them.
+  final String? raw;
 
   /// True when the file exists but is not a JSON object this app can merge
   /// into — the caller falls back to showing the snippet.
@@ -117,21 +129,56 @@ class ProviderWriteRefused implements Exception {
 typedef BuiltinScriptRunner =
     Future<BuiltinLinuxRunResult> Function(String script, Duration timeout);
 
+/// Writes one file under the server's home, in one native step.
+///
+/// Injected for the same reason as [BuiltinScriptRunner]: a save is a file
+/// write, and a test can hold the bytes without a phone. The real one is
+/// [BuiltinLinux.writeServerFile], which checks every path segment and renames
+/// a temp file over the target — a shell did none of that, and it had to wait
+/// for the installer lock first.
+typedef BuiltinFileWriter =
+    Future<void> Function(String relativePath, String content);
+
 class BuiltinProviderStore {
   BuiltinProviderStore({
     BuiltinLinux? linux,
     String? home,
     BuiltinScriptRunner? run,
+    BuiltinFileWriter? writeFile,
   }) : assert(
-         linux != null || run != null,
-         'BuiltinProviderStore needs a bridge or a runner',
+         linux != null || run != null || writeFile != null,
+         'BuiltinProviderStore needs a bridge, a runner or a writer',
        ),
        _home = home ?? '/root',
        _run =
-           run ?? ((script, timeout) => linux!.run(script, timeout: timeout));
+           run ?? ((script, timeout) => linux!.run(script, timeout: timeout)),
+       _writeFile =
+           writeFile ??
+           ((path, content) {
+             if (linux == null) {
+               throw ProviderWriteRefused(
+                 'This store cannot write without a native bridge',
+                 reason: 'no-writer',
+               );
+             }
+             return linux.writeServerFile(
+               relativePath: path,
+               content: content,
+             );
+           });
 
   final String _home;
   final BuiltinScriptRunner _run;
+  final BuiltinFileWriter _writeFile;
+
+  /// A path inside the server, as the native writer takes it.
+  String _relative(String absolute) {
+    final prefix = '$_home/';
+    if (!absolute.startsWith(prefix)) {
+      throw ProviderWriteRefused('The file is outside the server');
+    }
+    return absolute.substring(prefix.length);
+  }
 
   /// OpenCode 2's own directory first: it is what this app runs.
   static const _v2Path = '.oc-opencode2/config/opencode/opencode.json';
@@ -267,6 +314,7 @@ fi
         exists: true,
         document: {for (final e in decoded.entries) '${e.key}': e.value},
         hasComments: false,
+        raw: text,
       );
     } on FormatException {
       // A file that will not parse is treated as a comment-bearing one:
@@ -276,6 +324,7 @@ fi
         exists: true,
         document: null,
         hasComments: true,
+        raw: text,
       );
     }
   }
@@ -319,26 +368,19 @@ fi
       merged,
       path: snapshot.path,
       exists: snapshot.exists,
+      previous: snapshot.raw,
     );
 
     var keyWritten = false;
     if (draft.keyMode == ProviderKeyMode.secretFile && draft.hasKey) {
       final secret = draft.secretPath!;
-      final encodedKey = base64Encode(utf8.encode(draft.apiKey!.trim()));
-      // 600: the key is the person's, and anything else on the server has no
-      // business reading it.
-      final keyScript =
-          '''
-set -eu
-mkdir -p '$_home/.secrets'
-chmod 700 '$_home/.secrets'
-printf '%s' '$encodedKey' | base64 -d > '$secret'
-chmod 600 '$secret'
-echo DONE
-''';
-      final keyResult = await _run(keyScript, const Duration(seconds: 30));
-      keyWritten = keyResult.exitCode == 0 && keyResult.output.contains('DONE');
-      if (!keyWritten) {
+      // A plain write, on the same native path as the config: the key is one
+      // small file, and a save that had to start a shell for it queued behind
+      // whatever else the phone was doing.
+      try {
+        await _writeFile(_relative(secret), draft.apiKey!.trim());
+        keyWritten = true;
+      } on Object {
         AppLog.warn('provider', 'key file could not be written', {
           'provider': draft.id,
         });
@@ -425,6 +467,7 @@ echo DONE
       next,
       path: snapshot.path,
       exists: snapshot.exists,
+      previous: snapshot.raw,
     );
     AppLog.info('provider', 'custom provider removed', {
       'provider': providerID,
@@ -487,6 +530,7 @@ echo DONE
       next,
       path: snapshot.path,
       exists: snapshot.exists,
+      previous: snapshot.raw,
     );
     AppLog.info('provider', 'model context window changed', {
       'provider': providerID,
@@ -536,6 +580,7 @@ fi
     Map<String, Object?> document, {
     required String path,
     required bool exists,
+    String? previous,
   }) async {
     if (!await _underLimit(document)) {
       throw const ProviderWriteRefused(
@@ -543,30 +588,20 @@ fi
         reason: 'too-large',
       );
     }
-    final encoded = base64Encode(utf8.encode(jsonEncode(document)));
     final stamp = DateTime.now().millisecondsSinceEpoch;
+    final relative = _relative(path);
     final backup = exists ? '$path.bak.$stamp' : null;
-
-    final writeScript =
-        '''
-set -eu
-umask 077
-f='$path'
-mkdir -p "\$(dirname "\$f")"
-${backup != null ? "cp \"\$f\" '$backup'\nchmod 600 '$backup'" : ''}
-printf '%s' '$encoded' | base64 -d > "\$f.tmp.$stamp"
-chmod 600 "\$f.tmp.$stamp"
-mv "\$f.tmp.$stamp" "\$f"
-chmod 600 "\$f"
-echo DONE
-''';
-    final written = await _run(writeScript, const Duration(seconds: 45));
-    if (written.exitCode != 0 || !written.output.contains('DONE')) {
+    try {
+      // The backup first: if the new file cannot be written, the copy that
+      // exists to survive exactly that is already on disk.
+      if (backup != null && previous != null) {
+        await _writeFile(_relative(backup), previous);
+      }
+      await _writeFile(relative, '${jsonEncode(document)}\n');
+    } on Object catch (error) {
       throw ProviderWriteRefused(
         'The configuration could not be written',
-        reason: written.output.trim().isEmpty
-            ? 'exit ${written.exitCode}'
-            : written.output.trim(),
+        reason: '$error',
       );
     }
     return backup;

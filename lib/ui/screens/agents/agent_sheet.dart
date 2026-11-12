@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart' show SemanticsService;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../diagnostics/app_log.dart';
 import '../../../domain/agent_auth_probe.dart';
 import '../../../domain/agent_endpoint.dart';
 import '../../../domain/agent_sign_in.dart';
@@ -175,31 +176,39 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
     });
     await _readEndpoint();
     if (!mounted) return;
-    // The forced read skips the "already inspected" shortcut: that answer
-    // predates the write and would put the sign-in page back.
-    await _beginSignIn(force: true);
-    if (!mounted) return;
-    // The step's own work is done above; entering it through [_enter] would
+    // The step's own work is done below; entering it through [_enter] would
     // start a second read and clear a failure notice this one just set.
     setState(() => _step = AgentSheetStep.signIn);
-    // A saved gateway is this agent's sign-in (the status probe says so
-    // without asking for an account), so go on to the new conversation the
-    // person was setting the agent up for, exactly as a finished sign-in
-    // does. Editing the gateway of an agent that was already signed in stays
-    // on the page. If the status read failed, the page stays and says why.
-    if (wasSignedIn) return;
-    if (!(_endpoint?.configured ?? false)) return;
-    final signedIn =
-        _agents.agentSignInState(id)?.phase == AgentSignInPhase.signedIn;
-    if (!signedIn) return;
-    // Selecting an agent needs a row that is ready for chat: a stopped host
-    // or a usage limit keeps its own page and its own way forward.
+    final gateway = _endpoint?.configured ?? false;
     final row = _agents.agentRows.where((row) => row.id == id).firstOrNull;
-    if (row?.chatSelectable != true) return;
-    // A person using TalkBack or Switch Access is not moved off the page;
-    // "Use {agent}" is the way on, as after a terminal sign-in.
-    if (MediaQuery.accessibleNavigationOf(context)) return;
-    await _choose(id);
+    AppLog.info('agents', 'endpoint saved', {
+      'agent': id,
+      'gateway': gateway,
+      'wasSignedIn': wasSignedIn,
+      'phase': _agents.agentSignInState(id)?.phase.name,
+      'selectable': row?.chatSelectable,
+    });
+    if (!wasSignedIn && gateway) {
+      // The file the app just wrote names a gateway and its key: that is this
+      // agent's sign-in (the status probe answers from the same file), so the
+      // person goes on to the conversation they were setting the agent up
+      // for. Waiting for a probe that may still be reading the file from
+      // before the write is what put the sign-in page back.
+      // Selecting an agent needs a row ready for chat: a stopped host or a
+      // usage limit keeps its own page and its own way forward.
+      if (row?.chatSelectable == true &&
+          !MediaQuery.accessibleNavigationOf(context)) {
+        await _choose(id);
+        return;
+      }
+      // The page stays, but its sign-in line is re-read for the new file.
+      unawaited(_beginSignIn(force: true));
+      return;
+    }
+    // Editing the gateway of an agent that was already signed in stays on the
+    // page, and removing one has to read the account again: both are a re-read
+    // that skips the "already inspected" shortcut.
+    await _beginSignIn(force: true);
   }
 
   @override

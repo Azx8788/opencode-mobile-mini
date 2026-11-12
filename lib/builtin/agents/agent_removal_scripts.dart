@@ -50,18 +50,6 @@ exit "\$oc_result"
     }
   }
 
-  /// Root-authored reader for a single operation. Emits only bytes and a 0/1
-  /// absence flag, then deletes the bounded private receipt. Never runs data.
-  static String readReceipt(String receiptId) {
-    _validateReceiptId(receiptId);
-    return '''
-set -u
-python3 - '$receiptId' 2>/dev/null <<'OC_AGENT_REMOVAL_RECEIPT'
-$_readReceipt
-OC_AGENT_REMOVAL_RECEIPT
-''';
-  }
-
   static const _remove = r'''
 import json, os, pathlib, re, shutil, stat, sys
 agent, executable, version, receipt_id = sys.argv[1:]
@@ -249,58 +237,5 @@ if result == 0:
     except Exception:
         result = 18
 sys.exit(result)
-''';
-
-  static const _readReceipt = r'''
-import json, os, pathlib, re, stat, sys
-receipt_id = sys.argv[1]
-if not re.fullmatch(r'[a-f0-9]{32}', receipt_id) or os.getuid() != 0: sys.exit(18)
-root = pathlib.Path('/home/oc')
-parent = root / '.local/share'
-name = 'oc-agent-removal-' + receipt_id
-fd = directory = None
-identity = None
-result = None
-try:
-    for path in (root.parent, root, root / '.local', parent):
-        if not stat.S_ISDIR(path.lstat().st_mode): raise ValueError()
-    directory = os.open(parent, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-    fd = os.open(name, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=directory)
-    entry = os.fstat(fd)
-    # PRoot's root-id and change-id views project the same Android app owner
-    # as 0 or 1000 respectively. Creation requires the fixed UID1000 view.
-    if (not stat.S_ISREG(entry.st_mode) or entry.st_uid not in (0, 1000) or
-        stat.S_IMODE(entry.st_mode) != 0o600 or entry.st_nlink != 1): raise ValueError()
-    identity = (entry.st_dev, entry.st_ino)
-    if not 1 <= entry.st_size <= 96: raise ValueError()
-    data = os.read(fd, 97)
-    if len(data) != entry.st_size or len(data) > 96: raise ValueError()
-    def unique(pairs):
-        output = {}
-        for key, value in pairs:
-            if key in output: raise ValueError()
-            output[key] = value
-        return output
-    value = json.loads(data.decode('ascii'), object_pairs_hook=unique)
-    if (not isinstance(value, dict) or set(value) != {'bytes', 'absent'} or
-        type(value['bytes']) is not int or type(value['absent']) is not int or
-        not 0 <= value['bytes'] <= 9223372036854775807 or value['absent'] not in (0, 1) or
-        (value['absent'] == 1 and value['bytes'] != 0)): raise ValueError()
-    result = str(value['bytes']) + ' ' + str(value['absent'])
-except Exception:
-    result = None
-finally:
-    if fd is not None: os.close(fd)
-    if directory is not None:
-        try:
-            if identity is not None:
-                current = os.stat(name, dir_fd=directory, follow_symlinks=False)
-                if (current.st_dev, current.st_ino) != identity: raise ValueError()
-                os.unlink(name, dir_fd=directory)
-        except Exception:
-            result = None
-        os.close(directory)
-if result is None: sys.exit(18)
-print(result)
 ''';
 }
