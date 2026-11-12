@@ -17,7 +17,14 @@ import java.util.UUID
 
 /** Native executable and credentials stay outside the proot filesystem. */
 internal class PhoneEngineNative(private val context: Context) {
-    class Failure(val code: String) : Exception("The phone engine is unavailable.")
+    /**
+     * [trace] is the stage-by-stage path this start took, `key=value;…` only.
+     * It is what turns a bare code into a diagnosable log line: the channel
+     * hands it to Dart as the error detail, and Dart logs it (never a message
+     * or a path).
+     */
+    class Failure(val code: String, val trace: String? = null) :
+        Exception("The phone engine is unavailable.")
 
     private val filesRoot: File get() = context.filesDir.canonicalFile
     private var activeProfile: String? = null
@@ -341,14 +348,20 @@ internal class PhoneEngineNative(private val context: Context) {
         return root
     }
 
-    private fun regularNoLinks(file: File): Boolean = try {
-        var cursor: File? = file
-        while (cursor != null && cursor != filesRoot.parentFile) {
-            if (OsConstants.S_ISLNK(Os.lstat(cursor.absolutePath).st_mode)) return false
-            cursor = cursor.parentFile
+    // A block body, not `= try`: Kotlin refuses `return` inside an expression
+    // body, and the walk below returns early on the first link it meets.
+    private fun regularNoLinks(file: File): Boolean {
+        try {
+            var cursor: File? = file
+            while (cursor != null && cursor != filesRoot.parentFile) {
+                if (OsConstants.S_ISLNK(Os.lstat(cursor.absolutePath).st_mode)) return false
+                cursor = cursor.parentFile
+            }
+            return OsConstants.S_ISREG(Os.lstat(file.absolutePath).st_mode)
+        } catch (_: Exception) {
+            return false
         }
-        OsConstants.S_ISREG(Os.lstat(file.absolutePath).st_mode)
-    } catch (_: Exception) { false }
+    }
 
     internal fun requiredServerPassword(source: File): String {
         if (!regularNoLinks(source)) throw Failure("server_auth_unavailable")

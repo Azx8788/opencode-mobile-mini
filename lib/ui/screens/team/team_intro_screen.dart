@@ -176,6 +176,10 @@ class _TeamIntroScreenState extends State<TeamIntroScreen> {
       () => _preflight = checkSetupPreflight(
         device,
         downloadBytes: AiTeamPins.deviceDownloadBytes,
+        // This phone's team is the native phone engine inside the APK: the
+        // one-tap page downloads nothing, so the team's archive size must
+        // not decide whether the action to turn it on exists at all.
+        requireDownloadSpace: _kind != TeamServerKind.inApp,
       ),
     );
   }

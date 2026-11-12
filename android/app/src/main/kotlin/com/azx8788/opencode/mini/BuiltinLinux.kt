@@ -121,8 +121,18 @@ class BuiltinLinux(private val context: Context) {
             known.add(session.pid)
             known.addAll(descendants(session.pid))
         }
-        // A surviving, untracked app-UID child is not silently trusted after
-        // app restart. Inventory failure is also an unavailable prerequisite.
+        // A surviving, untracked child is not silently trusted after an app
+        // restart. Only an entry this app can *attribute* to itself blocks a
+        // start: a directory owned by this UID, or a root-owned one whose
+        // status still names this UID (PR_SET_DUMPABLE=0 makes one of our own
+        // processes look root-owned).
+        //
+        // Attribution is the whole test. Android mounts /proc with hidepid=2
+        // since 7.0, so a non-dumpable process of ours is usually not listed
+        // at all; on a device that still exposes /proc, every system process
+        // is listed as root-owned with an unreadable status, and condemning
+        // those refused every start with "restart_required" although nothing
+        // of ours was running.
         val entries = File("/proc").listFiles() ?: return true
         for (entry in entries) {
             val pid = entry.name.toIntOrNull() ?: continue
@@ -131,20 +141,25 @@ class BuiltinLinux(private val context: Context) {
                 if (e.errno == OsConstants.ENOENT) continue else return true
             }
             if (uid == AndroidProcess.myUid()) return true
-            // PR_SET_DUMPABLE=0 can make an app-UID /proc directory appear
-            // root-owned. Directory ownership alone cannot prove its UID.
-            if (uid == 0) {
-                val realUid = try {
-                    File(entry, "status").readLines().firstOrNull { it.startsWith("Uid:") }
-                        ?.substringAfter(':')?.trim()?.split(Regex("\\s+"))?.firstOrNull()?.toIntOrNull()
-                        ?: return true
-                } catch (e: java.io.FileNotFoundException) {
-                    if (!entry.exists()) continue else return true
-                } catch (_: Exception) { return true }
-                if (realUid == AndroidProcess.myUid()) return true
-            }
+            if (uid == 0 && reportedUid(entry) == AndroidProcess.myUid()) return true
         }
         return false
+    }
+
+    /**
+     * The real UID a /proc entry reports, when this app may read it.
+     *
+     * Null means "not attributable": the entry belongs to another user (a
+     * system process, or a process this app may not inspect), so it is not
+     * evidence of an unconfined child of ours.
+     */
+    private fun reportedUid(entry: File): Int? = try {
+        File(entry, "status").useLines { lines ->
+            lines.firstOrNull { it.startsWith("Uid:") }
+                ?.substringAfter(':')?.trim()?.split(Regex("\\s+"))?.firstOrNull()?.toIntOrNull()
+        }
+    } catch (_: Exception) {
+        null
     }
 
     val installed: Boolean get() = ready.isFile
@@ -202,6 +217,153 @@ class BuiltinLinux(private val context: Context) {
         } finally {
             synchronized(this) { installingRuntime = false }
         }
+    }
+
+    /**
+     * Writes the built-in server password beside the guest rootfs, the exact
+     * file both the proot server recipe and PhoneEngineNative read.
+     *
+     * This is a plain app-side write on purpose: starting the AI team used to
+     * reach this file by running a proot shell, so the write had to queue
+     * behind the installer lock and surfaced as an unclassified
+     * `builtin_linux` failure whenever another phone task was still finishing.
+     * Writing a file needs no guest process at all.
+     */
+    @Synchronized
+    fun writeServerPassword(password: String): Map<String, Any?> {
+        val began = SystemClock.elapsedRealtime()
+        val trace = StringBuilder()
+        fun mark(stage: String) {
+            if (trace.isNotEmpty()) trace.append(';')
+            trace.append(stage).append('@').append(SystemClock.elapsedRealtime() - began)
+        }
+        fun fail(stage: String): Nothing = throw PhoneEngineNative.Failure(
+            "server_password_write",
+            PhoneEngineTrace.sanitize("$trace;fail:$stage"),
+        )
+        mark("write")
+        if (password.isEmpty() || !installed) fail("state")
+        val directory = File(rootfs, "root/.oc-builtin")
+        // The old shell created this directory as part of its write; a direct
+        // write keeps that side effect, or a fresh install has no parent.
+        if (!directory.isDirectory && !directory.mkdirs() && !directory.isDirectory) fail("mkdir")
+        val target = File(directory, "server.password")
+        val written = try {
+            ServerPasswordWriter.write(target, password.toByteArray(Charsets.UTF_8))
+        } catch (_: Throwable) {
+            fail("io")
+        }
+        if (!written) fail("verify")
+        mark("done")
+        return mapOf("trace" to PhoneEngineTrace.sanitize(trace.toString()))
+    }
+
+    /**
+     * Stage marks for a write that never runs a guest program: the same shape
+     * `writeServerPassword` prints, so one trace reader covers both.
+     */
+    private class FileTrace(private val code: String) {
+        private val began = SystemClock.elapsedRealtime()
+        private val stages = StringBuilder()
+
+        fun mark(stage: String) {
+            if (stages.isNotEmpty()) stages.append(';')
+            stages.append(stage).append('@').append(SystemClock.elapsedRealtime() - began)
+        }
+
+        fun fail(stage: String): Nothing = throw PhoneEngineNative.Failure(
+            code,
+            PhoneEngineTrace.sanitize("$stages;fail:$stage"),
+        )
+
+        fun result(): Map<String, Any?> = mapOf("trace" to text())
+
+        fun text(): String = PhoneEngineTrace.sanitize(stages.toString())
+    }
+
+    /**
+     * Writes one file under the profile's own folder (`/home/oc/.oc-profiles`).
+     *
+     * This is the write the endpoint and Claude onboarding used to make by
+     * running a shell: the path is checked segment by segment here instead of
+     * being spliced into a script, and a link on the way is refused rather
+     * than followed.
+     */
+    @Synchronized
+    fun writeProfileFile(profileId: String, relativePath: String, content: ByteArray): Map<String, Any?> {
+        val trace = FileTrace("profile_file_write")
+        trace.mark("write")
+        if (!installed) trace.fail("state")
+        val root = try {
+            GuestFileWriter.profileRoot(File(rootfs, "home/oc/.oc-profiles"), profileId)
+        } catch (_: GuestFileWriter.Refused) {
+            trace.fail("profile")
+        }
+        // Only an installed agent has a home; creating one would invent an
+        // agent the person never set up.
+        if (!root.isDirectory) trace.fail("home")
+        val written = try {
+            GuestFileWriter.write(root, relativePath, content)
+        } catch (_: GuestFileWriter.Refused) {
+            trace.fail("path")
+        } catch (_: Throwable) {
+            trace.fail("io")
+        }
+        if (!written) trace.fail("verify")
+        trace.mark("done")
+        return trace.result()
+    }
+
+    /**
+     * Writes one file under the server's own home (`/root`), for the files
+     * the in-app server reads: `opencode.json` and a provider's key file.
+     */
+    @Synchronized
+    fun writeServerFile(relativePath: String, content: ByteArray): Map<String, Any?> {
+        val trace = FileTrace("server_file_write")
+        trace.mark("write")
+        if (!installed) trace.fail("state")
+        val root = File(rootfs, "root")
+        if (!root.isDirectory) trace.fail("home")
+        val written = try {
+            GuestFileWriter.write(root, relativePath, content)
+        } catch (_: GuestFileWriter.Refused) {
+            trace.fail("path")
+        } catch (_: Throwable) {
+            trace.fail("io")
+        }
+        if (!written) trace.fail("verify")
+        trace.mark("done")
+        return trace.result()
+    }
+
+    /**
+     * Reads and removes one agent-removal receipt, or fails with a code.
+     *
+     * The receipt is written by the removal itself as root inside Ubuntu; this
+     * reads it on the app side under the same constraints (owner-only, one
+     * link, bounded size) instead of starting a second guest process that
+     * queues behind the installer lock.
+     */
+    @Synchronized
+    fun readRemovalReceipt(receiptId: String): Map<String, Any?> {
+        val trace = FileTrace("agent_receipt_read")
+        trace.mark("read")
+        if (!installed) trace.fail("state")
+        if (!RECEIPT_ID.matches(receiptId)) trace.fail("id")
+        val directory = File(rootfs, "home/oc/.local/share")
+        val bytes = try {
+            GuestFileWriter.readAndRemove(directory, "oc-agent-removal-$receiptId", 96)
+        } catch (_: GuestFileWriter.Refused) {
+            trace.fail("refused")
+        } catch (_: Throwable) {
+            trace.fail("io")
+        }
+        trace.mark("done")
+        return mapOf(
+            "receipt" to String(bytes, Charsets.US_ASCII),
+            "trace" to PhoneEngineTrace.sanitize(trace.text()),
+        )
     }
 
     /** Runs [script] with /bin/sh inside Ubuntu as root (faked by proot). */
@@ -1390,11 +1552,21 @@ class BuiltinLinux(private val context: Context) {
                         it[1] in listOf("true", "false") }?.let { controls[it[0]] = it[1] == "true" }
                 } }
             }.apply { isDaemon = true; start() }
-            val finished = running.waitFor(30, TimeUnit.SECONDS)
+            val began = SystemClock.elapsedRealtime()
+            val finished = running.waitFor(PROOF_WAIT_SECONDS, TimeUnit.SECONDS)
             if (!finished) stopTree(running)
             reader.join(2000)
+            val exit = if (finished) running.exitValue() else -1
             val unchanged = sentinel.readText() == "private-proot-control"
-            val complete = finished && running.exitValue() == 0 && unchanged && labels.all { controls[it] == true }
+            val complete = finished && exit == 0 && unchanged && labels.all { controls[it] == true }
+            if (!complete) {
+                // Which control failed, by name: a real boundary failure, a
+                // guest without git (positiveWorkerClone) and a proof that ran
+                // out of time look identical from the app.
+                val failed = labels.filter { controls[it] != true }
+                Log.w(TAG, "proot proof incomplete after ${SystemClock.elapsedRealtime() - began}ms: " +
+                    "exit=$exit unchanged=$unchanged false=$failed")
+            }
             val report = labels.associateWith { controls[it] == true } + mapOf("tier" to "proot",
                 "nativeAttacksDenied" to false, "prootGitCompatible" to (controls["positiveWorkerClone"] == true),
                 "fixtureUnchanged" to unchanged, "complete" to complete)
@@ -1446,7 +1618,7 @@ class BuiltinLinux(private val context: Context) {
                 redirectError(File("/dev/null"))
             }.start()
             process.outputStream.close()
-            if (!process.waitFor(30, TimeUnit.SECONDS)) {
+            if (!process.waitFor(PROOF_WAIT_SECONDS, TimeUnit.SECONDS)) {
                 stopTree(process)
                 return false
             }
@@ -1456,7 +1628,7 @@ class BuiltinLinux(private val context: Context) {
             val preparation = ProcessBuilder(probe.absolutePath, "--prepare-git-fixture", protected.canonicalPath)
                 .redirectError(File("/dev/null")).apply { environment().clear() }.start()
             preparation.outputStream.close()
-            if (!preparation.waitFor(30, TimeUnit.SECONDS)) {
+            if (!preparation.waitFor(PROOF_WAIT_SECONDS, TimeUnit.SECONDS)) {
                 stopTree(preparation)
                 throw PhoneEngineNative.Failure("proof_fixture_unavailable")
             }
@@ -1510,6 +1682,9 @@ class BuiltinLinux(private val context: Context) {
                 (Os.lstat(sentinel.absolutePath).st_mode and 511) == 384 &&
                 mainRef.readText().trim() == expectedMain && head.readText().trim() == "ref: refs/heads/main" &&
                 PhoneEngineAttestation.hash(config) == configHash
+            if (!(native && proot && unchanged)) {
+                Log.w(TAG, "landlock proof incomplete: native=$native prootGitCompatible=$proot unchanged=$unchanged")
+            }
             mapOf("schemaVersion" to 1, "tier" to "landlock", "nativeAttacksDenied" to native,
                 "prootGitCompatible" to proot, "fixtureUnchanged" to unchanged,
                 "complete" to (native && proot && unchanged),
@@ -1566,8 +1741,14 @@ class BuiltinLinux(private val context: Context) {
             val status = startPhoneEngineChecked(profile, port, notice)
             if (status["boundary"] != true) restoreStoppedPhoneServer()
             else stoppedPhoneServer = null
+            Log.i(TAG, "phone engine ready: boundary=${status["boundary"]} tier=${status["boundaryTier"]}")
             return status
         } catch (error: Exception) {
+            // The reason the AI Team did not start, in one line. Log.e as well
+            // as the channel detail: if the MethodChannel leg fails first,
+            // `adb logcat -s oc-builtin` still has the whole stage trace.
+            Log.e(TAG, "phone engine start failed: ${engineFailureCode(error)} " +
+                "trace=${(error as? PhoneEngineNative.Failure)?.trace ?: "-"}")
             // Roll back only the server explicitly stopped in this runtime.
             // The UI may repeat its existing restart; startServer is idempotent.
             try { restoreStoppedPhoneServer() } catch (_: Exception) { }
@@ -1575,7 +1756,23 @@ class BuiltinLinux(private val context: Context) {
         }
     }
 
+    /** A native failure's code, never a message (it may hold a path). */
+    private fun engineFailureCode(error: Throwable): String =
+        (error as? PhoneEngineNative.Failure)?.code ?: error.javaClass.simpleName
+
     private fun startPhoneEngineChecked(profile: String, port: Int, notice: String?): Map<String, Any?> {
+        // One line per stage, `key=value@elapsedMs;…` only: it travels back as
+        // the failure detail, so a refused start says which gate closed instead
+        // of ending at a bare code the app cannot explain.
+        val began = SystemClock.elapsedRealtime()
+        val trace = StringBuilder()
+        fun mark(stage: String) {
+            if (trace.isNotEmpty()) trace.append(';')
+            trace.append(stage).append('@').append(SystemClock.elapsedRealtime() - began)
+        }
+        fun fail(code: String): Nothing = throw PhoneEngineNative.Failure(
+            code, PhoneEngineTrace.sanitize(trace.toString()))
+        mark("prepare")
         // Quiesce the tracked daemon before proof. Its stored receipt and
         // cached flags may belong to an older package/generation.
         phoneEngine.prepareFreshStart(profile)
@@ -1584,17 +1781,44 @@ class BuiltinLinux(private val context: Context) {
         serviceSetChanged()
         // PRoot proc bindings are fixed at launch. Even a prior protected
         // generation must stop before its replacement daemon changes PID.
-        val blocked = hasUnconfinedChildren() || serverRunning || processes.any { it.isAlive } ||
-            services.any { it.key != PHONE_ENGINE && it.value.process.isAlive } ||
-            LocalTerminal.get(context).hasLiveSessions()
-        if (blocked) throw PhoneEngineNative.Failure("restart_required")
+        processes.removeAll { !it.isAlive }
+        var unconfined = hasUnconfinedChildren()
+        var server = serverRunning
+        var procs = processes.count { it.isAlive }
+        var svcs = services.count { it.key != PHONE_ENGINE && it.value.process.isAlive }
+        var terminals = LocalTerminal.get(context).hasLiveSessions()
+        mark("gate:unconfined=$unconfined,server=$server,procs=$procs,svc=$svcs,term=$terminals")
+        // A closed gate is not proof of a stuck task: an install or restore
+        // that is finishing is exactly what closes it. Re-count on a short
+        // bound, and never signal a process this app does not hold — killing by
+        // uid plus name would kill that task and turn a heal into damage.
+        if (unconfined || server || procs > 0 || svcs > 0 || terminals) {
+            val settle = SystemClock.elapsedRealtime() + GATE_SETTLE_MS
+            while (SystemClock.elapsedRealtime() < settle && (unconfined || server || procs > 0)) {
+                Thread.sleep(GATE_SETTLE_POLL_MS)
+                processes.removeAll { !it.isAlive }
+                unconfined = hasUnconfinedChildren()
+                server = serverRunning
+                procs = processes.count { it.isAlive }
+            }
+        }
+        mark("after:unconfined=$unconfined,server=$server,procs=$procs,svc=$svcs,term=$terminals")
+        if (unconfined || server || procs > 0 || svcs > 0 || terminals) {
+            Log.w(TAG, "phone engine start refused: unconfined=$unconfined server=$server " +
+                "processes=$procs services=$svcs terminals=$terminals")
+            // A running install holds the admission lock and is not a leftover;
+            // its own completion opens the gate. Never race it.
+            if (synchronized(installerGuard) { installerProcess?.isAlive == true }) fail("restart_busy")
+            fail("restart_required")
+        }
         val tier = try { requirePhoneBoundaryKernel(); "landlock" }
             catch (failure: PhoneEngineNative.Failure) {
                 if (failure.code != "boundary_unsupported") throw failure
                 "proot"
             }
+        mark("tier=$tier")
         protectedTier = tier
-        var reason = if (blocked) "restart_required" else "boundary_unverified"
+        var reason = "boundary_unverified"
         var controls: Map<String, Any?>? = if (tier == "landlock") try {
             runPhoneEngineBoundaryProbe().also {
                 if (it["complete"] != true) reason = "boundary_proof_failed"
@@ -1603,14 +1827,17 @@ class BuiltinLinux(private val context: Context) {
             reason = if (e is PhoneEngineNative.Failure) e.code else "boundary_proof_unavailable"
             null
         } else null
-        val child = phoneEngine.start(profile, port, blocked, reason) { root ->
+        mark("proof:${controls?.get("complete") == true},reason=$reason")
+        Log.i(TAG, "phone engine start: tier=$tier proof=${controls?.get("complete")} reason=$reason")
+        val child = phoneEngine.start(profile, port, false, reason) { root ->
             if (tier == "proot") {
                 protectedTier = "proot"
                 controls = runProotTierProof(root)
             }
             val verified = controls
             if (verified?.get("complete") != true || hasUnconfinedChildren()) {
-                throw PhoneEngineNative.Failure("boundary_proof_failed")
+                mark("verify:failed")
+                fail("boundary_proof_failed")
             } else {
                 try {
                     commitProtectionAfterReceipt({
@@ -1626,22 +1853,32 @@ class BuiltinLinux(private val context: Context) {
                         protectedProot = true
                         protectedTier = tier
                     }
-                } catch (_: Exception) { throw PhoneEngineNative.Failure("boundary_signer_unavailable") }
+                } catch (_: Exception) {
+                    mark("signer:failed")
+                    fail("boundary_signer_unavailable")
+                }
             }
         }
+        mark("spawned")
         if (phoneEngine.status(profile)["boundary"] != true) {
             val reasonCode = phoneEngine.status(profile)["boundaryReason"] as? String
             phoneEngine.stop(profile)
-            throw PhoneEngineNative.Failure(reasonCode?.takeIf { it in listOf("boundary_signer_unavailable",
+            mark("status:${reasonCode ?: "boundary_false"}")
+            fail(reasonCode?.takeIf { it in listOf("boundary_signer_unavailable",
                 "boundary_probe_unavailable", "attestation_rejected") } ?: "boundary_proof_failed")
         }
         if (tier == "proot") {
-            val pid = pidOf(child) ?: throw PhoneEngineNative.Failure("boundary_probe_unavailable")
+            val pid = pidOf(child) ?: run {
+                mark("pid:missing")
+                fail("boundary_probe_unavailable")
+            }
             prootMaskedPids.add(pid)
             val root = File(context.filesDir.canonicalFile, "oc.teamEngine.$profile")
             try {
-                if (runProotTierProof(root, pid)["complete"] != true)
-                    throw PhoneEngineNative.Failure("boundary_proof_failed")
+                if (runProotTierProof(root, pid)["complete"] != true) {
+                    mark("proot:pid=$pid,proof=false")
+                    fail("boundary_proof_failed")
+                }
             } catch (error: Exception) {
                 prootMaskedPids.remove(pid)
                 phoneEngine.stop(profile)
@@ -1655,7 +1892,9 @@ class BuiltinLinux(private val context: Context) {
                 phoneEngine.stop(profile)
                 removeStoppedService(PHONE_ENGINE)
                 serviceSetChanged()
-                throw PhoneEngineNative.Failure("foreground_unavailable")
+                mark("service:failed")
+                throw PhoneEngineNative.Failure("foreground_unavailable",
+                    PhoneEngineTrace.sanitize(trace.toString()))
             }
             Thread {
                 child.waitFor()
@@ -4217,15 +4456,49 @@ class BuiltinLinux(private val context: Context) {
         private const val MAX_RESTART_DELAY_MS = 60_000L
         private const val MAX_RECEIPT_CHARS = 131_072
         private const val MAX_ENV_BYTES = 131_072
+        /** The removal receipt's own name: 32 hex characters and nothing else. */
+        private val RECEIPT_ID = Regex("[a-f0-9]{32}")
         private const val SERVER_DEFAULT_PORT = 4097
         private const val CPU_SAMPLE_MS = 1_000L
         private const val STOP_GRACE_MS = 2_000L
         private const val MAX_STOP_PIDS = 256
 
+        /**
+         * How long one boundary proof may take.
+         *
+         * Each proof runs dozens of programs through proot — a git init,
+         * commit and clone, then sixteen denial checks — and proot intercepts
+         * every syscall. Thirty seconds was a guess that a mid-range phone
+         * misses: the proof was then reported as an incomplete boundary
+         * ("unsafe", with no way to tell a slow phone from a broken one).
+         */
+        private const val PROOF_WAIT_SECONDS = 60L
+
+        /**
+         * How long the start gate waits for a finishing task before it calls
+         * the phone occupied. An install or restore that is completing closes
+         * the gate on its own; killing it to "heal" the start is worse than
+         * waiting one second. The bound keeps a stuck task from stalling the
+         * button forever, and the wait is counted in the trace.
+         */
+        private const val GATE_SETTLE_MS = 1_200L
+        private const val GATE_SETTLE_POLL_MS = 100L
+
+        /**
+         * The pids ActivityManager records for this app's own processes.
+         *
+         * AMS exposes only this app's processes to the app, and every
+         * `:name` process of this package runs as this UID, so a live one is
+         * ours by construction — never an unconfined leftover. `pkgList` is
+         * deprecated and empty on API 29+, and the earlier "only :local_pdf,
+         * and only with a matching pkgList" filter therefore never matched:
+         * a live PDF process looked like an untracked one and refused every
+         * engine start with "restart_required".
+         */
         internal fun registeredAppProcessIds(records: List<ActivityManager.RunningAppProcessInfo>?,
             packageName: String, uid: Int): Set<Int> = records.orEmpty().filter {
-                it.pid > 0 && it.uid == uid && it.processName == "$packageName:local_pdf" &&
-                    it.pkgList?.contains(packageName) == true
+                it.pid > 0 && it.uid == uid &&
+                    (it.processName == packageName || it.processName.startsWith("$packageName:"))
             }.map { it.pid }.toSet()
 
         internal fun <T> commitProtectionAfterReceipt(issue: () -> T, protect: () -> Unit): T {

@@ -135,10 +135,16 @@ SetupPreflightResult checkSetupStoragePreflight(
 /// nothing: the result is [SetupPreflightResult.mayBeSlow]. An unknown
 /// reading (empty ABI list, null memory or storage — an old build's channel,
 /// or a probe that failed) never blocks: the person can still try.
+///
+/// [requireDownloadSpace] is false when nothing is downloaded: the in-app AI
+/// Team is the phone engine shipped inside the APK, so reserving room for the
+/// team's archives measured a download that never happens and, on a phone
+/// with little space left, hid the only action that turns the team on.
 SetupPreflightResult checkSetupPreflight(
   VoiceDeviceInfo device, {
   required int downloadBytes,
   int? installedBytes,
+  bool requireDownloadSpace = true,
 }) {
   final abis = device.supportedAbis;
   if (abis.isNotEmpty && !abis.any(supportedSetupAbis.contains)) {
@@ -148,12 +154,14 @@ SetupPreflightResult checkSetupPreflight(
   if (memory != null && memory < minimumSetupMemoryMb) {
     return SetupPreflightResult.lowMemory(memory);
   }
-  final storage = checkSetupStoragePreflight(
-    device.availableStorageBytes,
-    downloadBytes: downloadBytes,
-    installedBytes: installedBytes,
-  );
-  if (!storage.supported) return storage;
+  if (requireDownloadSpace) {
+    final storage = checkSetupStoragePreflight(
+      device.availableStorageBytes,
+      downloadBytes: downloadBytes,
+      installedBytes: installedBytes,
+    );
+    if (!storage.supported) return storage;
+  }
   if (memory != null && memory < comfortableSetupMemoryMb) {
     return SetupPreflightResult.mayBeSlow(memory);
   }

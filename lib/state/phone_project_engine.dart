@@ -4,6 +4,8 @@ import 'dart:convert';
 import 'package:uuid/uuid.dart';
 
 import '../builtin/builtin_linux.dart';
+import '../diagnostics/app_log.dart';
+import '../domain/phone_engine_trace.dart';
 import '../domain/phone_project_engine.dart';
 import '../domain/orchestration_gateway.dart';
 import '../orchestration/adapters/inapp/phone_engine_gateway.dart';
@@ -19,6 +21,10 @@ abstract interface class PhoneProjectEngineBridge {
   Future<void> stop(String profileId);
 }
 
+/// A channel detail is only ever shown when it is a native start trace: the
+/// native side adds `stage@ms;…` for every gate it passed, and that is what
+/// makes an unclassified failure diagnosable. The shape check lives in
+/// [nativeTraceText] so it can be pinned by a round-trip test.
 class BuiltinPhoneProjectEngineBridge implements PhoneProjectEngineBridge {
   BuiltinPhoneProjectEngineBridge([BuiltinLinux? builtin])
     : _builtin = builtin ?? BuiltinLinux();
@@ -27,17 +33,22 @@ class BuiltinPhoneProjectEngineBridge implements PhoneProjectEngineBridge {
   /// Match the app-owned OC1 profile before native snapshots server auth.
   /// The protected restart writes this same password; it must not strand the
   /// already-started daemon with a stale rootfs copy.
+  ///
+  /// This is a direct file write, not a `run` script: the guest shell was only
+  /// ever a way to reach this path, and it made the AI-team start wait for the
+  /// installer lock (then fail as an unclassified `builtin_linux` error).
   Future<void> prepareServerAuthentication(ServerProfile profile) async {
     if (!BuiltinLinux.managesServerUrl(profile.baseUrl) ||
         profile.password.isEmpty) {
       throw const PhoneEngineException('server_auth_unavailable');
     }
-    final written = await _builtin.run(
-      BuiltinLinux.writePasswordScript(profile.password),
-      timeout: const Duration(seconds: 60),
-    );
-    if (!written.ok) {
-      throw const PhoneEngineException('server_credentials_write_failed');
+    try {
+      await _builtin.writeServerPassword(profile.password);
+    } on BuiltinLinuxException catch (error) {
+      // Native emits static codes. Never retain its message/details or cause.
+      throw PhoneEngineException(
+        error.code ?? 'server_credentials_write_failed',
+      );
     }
   }
 
@@ -440,11 +451,23 @@ class PhoneProjectEngineController {
       }
       await bridge.start(profileId, port: port, notice: notice);
     } on BuiltinLinuxException catch (error) {
-      // Native emits static codes. Never retain its message/details or cause.
+      // Native emits static codes. The only detail retained is a bare token:
+      // the native side adds its stage trace there, and that is what makes an
+      // unclassified failure diagnosable.
+      final trace = nativeTraceText(error.details);
+      AppLog.warn('engine', 'native start refused', {
+        'code': error.code ?? 'engineUnavailable',
+        'trace': ?trace,
+      });
       throw PhoneEngineException(error.code ?? 'engineUnavailable');
-    } on PhoneEngineException {
+    } on PhoneEngineException catch (error) {
+      AppLog.warn('engine', 'start refused', {'code': error.code});
       rethrow;
-    } catch (_) {
+    } catch (error) {
+      // The class only: a message may carry a path or native output.
+      AppLog.warn('engine', 'start did not reach the engine', {
+        'type': '${error.runtimeType}',
+      });
       throw const PhoneEngineException('engineUnavailable');
     }
     return _attach(profileId);
@@ -473,6 +496,7 @@ class PhoneProjectEngineController {
     try {
       credentials = await bridge.credentials(profileId);
     } catch (_) {
+      AppLog.warn('engine', 'no credentials after start');
       throw const PhoneEngineException('engineUnavailable');
     }
     KitRedact.registerKnownSecret(credentials.bearerToken);
@@ -483,6 +507,15 @@ class PhoneProjectEngineController {
     );
     try {
       final h = await client.probe();
+      AppLog.info('engine', 'attached', {
+        'canExecute': h.canExecute,
+        'boundary': h.boundary,
+        'tier': h.boundaryTier,
+        'execution': h.execution,
+        'oc2': h.oc2,
+        'oc2Verified': h.oc2Verified,
+        'readiness': h.readinessReason,
+      });
       if (_closed) {
         throw const PhoneEngineException('engineClosed');
       }

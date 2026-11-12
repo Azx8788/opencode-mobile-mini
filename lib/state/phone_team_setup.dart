@@ -18,6 +18,7 @@ import '../builtin/builtin_linux.dart';
 import '../builtin/builtin_server.dart';
 import '../builtin/deliberate_stop.dart';
 import '../builtin/local_terminal.dart';
+import '../diagnostics/app_log.dart';
 import '../domain/phone_project_engine.dart';
 import '../l10n/app_localizations.dart';
 import '../ui/kit/kit_redact.dart';
@@ -247,8 +248,17 @@ class BuiltinPhoneTeamSetupPorts implements PhoneTeamSetupPorts {
   Future<String?> startServer() async {
     final profile = _profile;
     if (profile == null) return 'noServerProfile';
-    final failure = await starter.start(profile);
+    // The same protected start setup uses: a profile still flagged for the
+    // OpenCode 2 move is moved here instead of being refused with
+    // `interrupted`, which left the team unable to ever come back on.
+    final failure = await starter.start(
+      profile,
+      migrateLegacyHistory: profile.requiresOpenCode2Migration,
+    );
     if (failure == null) return null;
+    AppLog.warn('team', 'protected server start failed', {
+      'problem': failure.problem.name,
+    });
     return failure.problem.name;
   }
 
@@ -376,11 +386,16 @@ class PhoneTeamSetupController extends ChangeNotifier {
   void _begin(PhoneTeamSetupStep step) {
     _step = step;
     _began[step] = _now();
+    AppLog.info('team', 'step begun', {'step': step.name});
     _emit();
   }
 
   void _end(PhoneTeamSetupStep step) {
     _took[step] = _now().difference(_began[step] ?? _now());
+    AppLog.info('team', 'step ended', {
+      'step': step.name,
+      'ms': _took[step]!.inMilliseconds,
+    });
     _emit();
   }
 
@@ -388,6 +403,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
     _skipped.add(step);
     _began[step] = _now();
     _took[step] = Duration.zero;
+    AppLog.info('team', 'step skipped', {'step': step.name});
     _emit();
   }
 
@@ -400,6 +416,12 @@ class PhoneTeamSetupController extends ChangeNotifier {
     _failedStep = step;
     _details = KitRedact.text(details);
     _phase = PhoneTeamSetupPhase.failed;
+    // The one line a report needs: which step, which kind, which safe code.
+    AppLog.warn('team', 'setup failed', {
+      'problem': problem.name,
+      'step': step.name,
+      'details': _details,
+    });
     _emit();
   }
 
@@ -449,6 +471,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
       } catch (_) {
         // Preserve the original reason while exposing a cleanup failure safely.
         details = '$details; engineStopFailed';
+        AppLog.warn('team', 'engine stop failed after a refusal');
       }
     }
     if (_serverStopped) {
@@ -465,6 +488,7 @@ class PhoneTeamSetupController extends ChangeNotifier {
         _serverState = on
             ? PhoneTeamServerState.backOn
             : PhoneTeamServerState.stillOff;
+        AppLog.info('team', 'server after failure', {'on': on});
       }
     }
     _fail(problem, step, details);
@@ -588,7 +612,14 @@ class PhoneTeamSetupController extends ChangeNotifier {
       // c) The engine proves this phone safe.
       _begin(PhoneTeamSetupStep.check);
       _engineAttempted = true;
-      var health = await _bounded(ports.startEngine(), 'startEngine');
+      // A protected launch runs up to three boundary proofs, each with its own
+      // minute, plus the ready/health handshake: the generic step budget was
+      // shorter than that and turned a slow phone into "the engine failed".
+      var health = await _bounded(
+        ports.startEngine(),
+        'startEngine',
+        limit: const Duration(minutes: 4),
+      );
       if (health.restartRequired && !stopped) {
         // The engine found an old server it cannot vouch for: ask now.
         _took.remove(PhoneTeamSetupStep.stop);
@@ -596,9 +627,20 @@ class PhoneTeamSetupController extends ChangeNotifier {
         if (!await _stopForProtection()) return;
         stopped = true;
         _begin(PhoneTeamSetupStep.check);
-        health = await _bounded(ports.startEngine(), 'startEngine');
+        health = await _bounded(
+          ports.startEngine(),
+          'startEngine',
+          limit: const Duration(minutes: 4),
+        );
       }
       _health = health;
+      AppLog.info('team', 'boundary checked', {
+        'boundary': health.boundary,
+        'tier': health.boundaryTier,
+        'restartRequired': health.restartRequired,
+        'execution': health.execution,
+        'attested': health.boundaryAttestationReason,
+      });
       // The check proves the boundary; OpenCode itself is verified only
       // after step d starts it again, so canExecute is judged there.
       if (!health.boundary) {
@@ -630,7 +672,9 @@ class PhoneTeamSetupController extends ChangeNotifier {
         return;
       }
       PhoneEngineHealth? last;
+      var probes = 0;
       for (var attempt = 0; attempt < readyAttempts; attempt++) {
+        probes = attempt + 1;
         try {
           last = await _bounded(ports.probeEngine(), 'probe');
         } on PhoneEngineException {
@@ -642,6 +686,15 @@ class PhoneTeamSetupController extends ChangeNotifier {
         if (attempt + 1 < readyAttempts) await _delay(readyGap);
       }
       _health = last ?? _health;
+      AppLog.info('team', 'engine probe', {
+        'attempts': probes,
+        'canExecute': last?.canExecute,
+        'boundary': last?.boundary,
+        'execution': last?.execution,
+        'oc2': last?.oc2,
+        'oc2Verified': last?.oc2Verified,
+        'readiness': last?.readinessReason,
+      });
       if (last == null || !last.canExecute) {
         await _failWith(
           PhoneTeamSetupProblem.notReady,

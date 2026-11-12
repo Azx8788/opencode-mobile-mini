@@ -141,7 +141,7 @@ class MainActivity : FlutterFragmentActivity() {
                         } else if (agentHostCode != null) {
                             result.error(agentHostCode, "Open agent setup and try again.", null)
                         } else if (error is PhoneEngineNative.Failure) {
-                            result.error(error.code, "The phone engine is unavailable.", null)
+                            result.error(error.code, "The phone engine is unavailable.", error.trace)
                         } else if (call.method in setOf("startPhoneEngine", "phoneEngineStatus",
                             "phoneEngineCredentials", "stopPhoneEngine", "deletePhoneEngine",
                             "startProtectedPhoneServer", "runPhoneEngineBoundaryProbe")) {
@@ -165,10 +165,16 @@ class MainActivity : FlutterFragmentActivity() {
                         } else if (error is SetupPersistenceException) {
                             result.error(SetupPersistenceException.CODE, null, null)
                         } else {
+                            // The code is a fixed string, so without the type and
+                            // the operation a log line cannot tell a lock conflict
+                            // from a broken file, or which call produced it. Both
+                            // carry no data: only a class name and a method name.
                             result.error("builtin_linux", "The phone operation could not finish. Try again.",
                                 if (call.method in setOf("startServer", "run", "status")) {
                                     serverStartDetail(error)
-                                } else null)
+                                } else {
+                                    "${error.javaClass.simpleName};op=${call.method}"
+                                })
                         }
                     }
                 }
@@ -322,6 +328,34 @@ class MainActivity : FlutterFragmentActivity() {
                     val run = linux.run(script, timeout, agentUser = call.argument<Boolean>("agentUser") == true)
                     mapOf("exitCode" to run.exitCode, "output" to run.output)
                 }
+            }
+            // The AI-team start writes the server password without a guest
+            // process: no installer lock, no proot startup, no 60s wait.
+            "writeServerPassword" -> inBackground {
+                linux.writeServerPassword(call.argument<String>("password") ?: "")
+            }
+            // The same reasoning, for every other file the app owns: a write
+            // is a write, not a queued shell command. The path is checked by
+            // GuestFileWriter, never spliced into a script.
+            "writeProfileFile" -> inBackground {
+                val profileId = call.argument<String>("profileId") ?: ""
+                val relativePath = call.argument<String>("relativePath") ?: ""
+                val content = base64Decoded(call.argument<String>("content"))
+                if (content == null) {
+                    throw PhoneEngineNative.Failure("profile_file_write", "decode")
+                }
+                linux.writeProfileFile(profileId, relativePath, content)
+            }
+            "writeServerFile" -> inBackground {
+                val relativePath = call.argument<String>("relativePath") ?: ""
+                val content = base64Decoded(call.argument<String>("content"))
+                if (content == null) {
+                    throw PhoneEngineNative.Failure("server_file_write", "decode")
+                }
+                linux.writeServerFile(relativePath, content)
+            }
+            "readRemovalReceipt" -> inBackground {
+                linux.readRemovalReceipt(call.argument<String>("receiptId") ?: "")
             }
             "startServer" -> {
                 val script = call.argument<String>("script")
@@ -594,4 +628,15 @@ class MainActivity : FlutterFragmentActivity() {
         const val EXTRA_LAUNCH_PROFILE = "oc.shortcut.profile"
         const val EXTRA_LAUNCH_SESSION = "oc.shortcut.session"
     }
+}
+
+/**
+ * A file's bytes, decoded at the channel edge so no policy above sees the
+ * text: a settings file carries a key, and the raw form of one is not needed
+ * anywhere but the writer.
+ */
+private fun base64Decoded(value: String?): ByteArray? = try {
+    if (value == null) null else android.util.Base64.decode(value, android.util.Base64.NO_WRAP)
+} catch (_: IllegalArgumentException) {
+    null
 }

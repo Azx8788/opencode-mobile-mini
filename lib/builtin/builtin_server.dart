@@ -265,11 +265,12 @@ Future<BuiltinServerStartFailure?> startBuiltinServer({
         );
       }
     }
-    final written = await linux.run(
-      BuiltinLinux.writePasswordScript(profile.password),
-      timeout: const Duration(seconds: 60),
-    );
-    if (!written.ok) {
+    // A direct write, not a guest shell: the password is one file in app
+    // storage, and running proot for it queued behind the installer lock —
+    // the same lock that makes "Start" fail while an install is finishing.
+    try {
+      await linux.writeServerPassword(profile.password);
+    } on BuiltinLinuxException {
       return const BuiltinServerStartFailure.detail(
         'The server password could not be saved.',
         problem: BuiltinStartProblem.passwordNotSaved,

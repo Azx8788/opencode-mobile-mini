@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/services.dart';
 
 import '../domain/server_probe.dart' show ServerFlavor;
@@ -1227,10 +1229,8 @@ class BuiltinLinux {
   }
 
   /// A short, shareable name for [script]: its first line that does real
-  /// work, with quoted text blanked. The password script is only ever
-  /// "write-password" — its body holds the password.
+  /// work, with quoted text blanked. Never the body: it can hold a password.
   static String scriptLabel(String script) {
-    if (script.contains('$passwordFile.tmp')) return 'write-password';
     for (final raw in script.split('\n')) {
       final line = raw.trim();
       if (line.isEmpty ||
@@ -1443,17 +1443,66 @@ fi
         'echo committed\n';
   }
 
-  /// Saves the server password inside Ubuntu, readable by its root only.
-  static String writePasswordScript(String password) {
+  /// Writes the built-in server password where the guest server and the phone
+  /// engine read it. A plain app-side write on purpose: the AI-team start used
+  /// to reach this file by running a proot shell, which queued behind the
+  /// installer lock and failed as an unclassified `builtin_linux` error while
+  /// another phone task was still finishing.
+  Future<void> writeServerPassword(String password) async {
     if (password.isEmpty) {
       throw ArgumentError.value(password, 'password', 'Must not be empty.');
     }
-    final dir = passwordFile.substring(0, passwordFile.lastIndexOf('/'));
-    return 'set -eu\n'
-        'umask 077\n'
-        'mkdir -p $dir\n'
-        "printf '%s' ${_quote(password)} > $passwordFile.tmp\n"
-        'mv $passwordFile.tmp $passwordFile\n';
+    await _invoke<void>('writeServerPassword', {'password': password});
+  }
+
+  /// Writes one file inside profile [profileId]'s own folder, in one native
+  /// step: no shell, no installer lock, no 10-second admission window.
+  ///
+  /// [relativePath] is checked segment by segment on the native side (`..`,
+  /// an absolute path, a control character and any link are refused), so a
+  /// caller cannot reach outside the profile even by mistake.
+  Future<void> writeProfileFile({
+    required String profileId,
+    required String relativePath,
+    required String content,
+  }) async {
+    await _invoke<void>('writeProfileFile', {
+      'profileId': profileId,
+      'relativePath': relativePath,
+      'content': base64Encode(utf8.encode(content)),
+    });
+  }
+
+  /// Writes one file under the server's home (`/root`): the provider config
+  /// and a provider's key file. Same checks as [writeProfileFile].
+  Future<void> writeServerFile({
+    required String relativePath,
+    required String content,
+  }) async {
+    await _invoke<void>('writeServerFile', {
+      'relativePath': relativePath,
+      'content': base64Encode(utf8.encode(content)),
+    });
+  }
+
+  /// Reads and removes one agent-removal receipt on the native side.
+  ///
+  /// The receipt is written by the removal as root; reading it used to be a
+  /// second guest process that queued behind the installer lock. The native
+  /// reader applies the same constraints the script did (owner-only, one
+  /// link, at most 96 bytes) and removes the file it just read.
+  Future<String> readRemovalReceipt(String receiptId) async {
+    final result = await _invoke<Map<Object?, Object?>>('readRemovalReceipt', {
+      'receiptId': receiptId,
+    });
+    final receipt = result?['receipt'];
+    if (receipt is! String) {
+      throw const BuiltinLinuxException(
+        'The removal receipt could not be read.',
+        code: 'agent_receipt_read',
+      );
+    }
+    return receipt;
   }
 
   /// The long-running server, mirroring the Termux runner: started in
