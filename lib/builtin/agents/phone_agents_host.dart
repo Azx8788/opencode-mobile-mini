@@ -226,6 +226,10 @@ final class BuiltinPhoneAgents implements PhoneAgentHost {
     _agent(agentId);
     final current = await _readClaudeFile(ClaudeSettings.settingsFile);
     if (action == 'write') {
+      final target = endpoint;
+      if (target == null) {
+        throw const ProductException('This endpoint cannot be saved');
+      }
       // Onboarding first: it is the flag that decides between the first-run
       // setup and the chat. A gateway written after a failed onboarding would
       // be in the file and still land on the sign-in screen.
@@ -238,7 +242,7 @@ final class BuiltinPhoneAgents implements PhoneAgentHost {
       );
       final written = ClaudeSettings.merge(
         current ?? const {},
-        endpoint!,
+        target,
         // A key sent as `x-api-key` is written as `ANTHROPIC_API_KEY`, which
         // is the only variable Claude Code sends that header for.
         useApiKeyHeader: useApiKeyHeader,
