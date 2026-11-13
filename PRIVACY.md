@@ -196,10 +196,11 @@ generic notifications when a coding session needs permission or an answer,
 finishes, or fails. These notifications intentionally omit prompt text, tool
 input, filenames, session titles, and server error details from the lock screen.
 
-The app uses Shorebird to check for and download compatible code updates.
-Update requests necessarily expose network information such as your IP address
-and app/update identifiers to Shorebird. Shorebird's own privacy terms govern
-that processing.
+The app checks for updates by reading this repository's releases from the
+GitHub API (`api.github.com`). That request carries the repository name and
+your IP address, and nothing about your server, your sessions or the models
+you configured. GitHub's own privacy terms govern it. There is no code-push
+channel: an update is a new APK that you install yourself.
 
 ## Provider and agent logos
 
@@ -240,4 +241,4 @@ two-letter monogram instead.
 ## Contact
 
 For privacy questions or reports, open an issue at
-[github.com/Eslamasabry/opencode-mobile-next/issues](https://github.com/Eslamasabry/opencode-mobile-next/issues).
+[github.com/Azx8788/opencode-plus/issues](https://github.com/Azx8788/opencode-plus/issues).
