@@ -194,12 +194,20 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
       // person goes on to the conversation they were setting the agent up
       // for. Waiting for a probe that may still be reading the file from
       // before the write is what put the sign-in page back.
-      // Selecting an agent needs a row ready for chat: a stopped host or a
-      // usage limit keeps its own page and its own way forward.
-      if (row?.chatSelectable == true &&
-          !MediaQuery.accessibleNavigationOf(context)) {
-        await _choose(id);
-        return;
+      // Selecting an agent checks its row, and the row still holds the answer
+      // read before the write: re-read the rows first, so a gateway that is
+      // now on disk can make the agent selectable in the same tap.
+      if (!MediaQuery.accessibleNavigationOf(context)) {
+        try {
+          await _agents.refreshAgentRows();
+        } catch (_) {
+          // The page's own Done is still the way on.
+        }
+        if (!mounted) return;
+        if (_row(id)?.chatSelectable == true) {
+          await _choose(id);
+          return;
+        }
       }
       // The page stays, but its sign-in line is re-read for the new file.
       unawaited(_beginSignIn(force: true));
@@ -978,8 +986,14 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
     final name = KitBidi.auto(_name(id));
     final state = _agents.agentSignInState(id);
     final phase = state?.phase;
-    final checking = _readingSignIn && (state == null || !state.inspected);
-    final signedIn = phase == AgentSignInPhase.signedIn || _signingOut;
+    // A settings file that names a gateway and a key is this agent's
+    // sign-in, by the same rule its status probe applies. The page must not
+    // ask for an account on top of a working endpoint, and a probe that
+    // re-reads that file must say "checking" instead of showing Sign in.
+    final gateway = _endpoint?.configured ?? false;
+    final checking = _readingSignIn;
+    final signedIn =
+        phase == AgentSignInPhase.signedIn || _signingOut || gateway;
     final hostKey = state?.hostOnlyApiKey ?? false;
     // A signed-in agent at its plan limit reads signed in; its row says limit.
     final limit =
@@ -995,7 +1009,7 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
         ? account?.accountDisplayName?.trim()
         : null;
     final canSignOut =
-        !(_endpoint?.configured ?? false) &&
+        !gateway &&
         (_signingOut ||
             (phase == AgentSignInPhase.signedIn &&
                 accounts != null &&
@@ -1004,7 +1018,6 @@ class _AgentSheetState extends ConsumerState<AgentSheet> {
                 accounts.canSignOutAgent(id)));
     // A gateway has no account command to sign out of: removing it is the
     // one way back, and that lives in the endpoint sheet.
-    final gateway = _endpoint?.configured ?? false;
     final gatewayHost = _endpoint?.baseUrl ?? '';
 
     // A stopped agent (its row offers only Resume) still opens this page so
