@@ -5063,9 +5063,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Open persistent project terminals';
 
   @override
-  @override
   String get chatAgentConfigureGateway => 'Reconfigure gateway';
 
+  @override
   String get chatUiOpenProviders => 'Open providers';
 
   @override

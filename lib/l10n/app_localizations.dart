@@ -8552,14 +8552,16 @@ abstract class AppLocalizations {
   /// **'Open persistent project terminals'**
   String get chatUiOpenPersistentWorkspaceTerminals;
 
+  /// Action on a failed turn when the agent's own settings name a third-party gateway: the endpoint is what needs fixing, not the account.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconfigure gateway'**
+  String get chatAgentConfigureGateway;
+
   /// Chat journey: Open providers
   ///
   /// In en, this message translates to:
   /// **'Open providers'**
-  /// Action on a failed turn when the agent's own settings name a third-party
-  /// gateway: the endpoint is what needs fixing, not the account.
-  String get chatAgentConfigureGateway;
-
   String get chatUiOpenProviders;
 
   /// Chat journey: Open subagent session

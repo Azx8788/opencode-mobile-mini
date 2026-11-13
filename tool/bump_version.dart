@@ -125,5 +125,26 @@ void main(List<String> args) {
   }
   lines[index] = 'version: $next';
   file.writeAsStringSync('${lines.join('\n')}\n');
+  _syncChangelog(next);
   stdout.writeln('$previous -> $next');
+}
+
+/// Keeps CHANGELOG.md's newest entry naming the version this build reports.
+///
+/// `test/mini_package_test.dart` refuses a pubspec version with no matching
+/// heading, and a preview that moves only the build number would otherwise
+/// leave the changelog pointing at the build before it. The entry's words
+/// stay: a build-only bump is the same version's next upload, not a new set
+/// of changes to describe.
+void _syncChangelog(String next) {
+  final file = File('CHANGELOG.md');
+  if (!file.existsSync()) return;
+  final text = file.readAsStringSync();
+  final head = RegExp(
+    r'^## \d+\.\d+\.\d+\+\d+ — ',
+    multiLine: true,
+  ).firstMatch(text);
+  if (head == null) return;
+  final updated = text.replaceRange(head.start, head.end, '## $next — ');
+  if (updated != text) file.writeAsStringSync(updated);
 }

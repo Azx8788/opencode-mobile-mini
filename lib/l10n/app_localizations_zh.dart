@@ -4685,9 +4685,9 @@ class AppLocalizationsZh extends AppLocalizations {
   String get chatUiOpenPersistentWorkspaceTerminals => '打开常驻的项目终端';
 
   @override
-  @override
   String get chatAgentConfigureGateway => '重新配置网关';
 
+  @override
   String get chatUiOpenProviders => '打开服务商';
 
   @override
