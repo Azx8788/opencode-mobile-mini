@@ -172,6 +172,7 @@ final class AgentSignInState {
     this.resetAt,
     this.inspected = false,
     this.codeSubmitted = false,
+    this.gateway = false,
   });
 
   final AgentSignInPhase phase;
@@ -184,6 +185,12 @@ final class AgentSignInState {
   final bool inspected;
   final bool codeSubmitted;
   bool get hostOnlyApiKey => method == AgentSignInMethod.apiKeyHost;
+
+  /// This agent's own settings file names a gateway and holds its key: the
+  /// sign-in is an endpoint, not an account. A turn that fails with a 401 or
+  /// a 404 then has one fix — the endpoint sheet — and an account page would
+  /// be a second screen between the person and the setting that is wrong.
+  final bool gateway;
 
   /// The host waits for Claude's prompt itself, so a code can be sent as soon
   /// as the page is ready.

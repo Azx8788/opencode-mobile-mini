@@ -68,6 +68,16 @@ extension _PhoneAgentCheckPublication on ConnectionController {
         !result.completed.contains(AgentPhoneCheckStep.daemon)) {
       return result;
     }
+    // A settings file that names a gateway is this agent's sign-in, whatever
+    // the account command says. Turning a check failure into "needs sign-in"
+    // on top of a written endpoint is the sign-in page coming back a third
+    // way — through the check, not the row.
+    try {
+      final gateway = await _paGatewaySignIn(_paEnsureHost(), result.agentId);
+      if (gateway != null) return result;
+    } catch (_) {
+      // No readable file: let the status read below decide.
+    }
     try {
       final session = _paSession(result.agentId);
       await session.inspectStatus().timeout(const Duration(seconds: 15));
@@ -138,9 +148,18 @@ extension _PhoneAgentAuthObservation on _ConnectionControllerPhoneAgents {
   ) async {
     if (id != 'claude') return null;
     try {
-      return agentEndpointSignIn(await host.readAgentEndpoint(id));
-    } catch (_) {
-      // An unreadable file leaves the probe to say.
+      final status = await host.readAgentEndpoint(id);
+      _paEndpointStatus[id] = status;
+      return agentEndpointSignIn(status);
+    } catch (error) {
+      // The file is unreadable, not absent. The guest script below can still
+      // see it from inside, which is why it is kept as a second reader — a
+      // diagnostic, never the authority on "signed out". The last good read
+      // stays cached so a transient failure cannot flip the answer.
+      AppLog.info('agents', 'endpoint read failed', <String, Object?>{
+        'agent': id,
+        'error': '$error',
+      });
       return null;
     }
   }
@@ -153,6 +172,18 @@ extension _PhoneAgentAuthObservation on _ConnectionControllerPhoneAgents {
     String id,
   ) async {
     final result = await _paProbeSignInOnce(host, id);
+    final saved = _paEndpointStatus[id];
+    // The settings file is the authority. The guest script reads the same
+    // file from inside, but it also runs the account command, and an account
+    // command that knows nothing about a gateway answers "signed out" about a
+    // working endpoint. Its answer is a diagnostic, never a second opinion
+    // that outranks the file.
+    if (saved != null &&
+        saved.configured &&
+        result.state != AgentAuthProbeState.signedIn) {
+      final gateway = agentEndpointSignIn(saved);
+      if (gateway != null) return gateway;
+    }
     final previous = _paAuthResults[id];
     final couldNotRun =
         result.error == AgentAuthProbeError.hostUnavailable ||

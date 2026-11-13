@@ -152,6 +152,8 @@ final class AgentEndpointStatus {
     required this.baseUrl,
     required this.model,
     required this.hasKey,
+    this.authVariable,
+    this.facts = const AgentEndpointFileFacts(),
   });
 
   static const absent = AgentEndpointStatus(
@@ -164,10 +166,61 @@ final class AgentEndpointStatus {
   final String? model;
   final bool hasKey;
 
+  /// Which variable held the key, exactly as written: `ANTHROPIC_AUTH_TOKEN`
+  /// for `Authorization: Bearer`, `ANTHROPIC_API_KEY` for `x-api-key`, null
+  /// when no key is saved. The two are not normalized: a gateway that wants
+  /// one refuses the other, and a diagnostic that renamed them would hide
+  /// the one fact worth knowing.
+  final String? authVariable;
+
+  /// The file this answer came from, for a log line that can be compared
+  /// with the writer's own path.
+  final AgentEndpointFileFacts facts;
+
+  /// The one predicate that decides "this agent is signed in by a gateway".
+  ///
+  /// Every reader asks this and nothing else: the row scan, the sign-in
+  /// sheet and the agent's own status probe. Two definitions drifting apart
+  /// is how a saved endpoint reads as signed out on one screen and signed in
+  /// on another.
   bool get configured => baseUrl != null && hasKey;
 
   @override
   String toString() => 'AgentEndpointStatus($baseUrl)';
+}
+
+/// The settings file's own shape, never its contents: the path the read
+/// actually used, when it last changed, how big it is, and which `env` keys
+/// it holds. Values — the key above all — are never part of this.
+final class AgentEndpointFileFacts {
+  const AgentEndpointFileFacts({
+    this.path,
+    this.modifiedAt,
+    this.sizeBytes,
+    this.envKeys = const [],
+    this.onboardingPath,
+    this.onboardingModifiedAt,
+  });
+
+  final String? path;
+  final DateTime? modifiedAt;
+  final int? sizeBytes;
+
+  /// Key names only, sorted: `ANTHROPIC_BASE_URL` present or absent is the
+  /// question a split-brain answer turns on.
+  final List<String> envKeys;
+  final String? onboardingPath;
+  final DateTime? onboardingModifiedAt;
+
+  Map<String, Object?> toLog() => <String, Object?>{
+    if (path != null) 'path': path,
+    if (modifiedAt != null) 'mtime': modifiedAt!.toIso8601String(),
+    if (sizeBytes != null) 'size': sizeBytes,
+    if (envKeys.isNotEmpty) 'envKeys': envKeys.join(','),
+    if (onboardingPath != null) 'onboardingPath': onboardingPath,
+    if (onboardingModifiedAt != null)
+      'onboardingMtime': onboardingModifiedAt!.toIso8601String(),
+  };
 }
 
 /// The sign-in a saved gateway is by itself, or null when the settings file

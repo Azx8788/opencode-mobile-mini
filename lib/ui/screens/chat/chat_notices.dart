@@ -266,6 +266,14 @@ extension _ChatNotices on _ChatScreenState {
     if (agentId == null || AgentCatalog.builtIn.byId(agentId) == null) {
       return null;
     }
+    // A saved gateway that rejects the key, or 404s the route, arrives here
+    // as the same refused turn. An account sign-in would be the wrong room:
+    // the setting that is wrong is the endpoint, and the sheet that holds it
+    // is one tap away. This is the way back the collapsed sign-in page used
+    // to take with it.
+    if (_gatewayConfigured(agentId)) {
+      return () => unawaited(showAgentProviderSheet(context, agentId: agentId));
+    }
     final again = _accountNeeded(failure);
     return () => unawaited(
       showAgentSheet(
@@ -275,6 +283,21 @@ extension _ChatNotices on _ChatScreenState {
         signInAgain: again,
       ),
     );
+  }
+
+  /// Whether this agent's own settings file names a gateway with a key. Read
+  /// from the same sign-in answer the screen uses, so the action and the row
+  /// cannot disagree about which kind of sign-in this is.
+  bool _gatewayConfigured(String agentId) {
+    try {
+      final phone = ProviderScope.containerOf(
+        context,
+        listen: false,
+      ).read(connProvider);
+      return phone.agentSignInState(agentId)?.gateway ?? false;
+    } catch (_) {
+      return false;
+    }
   }
 
   /// A sign-in refusal from an agent the app already shows signed in or

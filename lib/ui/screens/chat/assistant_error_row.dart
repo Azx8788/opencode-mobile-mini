@@ -94,6 +94,22 @@ class _AssistantErrorRow extends StatelessWidget {
         agentKind == null &&
         classifyAgentError(raw) == AgentErrorCause.usageLimit;
     final signIn = run == null || recovered ? null : chat?._agentSignIn(run);
+    // The endpoint is the thing to fix when this agent runs on a gateway: a
+    // 401 from a key the gateway no longer accepts and a 404 from a route or
+    // a model name that is not there both end in the same sheet. Offering
+    // "send again" or an account page instead is the dead end the sign-in
+    // page used to be.
+    final gatewayFix =
+        run == null ||
+            recovered ||
+            signIn == null ||
+            !(chat?._gatewayConfigured(run.provider ?? '') ?? false)
+        ? null
+        : KitAction(
+            key: const Key('error-action-configure-gateway'),
+            label: strings.chatAgentConfigureGateway,
+            onPressed: signIn,
+          );
     // Another model first, then the agent's own sign-in by name; Error
     // details moves to the reply's menu (a notice shows two actions).
     final signInAgain = needsAccount && signIn != null
@@ -145,7 +161,7 @@ class _AssistantErrorRow extends StatelessWidget {
               ),
       ),
       _ when usageLimit && choose != null => ('usage-limit', choose),
-      _ => _typedFix(strings, kind, useSuggestion, named),
+      _ => _typedFix(strings, kind, useSuggestion, named, gatewayFix),
     };
     final hint =
         agentKind == null &&
@@ -197,24 +213,27 @@ class _AssistantErrorRow extends StatelessWidget {
     MessageErrorKind kind,
     VoidCallback? useSuggestion,
     String? named,
+    KitAction? gatewayFix,
   ) => switch (kind) {
     MessageErrorKind.modelNotFound => (
       'model-not-found',
-      // The server named a model it has: one tap switches to it and sends
-      // the prompt again (review board: prompt error).
-      useSuggestion != null && named != null && !recovered
-          ? KitAction(
-              key: const Key('error-action-use-suggestion'),
-              label: strings.chatUiUseModelAndResend(named),
-              onPressed: useSuggestion,
-            )
-          : onChooseModel == null
-          ? null
-          : KitAction(
-              key: const Key('error-action-choose-model'),
-              label: strings.chatUiChooseModel,
-              onPressed: onChooseModel,
-            ),
+      // A gateway that 404s a model name is fixed by naming one it lists,
+      // which is the same sheet. Otherwise: the server named a model it does
+      // have, and one tap switches to it and sends the prompt again.
+      gatewayFix ??
+          (useSuggestion != null && named != null && !recovered
+              ? KitAction(
+                  key: const Key('error-action-use-suggestion'),
+                  label: strings.chatUiUseModelAndResend(named),
+                  onPressed: useSuggestion,
+                )
+              : onChooseModel == null
+              ? null
+              : KitAction(
+                  key: const Key('error-action-choose-model'),
+                  label: strings.chatUiChooseModel,
+                  onPressed: onChooseModel,
+                )),
     ),
     MessageErrorKind.contextOverflow => (
       'context-overflow',
@@ -226,15 +245,18 @@ class _AssistantErrorRow extends StatelessWidget {
               onPressed: onCompact,
             ),
     ),
+    // A gateway this agent owns is edited here; a server-side provider is
+    // opened in the library.
     MessageErrorKind.providerAuth => (
       'provider-auth',
-      onOpenProviders == null
-          ? null
-          : KitAction(
-              key: const Key('error-action-providers'),
-              label: providersLabel ?? strings.chatUiOpenProviders,
-              onPressed: onOpenProviders,
-            ),
+      gatewayFix ??
+          (onOpenProviders == null
+              ? null
+              : KitAction(
+                  key: const Key('error-action-providers'),
+                  label: providersLabel ?? strings.chatUiOpenProviders,
+                  onPressed: onOpenProviders,
+                )),
     ),
     MessageErrorKind.outputLength => (
       'output-length',
@@ -246,16 +268,20 @@ class _AssistantErrorRow extends StatelessWidget {
               onPressed: onContinue,
             ),
     ),
-    // Nothing to fix first: the same prompt can simply go again.
+    // A gateway's refusal is fixed in its own sheet before anything else
+    // can work; otherwise the same prompt can simply go again.
     _ => (
       'generic',
-      onResend == null || recovered || kind == MessageErrorKind.contentFilter
-          ? null
-          : KitAction(
-              key: const Key('error-action-resend'),
-              label: strings.chatUiSendPromptAgain,
-              onPressed: onResend,
-            ),
+      gatewayFix ??
+          (onResend == null ||
+                  recovered ||
+                  kind == MessageErrorKind.contentFilter
+              ? null
+              : KitAction(
+                  key: const Key('error-action-resend'),
+                  label: strings.chatUiSendPromptAgain,
+                  onPressed: onResend,
+                )),
     ),
   };
 }

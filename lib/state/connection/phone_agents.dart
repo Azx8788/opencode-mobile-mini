@@ -663,8 +663,16 @@ mixin _ConnectionControllerPhoneAgents on ChangeNotifier
             // endpoint the person chose. The probe stays the answer when the
             // file names no gateway.
             final gateway = await _paGatewaySignIn(host, descriptor.id);
+            // A read that failed leaves the file's last answer standing. The
+            // probe may not turn "this file could not be read just now" into
+            // "signed out": that is the setter this whole path exists to
+            // stop, and it is the one a scan running right after a save hits.
+            final saved = _paEndpointStatus[descriptor.id];
             final auth =
-                gateway ?? await _paProbeSignIn(host, descriptor.id);
+                gateway ??
+                (saved != null && saved.configured
+                    ? agentEndpointSignIn(saved)!
+                    : await _paProbeSignIn(host, descriptor.id));
             if (_self._disposed || _paHost != host || _paHostProfile != owner) {
               return;
             }
@@ -764,6 +772,13 @@ mixin _ConnectionControllerPhoneAgents on ChangeNotifier
 
   final _paAuthResults = <String, AgentAuthProbeResult>{};
   final _paAuthRevisions = <String, int>{};
+
+  /// The last settings-file read per agent, kept for the sign-in log and for
+  /// the sheet's "which variable holds the key" line. Never the key itself.
+  final _paEndpointStatus = <String, AgentEndpointStatus>{};
+
+  /// The last line written per agent, so a rebuild is not a log entry.
+  final _paSignInLogKey = <String, String>{};
 
   /// Bumped when an agent's own settings file changes. A row scan that began
   /// earlier is reading the old file; its answer must not be published over
@@ -866,11 +881,58 @@ mixin _ConnectionControllerPhoneAgents on ChangeNotifier
       return interactive;
     }
     final result = _paAuthResults[agentId];
+    final endpoint = _paEndpointStatus[agentId];
+    final phase = result == null
+        ? AgentSignInPhase.signedOut
+        : _paAuthPhase(result);
+    _logSignInState(agentId, phase, result, endpoint);
     return AgentSignInState(
-      phase: result == null ? AgentSignInPhase.signedOut : _paAuthPhase(result),
+      phase: phase,
       method: descriptor.signInMethod,
       inspected: result != null,
+      gateway: endpoint?.configured ?? false,
     );
+  }
+
+  /// Every recomputation of the sign-in answer is a data point: the row scan
+  /// writes the probe's answer after the person has already saved, and a
+  /// write-side regression shows up here and nowhere else. Repeated identical
+  /// answers are dropped, so a rebuild cannot flood the log.
+  void _logSignInState(
+    String agentId,
+    AgentSignInPhase phase,
+    AgentAuthProbeResult? result,
+    AgentEndpointStatus? endpoint,
+  ) {
+    final key = [
+      phase.name,
+      result?.state.name ?? '-',
+      result?.error?.name ?? '-',
+      endpoint?.configured ?? false,
+      endpoint?.authVariable ?? '-',
+      endpoint?.facts.modifiedAt?.toIso8601String() ?? '-',
+    ].join('|');
+    if (_paSignInLogKey[agentId] == key) return;
+    _paSignInLogKey[agentId] = key;
+    final facts = endpoint?.facts.toLog() ?? const <String, Object?>{};
+    final data = <String, Object?>{
+      'agent': agentId,
+      'phase': phase.name,
+      'inspected': result != null,
+      'probe': result?.state.name,
+      'probeError': result?.error?.name,
+      'fileConfigured': endpoint?.configured,
+      'authVariable': endpoint?.authVariable,
+      ...facts,
+    };
+    // The file says signed in and the screen says signed out: the one
+    // disagreement this log exists to catch.
+    if ((endpoint?.configured ?? false) &&
+        phase == AgentSignInPhase.signedOut) {
+      AppLog.warn('agents', 'sign-in state disagrees with the file', data);
+    } else {
+      AppLog.info('agents', 'sign-in state', data);
+    }
   }
 
   /// Explicit CLI status only; account labels are transient and never logged.
@@ -898,7 +960,12 @@ mixin _ConnectionControllerPhoneAgents on ChangeNotifier
     // A gateway already on disk answers this without the CLI: asking the
     // account command would call a working endpoint signed out.
     final gateway = await _paGatewaySignIn(host, agentId);
-    final result = gateway ?? await _paProbeSignIn(host, agentId);
+    final saved = _paEndpointStatus[agentId];
+    final result =
+        gateway ??
+        (saved != null && saved.configured
+            ? agentEndpointSignIn(saved)!
+            : await _paProbeSignIn(host, agentId));
     if (_self._disposed || _paHost != host || _paHostProfile != owner) return;
     _paAuthResults[agentId] = result;
     _self._notifyListeners();

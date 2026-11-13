@@ -16,6 +16,7 @@ class _Gateway {
     required List<int> bearerStatuses,
     required List<int> apiKeyStatuses,
     Duration delay = Duration.zero,
+    String body = '{}',
   }) async {
     final gateway = _Gateway(
       await HttpServer.bind(InternetAddress.loopbackIPv4, 0),
@@ -23,7 +24,8 @@ class _Gateway {
     gateway
       .._bearer = List.of(bearerStatuses)
       .._apiKey = List.of(apiKeyStatuses)
-      .._delay = delay;
+      .._delay = delay
+      .._body = body;
     return gateway;
   }
 
@@ -33,6 +35,7 @@ class _Gateway {
   List<int> _bearer = const [];
   List<int> _apiKey = const [];
   Duration _delay = Duration.zero;
+  String _body = '{}';
 
   String get baseUrl => 'http://${_server.address.host}:${_server.port}';
 
@@ -46,7 +49,7 @@ class _Gateway {
     // Drain whatever the probe sent so the socket closes cleanly.
     await request.drain<void>();
     request.response.statusCode = status;
-    request.response.write('{}');
+    request.response.write(_body);
     await request.response.close();
   }
 
@@ -161,5 +164,50 @@ void main() {
     expect(decoded['model'], 'deepseek-v4-flash');
     expect(decoded['max_tokens'], 1);
     expect(decoded['messages'], isNotEmpty);
+  });
+
+  test('a saved address that ends in /v1 probes one /v1/messages', () async {
+    // AgentRouter's saved address keeps /v1; Claude Code appends /v1/messages
+    // to the base. Probing the saved string verbatim would ask for
+    // /v1/v1/messages and read the 404 as "no route".
+    final gateway = await _Gateway.start(
+      bearerStatuses: <int>[],
+      apiKeyStatuses: <int>[],
+    );
+    addTearDown(gateway.stop);
+    final probe = await GatewayProbeClient.probe(
+      _endpoint('${gateway.baseUrl}/v1'),
+    );
+    expect(gateway.paths, <String>['/v1/messages']);
+    expect(probe.answersMessages, isTrue);
+  });
+
+  test('a 404 that names a model is a route that is there', () async {
+    final gateway = await _Gateway.start(
+      bearerStatuses: <int>[404],
+      apiKeyStatuses: <int>[],
+      body:
+          '{"type":"error","error":{"type":"not_found_error",'
+          '"message":"model: claude-opus-4-7"}}',
+    );
+    addTearDown(gateway.stop);
+    final probe = await GatewayProbeClient.probe(
+      _endpoint(gateway.baseUrl, apiKey: 'sk-test'),
+    );
+    expect(probe.status, 404);
+    expect(probe.answersMessages, isTrue);
+    expect(probe.detail, 'model not in catalog');
+  });
+
+  test('a 404 with no model word is a missing route', () async {
+    final gateway = await _Gateway.start(
+      bearerStatuses: <int>[404],
+      apiKeyStatuses: <int>[],
+      body: '{"error":"not found"}',
+    );
+    addTearDown(gateway.stop);
+    final probe = await GatewayProbeClient.probe(_endpoint(gateway.baseUrl));
+    expect(probe.answersMessages, isFalse);
+    expect(probe.detail, 'no /v1/messages');
   });
 }

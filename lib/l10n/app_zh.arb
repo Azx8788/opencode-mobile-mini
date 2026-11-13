@@ -103,6 +103,7 @@
   "chatUiModel": "模型",
   "chatUiMoved": "已移动",
   "chatUiOpenParentSession": "打开上级对话",
+  "chatAgentConfigureGateway": "重新配置网关",
   "chatUiOpenProviders": "打开服务商",
   "chatUiOpenCodeIsReconnectingTryAgainWhenThe": "OpenCode 正在重新连接。服务器在线后请重试。",
   "chatUiOpenCodeNeedsInput": "OpenCode 需要你的输入",

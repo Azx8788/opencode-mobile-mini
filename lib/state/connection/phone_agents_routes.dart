@@ -125,6 +125,8 @@ extension _PhoneAgentRoutes on _ConnectionControllerPhoneAgents {
     _paLive.clear();
     _paAuthResults.clear();
     _paAuthRevisions.clear();
+    _paEndpointStatus.clear();
+    _paSignInLogKey.clear();
     _paChecks.clear();
     _paRows = const [];
     _paHostRunning = false;

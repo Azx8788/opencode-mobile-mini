@@ -61,6 +61,11 @@ abstract final class ClaudeSettings {
   /// Claude Code's own catalog already describes a `claude-…` name: its
   /// window, its picker row and its place in the tier list. Mapping one of
   /// those would replace a correct entry with a guess.
+  ///
+  /// Kept for the picker's display decision only. The merge below does not
+  /// branch on it: a gateway's own catalog is the only list that matters, and
+  /// `claude-opus-4-7` is a name this build does not know even though it
+  /// starts with `claude-`.
   static bool isCatalogModel(String model) =>
       model.toLowerCase().startsWith('claude-');
 
@@ -82,7 +87,14 @@ abstract final class ClaudeSettings {
   }) {
     final next = <String, Object?>{...current};
     final env = _object(next['env']);
-    env['ANTHROPIC_BASE_URL'] = endpoint.baseUrl;
+    // Claude Code appends `/v1/messages` itself. A provider's saved address
+    // keeps its own version segment (`https://agentrouter.org/v1`), and
+    // writing that through verbatim turns every request into
+    // `/v1/v1/messages` — a 404 the gateway cannot explain. The strip is
+    // idempotent, so a value read back from this file is safe to merge again.
+    env['ANTHROPIC_BASE_URL'] = AgentEndpoint.claudeCodeBaseUrl(
+      endpoint.baseUrl,
+    );
 
     final key = endpoint.apiKey;
     if (key == null) {
@@ -108,31 +120,30 @@ abstract final class ClaudeSettings {
       }
       next.remove('modelPicker');
     } else {
-      env[defaultModel] = model;
-      if (isCatalogModel(model)) {
-        // Its own tier entries are more accurate than this file's.
-        for (final name in tierVariables) {
-          env.remove(name);
-        }
-        next.remove('modelPicker');
-      } else {
-        for (final name in tierVariables) {
-          env[name] = model;
-        }
-        // Without this, Claude Code says the name "isn't described by this
-        // version's model catalog" and assumes a 200k window anyway. The row
-        // makes the assumption explicit and names the entry it borrows.
-        next['modelPicker'] = <String, Object?>{
-          'replaceBuiltInOptions': true,
-          'options': <Object?>[
-            <String, Object?>{
-              'model': model,
-              'label': model,
-              'behavesAs': behavesAs,
-            },
-          ],
-        };
+      // Every tier points at the one name the gateway lists. Claude Code
+      // chooses a tier per task — a title, a subagent, the main loop — and a
+      // tier left at its built-in name is a request for a model the gateway
+      // never had, which comes back as the 404 that reads like a broken
+      // endpoint. `claude-opus-4-7` starts with `claude-` and is still not a
+      // name this build knows, so the tier list cannot be decided by that
+      // prefix; one name everywhere is right for a gateway's own name and
+      // for a real Claude one alike.
+      for (final name in modelVariables) {
+        env[name] = model;
       }
+      // Without this, Claude Code says the name "isn't described by this
+      // version's model catalog" and assumes a window anyway. The row makes
+      // the assumption explicit and names the entry it borrows.
+      next['modelPicker'] = <String, Object?>{
+        'replaceBuiltInOptions': true,
+        'options': <Object?>[
+          <String, Object?>{
+            'model': model,
+            'label': model,
+            'behavesAs': behavesAs,
+          },
+        ],
+      };
     }
     next['env'] = env;
     return next;
@@ -174,7 +185,10 @@ abstract final class ClaudeSettings {
       for (final entry in projects.entries) {
         final value = entry.value;
         copy['${entry.key}'] = value is Map
-            ? <String, Object?>{..._object(value), 'hasTrustDialogAccepted': true}
+            ? <String, Object?>{
+                ..._object(value),
+                'hasTrustDialogAccepted': true,
+              }
             : value;
       }
       next['projects'] = copy;

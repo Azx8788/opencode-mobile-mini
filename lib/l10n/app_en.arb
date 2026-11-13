@@ -4248,6 +4248,10 @@
   "@chatUiOpenPersistentWorkspaceTerminals": {
     "description": "Chat journey: Open persistent workspace terminals"
   },
+  "chatAgentConfigureGateway": "Reconfigure gateway",
+  "@chatAgentConfigureGateway": {
+    "description": "Action on a failed turn when the agent's own settings name a third-party gateway: the endpoint is what needs fixing, not the account."
+  },
   "chatUiOpenProviders": "Open providers",
   "@chatUiOpenProviders": {
     "description": "Chat journey: Open providers"

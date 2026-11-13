@@ -45,6 +45,7 @@ import '../../domain/model_switch_fit.dart';
 import '../../state/model_library.dart';
 import '../../domain/token_count_format.dart';
 import '../../domain/prompt_attachment.dart';
+import 'agents/agent_provider_sheet.dart' show showAgentProviderSheet;
 import 'agents/agent_sheet.dart' show AgentSheetStep, showAgentSheet;
 import '../../domain/background_work.dart';
 import '../../domain/background_tasks.dart';

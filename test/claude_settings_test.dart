@@ -58,21 +58,86 @@ void main() {
       });
     });
 
-    test('a model Claude Code already knows keeps its own tiers', () {
+    test('a Claude-looking name still fills every tier', () {
+      // `claude-opus-4-7` starts with `claude-` and is not a name this build
+      // knows: a gateway's catalog is its own. Leaving a tier at its built-in
+      // name would ask the gateway for a model it never listed.
       final next = ClaudeSettings.merge(
         <String, Object?>{
           'modelPicker': <String, Object?>{'replaceBuiltInOptions': true},
         },
-        _endpoint(model: 'claude-sonnet-4-5'),
+        _endpoint(model: 'claude-opus-4-7'),
         useApiKeyHeader: false,
       );
       final env = _env(next);
-      expect(env['ANTHROPIC_MODEL'], 'claude-sonnet-4-5');
-      for (final name in ClaudeSettings.tierVariables) {
-        expect(env[name], isNull, reason: name);
+      for (final name in ClaudeSettings.modelVariables) {
+        expect(env[name], 'claude-opus-4-7', reason: name);
       }
-      expect(next.containsKey('modelPicker'), isFalse);
+      expect(next['modelPicker'], isNotNull);
     });
+
+    test('the saved address loses its version segment', () {
+      // AgentRouter's own rule: the base URL must not end in /v1, because
+      // Claude Code appends /v1/messages itself.
+      const cases = <String, String>{
+        'https://agentrouter.org/v1': 'https://agentrouter.org',
+        'https://agentrouter.org/v1/': 'https://agentrouter.org',
+        'https://host/v1beta': 'https://host',
+        'https://host/anthropic': 'https://host/anthropic',
+        'https://host': 'https://host',
+      };
+      for (final saved in cases.keys) {
+        final env = _env(
+          ClaudeSettings.merge(
+            const <String, Object?>{},
+            _endpoint(baseUrl: saved),
+            useApiKeyHeader: false,
+          ),
+        );
+        expect(env['ANTHROPIC_BASE_URL'], cases[saved], reason: saved);
+      }
+    });
+
+    test('merging a written address again changes nothing', () {
+      final once = ClaudeSettings.merge(
+        const <String, Object?>{},
+        _endpoint(baseUrl: 'https://agentrouter.org/v1'),
+        useApiKeyHeader: false,
+      );
+      final twice = ClaudeSettings.merge(
+        once,
+        _endpoint(baseUrl: 'https://agentrouter.org/v1'),
+        useApiKeyHeader: false,
+      );
+      expect(_env(twice)['ANTHROPIC_BASE_URL'], 'https://agentrouter.org');
+    });
+
+    test(
+      'the key goes into the variable the probe chose, and only that one',
+      () {
+        final apiKey = _env(
+          ClaudeSettings.merge(
+            const <String, Object?>{},
+            _endpoint(),
+            useApiKeyHeader: true,
+          ),
+        );
+        expect(apiKey['ANTHROPIC_API_KEY'], 'sk-live-123');
+        expect(apiKey['ANTHROPIC_AUTH_TOKEN'], isNull);
+
+        final bearer = _env(
+          ClaudeSettings.merge(
+            <String, Object?>{
+              'env': <String, Object?>{'ANTHROPIC_API_KEY': 'old'},
+            },
+            _endpoint(),
+            useApiKeyHeader: false,
+          ),
+        );
+        expect(bearer['ANTHROPIC_AUTH_TOKEN'], 'sk-live-123');
+        expect(bearer['ANTHROPIC_API_KEY'], isNull);
+      },
+    );
 
     test('no model removes the model keys and the picker', () {
       final next = ClaudeSettings.merge(
@@ -200,13 +265,10 @@ void main() {
       });
       expect(next['hasCompletedOnboarding'], isTrue);
       final projects = next['projects']! as Map<String, Object?>;
-      expect(
-        projects['/home/oc/projects/a'],
-        <String, Object?>{
-          'allowedTools': <Object?>[],
-          'hasTrustDialogAccepted': true,
-        },
-      );
+      expect(projects['/home/oc/projects/a'], <String, Object?>{
+        'allowedTools': <Object?>[],
+        'hasTrustDialogAccepted': true,
+      });
       // A value that is not an object is carried through, not replaced: it is
       // the person's, and this app does not know what it means.
       expect(projects['/home/oc/projects/b'], 'unexpected');

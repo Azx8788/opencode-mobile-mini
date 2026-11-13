@@ -146,18 +146,104 @@ final class BuiltinPhoneAgents implements PhoneAgentHost {
     if (!agentSupportsEndpoint(agentId)) {
       throw const ProductException('This agent has no endpoint setting');
     }
+    final settings = await _claudeFileStat(ClaudeSettings.settingsFile);
+    final onboarding = await _claudeFileStat(ClaudeSettings.onboardingFile);
     final decoded = await _readClaudeFile(ClaudeSettings.settingsFile);
-    if (decoded == null) return AgentEndpointStatus.absent;
+    if (decoded == null) {
+      final absent = AgentEndpointStatus(
+        baseUrl: null,
+        model: null,
+        hasKey: false,
+        facts: _endpointFacts(settings, onboarding, const []),
+      );
+      _logEndpointRead(agentId, absent);
+      return absent;
+    }
     final env = decoded['env'];
-    if (env is! Map) return AgentEndpointStatus.absent;
+    if (env is! Map) {
+      final absent = AgentEndpointStatus(
+        baseUrl: null,
+        model: null,
+        hasKey: false,
+        facts: _endpointFacts(settings, onboarding, const []),
+      );
+      _logEndpointRead(agentId, absent);
+      return absent;
+    }
     final base = env['ANTHROPIC_BASE_URL'];
-    final token = env['ANTHROPIC_AUTH_TOKEN'] ?? env['ANTHROPIC_API_KEY'];
+    final authToken = env['ANTHROPIC_AUTH_TOKEN'];
+    final apiKey = env['ANTHROPIC_API_KEY'];
     final model = env['ANTHROPIC_MODEL'];
-    return AgentEndpointStatus(
+    final token = authToken ?? apiKey;
+    final status = AgentEndpointStatus(
       baseUrl: base is String && base.trim().isNotEmpty ? base.trim() : null,
       model: model is String && model.trim().isNotEmpty ? model.trim() : null,
       hasKey: token is String && token.trim().isNotEmpty,
+      // Written exactly as found. The probe decides which one is written;
+      // this reports what the file has, not what it should have.
+      authVariable: token is String && token.trim().isNotEmpty
+          ? (authToken is String && authToken.trim().isNotEmpty
+                ? 'ANTHROPIC_AUTH_TOKEN'
+                : 'ANTHROPIC_API_KEY')
+          : null,
+      facts: _endpointFacts(settings, onboarding, [
+        for (final key in env.keys) '$key',
+      ]),
     );
+    _logEndpointRead(agentId, status);
+    return status;
+  }
+
+  AgentEndpointFileFacts _endpointFacts(
+    ({String path, DateTime? modified, int? size})? settings,
+    ({String path, DateTime? modified, int? size})? onboarding,
+    List<String> envKeys,
+  ) {
+    final keys = [...envKeys]..sort();
+    return AgentEndpointFileFacts(
+      path: settings?.path,
+      modifiedAt: settings?.modified,
+      sizeBytes: settings?.size,
+      envKeys: keys,
+      onboardingPath: onboarding?.path,
+      onboardingModifiedAt: onboarding?.modified,
+    );
+  }
+
+  /// One line per read, never the key: which file, when it changed, which
+  /// variable holds the key, and whether the predicate calls it configured.
+  /// This is the line to compare against the writer's, and against the guest
+  /// script's own `env` view when a split brain is suspected.
+  void _logEndpointRead(String agentId, AgentEndpointStatus status) {
+    final host = Uri.tryParse(status.baseUrl ?? '')?.host;
+    AppLog.info('agents', 'endpoint read', <String, Object?>{
+      'agent': agentId,
+      'configured': status.configured,
+      'authVariable': status.authVariable,
+      if (host != null && host.isNotEmpty) 'host': host,
+      ...status.facts.toLog(),
+    });
+  }
+
+  /// The absolute path this read used, and the file's own timestamps. The
+  /// same string the writer resolves, so a mismatch is visible in one line.
+  Future<({String path, DateTime? modified, int? size})?> _claudeFileStat(
+    String relativePath,
+  ) async {
+    final rootfs = await BuiltinRootfsFolders.locateRootfs();
+    if (rootfs == null) return null;
+    final file = File(
+      '${rootfs.path}/home/oc/.oc-profiles/$profileId/$relativePath',
+    );
+    try {
+      final stat = await file.stat();
+      if (stat.type == FileSystemEntityType.notFound) {
+        return (path: file.path, modified: null, size: null);
+      }
+      return (path: file.path, modified: stat.modified, size: stat.size);
+    } on FileSystemException {
+      return (path: file.path, modified: null, size: null);
+    }
   }
 
   @override
@@ -248,6 +334,24 @@ final class BuiltinPhoneAgents implements PhoneAgentHost {
         useApiKeyHeader: useApiKeyHeader,
       );
       await _writeClaudeFile(ClaudeSettings.settingsFile, written);
+      // The writer's half of the diagnostic: what the address was, what the
+      // file got, and which variable the key went into. `stripped` is the
+      // `/v1` question asked directly instead of from memory.
+      final rawBase = target.baseUrl;
+      final writtenEnv = written['env'];
+      final writtenBase = writtenEnv is Map
+          ? '${writtenEnv['ANTHROPIC_BASE_URL'] ?? ''}'
+          : '';
+      AppLog.info('agents', 'endpoint write', <String, Object?>{
+        'agent': agentId,
+        'stripped': rawBase != writtenBase,
+        'authVariable': useApiKeyHeader
+            ? 'ANTHROPIC_API_KEY'
+            : 'ANTHROPIC_AUTH_TOKEN',
+        'model': target.model,
+        'rawHost': Uri.tryParse(rawBase)?.host,
+        'writtenHost': Uri.tryParse(writtenBase)?.host,
+      });
     } else {
       final cleared = ClaudeSettings.clear(current ?? const {});
       if (cleared.isEmpty) {

@@ -70,12 +70,22 @@ abstract final class GatewayProbeClient {
         detail: 'no key to probe with',
       );
     }
-    final bearer = await _attempt(endpoint, key, xApiKey: false, timeout: timeout);
+    final bearer = await _attempt(
+      endpoint,
+      key,
+      xApiKey: false,
+      timeout: timeout,
+    );
     if (bearer.answersMessages) return bearer;
     // Anything but a refused key is an answer about the route or the network;
     // only a refusal is worth retrying with the other header.
     if (!bearer.unauthorized) return bearer;
-    final alternate = await _attempt(endpoint, key, xApiKey: true, timeout: timeout);
+    final alternate = await _attempt(
+      endpoint,
+      key,
+      xApiKey: true,
+      timeout: timeout,
+    );
     if (alternate.answersMessages) {
       return GatewayProbe(
         answersMessages: true,
@@ -95,7 +105,12 @@ abstract final class GatewayProbeClient {
   }) async {
     final client = HttpClient()..connectionTimeout = timeout;
     try {
-      final uri = Uri.parse('${endpoint.baseUrl}/v1/messages');
+      // The probe asks the same URL Claude Code will: the base URL without
+      // its version segment, plus `/v1/messages`. Probing the saved address
+      // verbatim would ask a `/v1` gateway for `/v1/v1/messages` and read
+      // the 404 as "no Messages route", which is the opposite of the truth.
+      final base = AgentEndpoint.claudeCodeBaseUrl(endpoint.baseUrl);
+      final uri = Uri.parse('$base/v1/messages');
       final request = await client.postUrl(uri).timeout(timeout);
       request.headers.set('content-type', 'application/json');
       request.headers.set('anthropic-version', anthropicVersion);
@@ -113,17 +128,24 @@ abstract final class GatewayProbeClient {
       });
       request.add(utf8.encode(body));
       final response = await request.close().timeout(timeout);
-      // The body is drained, not read: a gateway that streams stays
-      // connected until the socket is closed.
-      await response.drain<void>().timeout(timeout);
       final status = response.statusCode;
+      // A refusal's body says which refusal it is: a 404 for a model name is
+      // a working route with a catalog that does not list that name, while a
+      // 404 for the path means there is no Messages route at all. Read a
+      // bounded prefix, never the whole stream (a gateway that streams stays
+      // open until the socket closes).
+      final reply = await _readPrefix(response, 4096, timeout);
       final unauthorized = status == 401 || status == 403;
+      final missingModel = status == 404 && _namesAModel(reply);
       return GatewayProbe(
-        answersMessages: !unauthorized && status != 404 && status < 500,
+        answersMessages:
+            !unauthorized && (status != 404 || missingModel) && status < 500,
         usesApiKeyHeader: false,
         status: status,
         detail: unauthorized
             ? 'key refused'
+            : missingModel
+            ? 'model not in catalog'
             : status == 404
             ? 'no /v1/messages'
             : status >= 500
@@ -145,6 +167,39 @@ abstract final class GatewayProbeClient {
     } finally {
       client.close(force: true);
     }
+  }
+
+  /// Up to [limit] bytes of the reply, decoded, then the rest drained.
+  static Future<String> _readPrefix(
+    HttpClientResponse response,
+    int limit,
+    Duration timeout,
+  ) async {
+    final bytes = <int>[];
+    try {
+      await for (final chunk in response.timeout(timeout)) {
+        bytes.addAll(chunk.take(limit - bytes.length));
+        if (bytes.length >= limit) break;
+      }
+    } on Object {
+      // A short or broken body still leaves what arrived.
+    }
+    return utf8.decode(bytes, allowMalformed: true);
+  }
+
+  /// Whether a 404's body names a model rather than a route.
+  ///
+  /// Anthropic's own wording is `{"type":"error","error":{"type":
+  /// "not_found_error","message":"model: claude-…"}}`; gateways built on it
+  /// keep the `model` prefix. A body with no such word is a missing route.
+  static bool _namesAModel(String body) {
+    if (body.isEmpty) return false;
+    final lower = body.toLowerCase();
+    return lower.contains('model:') ||
+        lower.contains('model_not_found') ||
+        lower.contains('model not found') ||
+        lower.contains('unknown model') ||
+        lower.contains('invalid model');
   }
 }
 
