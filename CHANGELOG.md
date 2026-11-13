@@ -2,7 +2,7 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
-## 0.3.13+19 — 2026-11-13
+## 0.3.13+20 — 2026-11-13
 
 A saved gateway is a sign-in on every screen, and a gateway's own rules about
 its address, its key and its model names are followed instead of one

@@ -18,16 +18,24 @@ final class AgentAuthProbeResult {
     required this.state,
     this.accountDisplayName,
     this.error,
+    this.scriptEnvKeys = const [],
   });
 
   const AgentAuthProbeResult.failed(AgentAuthProbeError reason)
     : state = AgentAuthProbeState.error,
       accountDisplayName = null,
-      error = reason;
+      error = reason,
+      scriptEnvKeys = const [];
 
   final AgentAuthProbeState state;
   final String? accountDisplayName;
   final AgentAuthProbeError? error;
+
+  /// The key names the guest script saw in the settings file, never values.
+  /// The app's own read reports the same list; a disagreement is the
+  /// split-brain a login loop is made of, and it is visible without a second
+  /// device.
+  final List<String> scriptEnvKeys;
 
   /// Only the helper's narrow allowlist crosses the bridge. Unknown, malformed,
   /// or contradictory replies are errors rather than guessed signed-out states.
@@ -68,6 +76,23 @@ final class AgentAuthProbeResult {
     return AgentAuthProbeResult(
       state: state,
       accountDisplayName: account as String?,
+      scriptEnvKeys: _envKeys(json['envKeys']),
     );
   }
+
+  /// Variable names only, and only names that could be one: the script's
+  /// list is read for a diagnostic, never trusted as data.
+  static List<String> _envKeys(Object? value) {
+    if (value is! List) return const [];
+    final keys = <String>[];
+    for (final key in value) {
+      if (key is String && key.length <= 64 && _envName.hasMatch(key)) {
+        keys.add(key);
+      }
+      if (keys.length >= 60) break;
+    }
+    return List.unmodifiable(keys);
+  }
+
+  static final _envName = RegExp(r'^[A-Z][A-Z0-9_]*$');
 }

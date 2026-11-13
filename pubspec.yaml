@@ -1,7 +1,7 @@
 name: opencode_mobile
 description: "OpenCode Plus - Android-only (arm64) coding-agent client that runs agents in its own Linux."
 publish_to: "none"
-version: 0.3.13+19
+version: 0.3.13+20
 
 environment:
   sdk: ^3.10.0

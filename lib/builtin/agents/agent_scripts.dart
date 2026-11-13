@@ -37,10 +37,11 @@ OC_AUTH_PROBE
 import json, os, re, selectors, signal, subprocess, sys, time
 from urllib.parse import urlsplit
 agent, executable, action = sys.argv[1:]
-def emit(state, account=None, error=None):
+def emit(state, account=None, error=None, env_keys=None):
     value = {'state': state}
     if account is not None: value['accountDisplayName'] = account
     if error is not None: value['error'] = error
+    if env_keys is not None: value['envKeys'] = env_keys
     print(json.dumps(value, separators=(',', ':')))
 def fail(error):
     emit('error', error=error)
@@ -100,10 +101,14 @@ try:
         # state too: `auth status` only knows about Claude accounts, and would
         # call a working gateway "signed out" without ever trying it.
         gateway = None
+        # Key names, never values: the app's own read and this one must agree
+        # about which variables the file holds before an answer counts.
+        env_keys = []
         try:
             with open(home + '/claude/settings.json', encoding='utf-8') as source: settings = json.load(source)
             values = settings.get('env') if isinstance(settings, dict) else None
             if isinstance(values, dict):
+                env_keys = sorted(k for k in values.keys() if isinstance(k, str) and len(k) <= 64)
                 base = values.get('ANTHROPIC_BASE_URL')
                 token = values.get('ANTHROPIC_AUTH_TOKEN') or values.get('ANTHROPIC_API_KEY')
                 if isinstance(base, str) and base.strip() and isinstance(token, str) and token.strip():
@@ -113,16 +118,16 @@ try:
             # A gateway answers by itself; the account command would only add
             # a 60-second wait to every refresh and then call it signed out.
             if action == 'logout': fail('signOutFailed')
-            emit('signedIn', account(urlsplit(gateway).hostname))
+            emit('signedIn', account(urlsplit(gateway).hostname), env_keys=env_keys)
         else:
             code, data = 1, None
             try: code, data = run(['auth', 'status', '--json'])
             except (OSError, ValueError, TypeError, subprocess.TimeoutExpired, TimeoutError): pass
             if isinstance(data, dict) and type(data.get('loggedIn')) is bool and data['loggedIn']:
                 if action == 'logout': fail('signOutFailed')
-                emit('signedIn', account(data.get('email')))
+                emit('signedIn', account(data.get('email')), env_keys=env_keys)
             elif isinstance(data, dict) and type(data.get('loggedIn')) is bool:
-                emit('signedOut')
+                emit('signedOut', env_keys=env_keys)
             else: fail('invalidResponse')
     elif agent == 'fx':
         code, data = run(['status', '--json'])

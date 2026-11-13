@@ -923,6 +923,11 @@ mixin _ConnectionControllerPhoneAgents on ChangeNotifier
       'probeError': result?.error?.name,
       'fileConfigured': endpoint?.configured,
       'authVariable': endpoint?.authVariable,
+      // The guest script's own view of the same file, names only. A list
+      // that differs from `envKeys` above means the two readers are not
+      // looking at the same file — the split brain, printed.
+      if (result != null && result.scriptEnvKeys.isNotEmpty)
+        'scriptEnvKeys': result.scriptEnvKeys.join(','),
       ...facts,
     };
     // The file says signed in and the screen says signed out: the one
