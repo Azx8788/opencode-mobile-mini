@@ -464,7 +464,20 @@ mixin _ConnectionControllerPhoneAgents on ChangeNotifier
     if (id == null) throw _notReady;
     if (agentId != openCodeChatAgentId) {
       final row = phoneAgentsAvailable ? _paRowFor(agentId) : null;
-      if (row == null || !row.chatSelectable) throw _notReady;
+      // A row can lag one scan behind the settings file the person just
+      // wrote. The file is the authority on a gateway: a saved endpoint is
+      // this agent's sign-in, even while the row still says otherwise.
+      AgentAuthProbeResult? gateway;
+      if (row != null && !row.chatSelectable) {
+        try {
+          gateway = await _paGatewaySignIn(_paEnsureHost(), agentId);
+        } catch (_) {
+          gateway = null;
+        }
+      }
+      if (row == null || (!row.chatSelectable && gateway == null)) {
+        throw _notReady;
+      }
     }
     try {
       await _self.store.prefs.setString(_paChatAgentKey(id), agentId);
@@ -607,7 +620,14 @@ mixin _ConnectionControllerPhoneAgents on ChangeNotifier
           if (runtime.installed &&
               descriptor.signInMethod != AgentSignInMethod.none &&
               (host is PhoneAgentAuthPort || runtime.signInPhase == null)) {
-            final auth = await _paProbeSignIn(host, descriptor.id);
+            // A settings file that names a gateway is this agent's sign-in.
+            // Reading that one file is cheap, where the probe can spend a
+            // minute on a CLI and answer from an account that is not the
+            // endpoint the person chose. The probe stays the answer when the
+            // file names no gateway.
+            final gateway = await _paGatewaySignIn(host, descriptor.id);
+            final auth =
+                gateway ?? await _paProbeSignIn(host, descriptor.id);
             if (_self._disposed || _paHost != host || _paHostProfile != owner) {
               return;
             }
@@ -826,7 +846,10 @@ mixin _ConnectionControllerPhoneAgents on ChangeNotifier
   }) async {
     final host = _paEnsureHost();
     final owner = _paHostProfile;
-    final result = await _paProbeSignIn(host, agentId);
+    // A gateway already on disk answers this without the CLI: asking the
+    // account command would call a working endpoint signed out.
+    final gateway = await _paGatewaySignIn(host, agentId);
+    final result = gateway ?? await _paProbeSignIn(host, agentId);
     if (_self._disposed || _paHost != host || _paHostProfile != owner) return;
     _paAuthResults[agentId] = result;
     _self._notifyListeners();

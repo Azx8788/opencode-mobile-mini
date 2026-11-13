@@ -128,6 +128,23 @@ extension _PhoneAgentAuthObservation on _ConnectionControllerPhoneAgents {
         AgentAuthProbeState.error => AgentSignInPhase.failed,
       };
 
+  /// The sign-in an agent's own settings file already names, or null when it
+  /// names no gateway. One JSON read, judged by the same rule the status
+  /// probe applies: a file with a base URL and a token is signed in, account
+  /// or no account.
+  Future<AgentAuthProbeResult?> _paGatewaySignIn(
+    PhoneAgentHostPort host,
+    String id,
+  ) async {
+    if (id != 'claude') return null;
+    try {
+      return agentEndpointSignIn(await host.readAgentEndpoint(id));
+    } catch (_) {
+      // An unreadable file leaves the probe to say.
+      return null;
+    }
+  }
+
   /// A check that could not run this time (the phone was busy, or it took
   /// too long) is not news about the account: the last answer the agent
   /// itself gave stands, so a signed-in agent is not sent to sign in again.

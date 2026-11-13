@@ -2,6 +2,27 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.13+18 — 2026-11-13
+
+Choosing a provider for Claude Code wrote its address and key into the agent's
+settings file, but the app still showed "Sign in with Claude Code": the
+endpoint was read from the file while the sign-in answer came only from the
+account probe. A saved gateway and an account were two different answers to
+the same question, so the sheet could send a person back to Sign in forever.
+
+  * **A saved gateway is the sign-in on every screen.** A settings file with a
+    base URL and a token is signed in, account or no account — the same rule
+    the status probe applies. The sign-in page, the agent row and the phone
+    check all read that one answer, and a gateway is never asked for an
+    account on top of it.
+  * **Selecting a provider goes on to the conversation.** The rows are read
+    again after the write, and the agent is chosen when it is ready; when a
+    stopped host keeps the page, its main action is "Use Claude Code", not
+    "Sign in".
+  * **A row that lags one scan behind the file still lets the agent be
+    chosen**, and the sheet says "Checking sign-in…" whenever that read is
+    running instead of offering Sign in over an answer still being read.
+
 ## 0.3.13+17 — 2026-11-10
 
 Every model was effectively 200K tokens, the log could only be read with a

@@ -11,6 +11,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:opencode_mobile/builtin/agents/agent_endpoint_scripts.dart';
+import 'package:opencode_mobile/domain/agent_auth_probe.dart';
 import 'package:opencode_mobile/domain/agent_endpoint.dart';
 
 void main() {
@@ -116,6 +117,41 @@ void main() {
       for (final id in ['codex', 'gemini', 'qwen', 'kilo', 'cline', 'fx']) {
         expect(agentSupportsEndpoint(id), isFalse, reason: id);
       }
+    });
+  });
+
+  // The row must not keep the signed-out answer read before the write: a
+  // settings file naming a gateway and a key is a signed-in agent by the same
+  // rule its own status check applies.
+  group('agentEndpointSignIn', () {
+    test('a saved gateway is signed in, named by its host', () {
+      final result = agentEndpointSignIn(
+        const AgentEndpointStatus(
+          baseUrl: 'https://gateway.example.com/v1',
+          model: null,
+          hasKey: true,
+        ),
+      );
+      expect(result, isNotNull);
+      expect(result!.state, AgentAuthProbeState.signedIn);
+      expect(result.accountDisplayName, 'gateway.example.com');
+    });
+
+    test('an address without a key is not a sign-in', () {
+      expect(
+        agentEndpointSignIn(
+          const AgentEndpointStatus(
+            baseUrl: 'https://gateway.example.com',
+            model: null,
+            hasKey: false,
+          ),
+        ),
+        isNull,
+      );
+    });
+
+    test('no endpoint is no sign-in', () {
+      expect(agentEndpointSignIn(AgentEndpointStatus.absent), isNull);
     });
   });
 

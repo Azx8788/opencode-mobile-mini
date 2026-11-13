@@ -7,6 +7,7 @@
 /// whether one is stored, never what it was.
 library;
 
+import 'agent_auth_probe.dart';
 import 'server_gateway/value_types_catalog.dart';
 
 /// Whether [agentId]'s own settings file takes a gateway endpoint.
@@ -167,4 +168,26 @@ final class AgentEndpointStatus {
 
   @override
   String toString() => 'AgentEndpointStatus($baseUrl)';
+}
+
+/// The sign-in a saved gateway is by itself, or null when the settings file
+/// does not name one.
+///
+/// Claude Code reads `ANTHROPIC_BASE_URL` and `ANTHROPIC_AUTH_TOKEN` from its
+/// own settings file, and its status check treats a file with both as signed
+/// in, account or no account. The app applies the same rule the moment it has
+/// written that file and read it back, so a row never keeps the signed-out
+/// answer a scan read before the write.
+AgentAuthProbeResult? agentEndpointSignIn(AgentEndpointStatus status) {
+  final baseUrl = status.baseUrl;
+  if (!status.configured || baseUrl == null) return null;
+  final host = Uri.tryParse(baseUrl)?.host;
+  return AgentAuthProbeResult(
+    state: AgentAuthProbeState.signedIn,
+    accountDisplayName: host == null || host.isEmpty
+        ? null
+        : host.length > 160
+        ? host.substring(0, 160)
+        : host,
+  );
 }
