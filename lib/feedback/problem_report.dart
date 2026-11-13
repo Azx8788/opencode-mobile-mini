@@ -12,8 +12,11 @@ import '../ui/kit/kit_redact.dart';
 /// The one first-party destination for "something is broken": the GitHub
 /// issue form of this app's repository. App-authored; it still opens through
 /// `openExternalLink`, like every other link.
-const String bugReportRepoUrl =
-    'https://github.com/Eslamasabry/opencode-mobile-next';
+///
+/// This repository, not the upstream one it derives from: a report filed
+/// upstream is read by people who do not ship this build, and the log the
+/// form carries is this app's.
+const String bugReportRepoUrl = 'https://github.com/Azx8788/opencode-plus';
 
 /// The longest link the app hands to `openExternalLink` (its own ceiling).
 const int problemReportMaxLinkLength = 2048;

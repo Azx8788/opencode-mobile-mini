@@ -17,13 +17,13 @@ import 'shorebird_update_notice.dart' show UpdateStatusScope;
 /// check the project's GitHub releases instead and point at the release
 /// page. Nothing downloads automatically.
 const desktopReleasesApiUrl =
-    'https://api.github.com/repos/Azx8788/opencode-mobile-mini/releases';
+    'https://api.github.com/repos/Azx8788/opencode-plus/releases';
 const desktopReleasesPageUrl =
-    'https://github.com/Azx8788/opencode-mobile-mini/releases';
+    'https://github.com/Azx8788/opencode-plus/releases';
 const desktopReleaseNetworkTimeout = Duration(seconds: 10);
 
 const _desktopReleaseOwner = 'Azx8788';
-const _desktopReleaseRepository = 'opencode-mobile-mini';
+const _desktopReleaseRepository = 'opencode-plus';
 final _desktopReleaseTagPattern = RegExp(
   r'^v\d+\.\d+\.\d+\+(\d+)(?:-[0-9A-Za-z]+(?:[.-][0-9A-Za-z]+)*)?$',
 );
