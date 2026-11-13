@@ -121,12 +121,6 @@ jobs:
       - name: Build arm64 release APK
         run: flutter build apk --release --target-platform android-arm64
 
-      # Flutter's APK build installs the Gradle wrapper before this step.
-      # Exercise Android 12 tree-URI checks, not only the Dart log mirror.
-      - name: Storage provider regression tests
-        working-directory: android
-        run: ./gradlew --no-daemon --max-workers=2 :app:testReleaseUnitTest --tests com.azx8788.opencode.mini.InternalStorageProviderTest
-
       - name: Verify and package the APK
         run: |
           set -euo pipefail
@@ -164,3 +158,43 @@ jobs:
             dist/*.apk
             dist/SHA256SUMS
           draft: true
+
+  # The Storage Access Framework root is the app's own directory, and the
+  # rules that decide whether a file manager may enter it are the platform's,
+  # not this app's: the picker hides a root without FLAG_SUPPORTS_IS_CHILD,
+  # and DocumentsProvider.enforceTree() refuses a tree URI whose document is
+  # not a descendant of the granted one. Those checks are exercised here on
+  # Android 12, the version the picker in the reported bug runs on.
+  storage-provider:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter 3.47.1
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "3.47.1"
+          channel: stable
+          cache: true
+
+      - name: Accept Android SDK licenses
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
+      - name: Resolve packages
+        run: flutter pub get
+
+      # The Gradle wrapper is not committed; the Flutter tool writes it.
+      - name: Storage provider regression tests
+        working-directory: android
+        run: |
+          flutter build apk --debug --target-platform android-arm64 --no-pub
+          ./gradlew --no-daemon :app:testReleaseUnitTest --tests 'com.azx8788.opencode.mini.InternalStorageProviderTest'

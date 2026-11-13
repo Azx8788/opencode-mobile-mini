@@ -91,6 +91,14 @@ android {
             if (ocPreview) proguardFiles("phone-engine-instrumentation.pro")
         }
     }
+
+    testOptions {
+        unitTests {
+            // Robolectric reads the merged manifest and the app's resources,
+            // so the provider under test is the one the manifest registers.
+            isIncludeAndroidResources = true
+        }
+    }
 }
 
 kotlin {

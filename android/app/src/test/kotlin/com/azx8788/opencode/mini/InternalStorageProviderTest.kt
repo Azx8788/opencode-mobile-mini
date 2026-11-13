@@ -26,11 +26,18 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
 
-// Match the Android 12 directory picker used by MT's Add local storage flow.
-// Call the framework's tree-URI entry points as well as the provider methods:
-// adding a root flag alone must not make these tests pass.
+// The Storage Access Framework root the app offers to the system file picker.
+//
+// The tests drive the framework entry points, not only the provider methods:
+// DocumentsProvider.enforceTree() compares the granted tree id with the
+// requested document id and calls isChildDocument(), so a root that only
+// declares FLAG_SUPPORTS_IS_CHILD still fails here. sdk 31 is the Android
+// version the picker in the reported bug runs on.
+//
+// The app's own Application is not used: it installs a crash handler, and
+// none of this needs it.
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [31], manifest = Config.NONE, application = Application::class)
+@Config(sdk = [31], application = Application::class)
 class InternalStorageProviderTest {
     @get:Rule
     val outside = TemporaryFolder()
@@ -91,6 +98,8 @@ class InternalStorageProviderTest {
                 cursor.getString(cursor.getColumnIndexOrThrow(Root.COLUMN_DOCUMENT_ID)),
             )
             val flags = cursor.getInt(cursor.getColumnIndexOrThrow(Root.COLUMN_FLAGS))
+            // Without FLAG_SUPPORTS_IS_CHILD the system directory picker hides
+            // this root, which is the reported failure.
             assertTrue(flags and Root.FLAG_SUPPORTS_IS_CHILD != 0)
             assertTrue(flags and Root.FLAG_SUPPORTS_CREATE != 0)
             assertTrue(flags and Root.FLAG_LOCAL_ONLY != 0)
@@ -139,6 +148,17 @@ class InternalStorageProviderTest {
     }
 
     @Test
+    fun absolutePathCannotLeaveThePrivateRoot() {
+        val external = outside.newFile("outside.txt")
+        // A document id is always relative to filesDir, so an absolute path
+        // cannot name a file outside it.
+        assertFalse(
+            provider.isChildDocument(InternalStorageProvider.ROOT_ID, external.absolutePath),
+        )
+        assertFalse(provider.isChildDocument(id(workspace), external.absolutePath))
+    }
+
+    @Test
     fun traversalCannotLeaveTheGrantedSubdirectory() {
         val escapeId = "${id(workspace)}/../workspace-other/note.txt"
         assertFalse(provider.isChildDocument(id(workspace), escapeId))
@@ -159,14 +179,14 @@ class InternalStorageProviderTest {
         Files.createSymbolicLink(link.toPath(), sibling.toPath())
         val linkedNote = File(link, "note.txt")
         assertFalse(provider.isChildDocument(id(workspace), id(linkedNote)))
-        // The existing filesDir scope is unchanged when the whole root is granted.
+        // The whole-root grant still covers it: it stays inside filesDir.
         assertTrue(provider.isChildDocument(InternalStorageProvider.ROOT_ID, id(linkedNote)))
     }
 
     @Test
     fun frameworkCanQueryNestedDirectoryThroughATreeGrant() {
         val uri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri(workspace), id(nested))
-        requireNotNull(provider.query(uri, null, null, null, null)).use { cursor ->
+        provider.query(uri, null, null, null).use { cursor ->
             assertTrue(cursor.moveToFirst())
             assertEquals(
                 id(note),
@@ -179,10 +199,10 @@ class InternalStorageProviderTest {
     @Test
     fun frameworkCanReadAndWriteFileThroughATreeGrant() {
         val uri = documentUri(workspace, note)
-        ParcelFileDescriptor.AutoCloseInputStream(requireNotNull(provider.openFile(uri, "r"))).use {
+        ParcelFileDescriptor.AutoCloseInputStream(provider.openFile(uri, "r")).use {
             assertEquals("hello", it.readBytes().toString(Charsets.UTF_8))
         }
-        ParcelFileDescriptor.AutoCloseOutputStream(requireNotNull(provider.openFile(uri, "wt"))).use {
+        ParcelFileDescriptor.AutoCloseOutputStream(provider.openFile(uri, "wt")).use {
             it.write("updated".toByteArray(Charsets.UTF_8))
         }
         assertEquals("updated", note.readText())
@@ -192,7 +212,7 @@ class InternalStorageProviderTest {
     fun frameworkRefusesQueriesAndOpensOutsideTheTreeGrant() {
         val uri = documentUri(workspace, siblingNote)
         assertThrows(SecurityException::class.java) {
-            provider.query(uri, null, null, null, null)
+            provider.query(uri, null, null, null)
         }
         assertThrows(SecurityException::class.java) {
             provider.openFile(uri, "r")
@@ -204,7 +224,7 @@ class InternalStorageProviderTest {
         val createdId = provider.createDocument(id(workspace), "text/plain", "created.txt")
         assertTrue(provider.isChildDocument(id(workspace), createdId))
         val uri = DocumentsContract.buildDocumentUriUsingTree(treeUri(workspace), createdId)
-        requireNotNull(provider.query(uri, null, null, null, null)).use { cursor ->
+        provider.query(uri, null, null, null).use { cursor ->
             assertTrue(cursor.moveToFirst())
             assertEquals(
                 "created.txt",

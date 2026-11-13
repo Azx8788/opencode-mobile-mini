@@ -54,7 +54,7 @@ class InternalStorageProvider : DocumentsProvider() {
         return cursor
     }
 
-    override fun isChildDocument(parentDocumentId: String, documentId: String): Boolean = try {
+    override fun isChildDocument(parentDocumentId: String?, documentId: String?): Boolean = try {
         val parent = resolve(parentDocumentId)
         val child = resolve(documentId)
         // Check real paths against the granted directory, not just filesDir:
@@ -139,8 +139,9 @@ class InternalStorageProvider : DocumentsProvider() {
 
     private fun root(): File = requireNotNull(context).filesDir.canonicalFile
 
-    private fun resolve(documentId: String): File {
+    private fun resolve(documentId: String?): File {
         val base = root()
+        if (documentId == null) throw FileNotFoundException("No document id")
         if (documentId == ROOT_ID) return base
         val file = File(base, documentId).canonicalFile
         val prefix = base.path + File.separator
