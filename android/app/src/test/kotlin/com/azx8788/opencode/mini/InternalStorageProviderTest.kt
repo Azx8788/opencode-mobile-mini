@@ -1,8 +1,6 @@
 package com.azx8788.opencode.mini
 
-import android.Manifest
 import android.app.Application
-import android.content.pm.ProviderInfo
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
@@ -22,6 +20,7 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
+import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
@@ -34,6 +33,8 @@ import org.robolectric.annotation.Config
 // declares FLAG_SUPPORTS_IS_CHILD still fails here. sdk 31 is the Android
 // version the picker in the reported bug runs on.
 //
+// The provider is the one the manifest registers, so a change that breaks the
+// registration (the authority, MANAGE_DOCUMENTS, exported) fails here too.
 // The app's own Application is not used: it installs a crash handler, and
 // none of this needs it.
 @RunWith(RobolectricTestRunner::class)
@@ -64,19 +65,8 @@ class InternalStorageProviderTest {
         sibling = File(testRoot, "workspace-other").apply { check(mkdir()) }
         siblingNote = File(sibling, "note.txt").apply { writeText("private sibling") }
 
-        provider = InternalStorageProvider()
-        provider.attachInfo(
-            context,
-            ProviderInfo().apply {
-                name = InternalStorageProvider::class.java.name
-                packageName = context.packageName
-                this.authority = this@InternalStorageProviderTest.authority
-                exported = true
-                grantUriPermissions = true
-                readPermission = Manifest.permission.MANAGE_DOCUMENTS
-                writePermission = Manifest.permission.MANAGE_DOCUMENTS
-            },
-        )
+        provider = Robolectric.buildContentProvider(InternalStorageProvider::class.java)
+            .create()
     }
 
     @After
