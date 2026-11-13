@@ -54,18 +54,27 @@ class InternalStorageProvider : DocumentsProvider() {
         return cursor
     }
 
-    override fun isChildDocument(parentDocumentId: String?, documentId: String?): Boolean = try {
-        val parent = resolve(parentDocumentId)
-        val child = resolve(documentId)
-        // Check real paths against the granted directory, not just filesDir:
-        // a nested tree grant must not reach siblings via '..' or symlinks.
-        // The separator also keeps 'project-other' outside a 'project' grant.
-        parent.isDirectory && child.exists() &&
+    override fun isChildDocument(parentDocumentId: String?, documentId: String?): Boolean {
+        val parent = resolveOrNull(parentDocumentId) ?: return false
+        val child = resolveOrNull(documentId) ?: return false
+        // Compare real paths, not the ids: a nested tree grant must not reach a
+        // sibling through '..' or a symlink, and a sibling whose name merely
+        // starts with the granted directory's name is not inside it either.
+        return parent.isDirectory && child.exists() &&
             child.path.startsWith(parent.path + File.separator)
-    } catch (_: IOException) {
-        false
-    } catch (_: SecurityException) {
-        false
+    }
+
+    private fun resolveOrNull(documentId: String?): File? {
+        if (documentId == null) return null
+        return try {
+            resolve(documentId)
+        } catch (_: IOException) {
+            // A path that leaves filesDir, or one the file system refuses.
+            null
+        } catch (_: IllegalArgumentException) {
+            // A document id the platform cannot even spell as a path.
+            null
+        }
     }
 
     override fun queryDocument(documentId: String, projection: Array<out String>?): Cursor {
@@ -139,9 +148,8 @@ class InternalStorageProvider : DocumentsProvider() {
 
     private fun root(): File = requireNotNull(context).filesDir.canonicalFile
 
-    private fun resolve(documentId: String?): File {
+    private fun resolve(documentId: String): File {
         val base = root()
-        if (documentId == null) throw FileNotFoundException("No document id")
         if (documentId == ROOT_ID) return base
         val file = File(base, documentId).canonicalFile
         val prefix = base.path + File.separator

@@ -197,4 +197,16 @@ jobs:
         working-directory: android
         run: |
           flutter build apk --debug --target-platform android-arm64 --no-pub
-          ./gradlew --no-daemon :app:testReleaseUnitTest --tests 'com.azx8788.opencode.mini.InternalStorageProviderTest'
+          # AGP names the unit test task after the variant it tests, and the
+          # name has changed between versions. Ask the build which task exists
+          # instead of guessing one and failing with "task not found".
+          task=$(./gradlew --no-daemon -q :app:tasks --all --console=plain \
+            | sed -n 's/^\(test[A-Za-z]*UnitTest\) .*/\1/p' | sort -u | head -1)
+          if [ -z "$task" ]; then
+            echo "::error::No AGP unit test task was found in :app"
+            ./gradlew --no-daemon -q :app:tasks --all --console=plain | grep -i unittest || true
+            exit 1
+          fi
+          echo "Running :app:$task"
+          ./gradlew --no-daemon ":app:$task" \
+            --tests 'com.azx8788.opencode.mini.InternalStorageProviderTest'

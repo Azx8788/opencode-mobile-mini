@@ -1,6 +1,8 @@
 package com.azx8788.opencode.mini
 
+import android.Manifest
 import android.app.Application
+import android.content.pm.ProviderInfo
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.DocumentsContract
@@ -20,7 +22,6 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
 import org.junit.runner.RunWith
-import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.annotation.Config
@@ -33,12 +34,12 @@ import org.robolectric.annotation.Config
 // declares FLAG_SUPPORTS_IS_CHILD still fails here. sdk 31 is the Android
 // version the picker in the reported bug runs on.
 //
-// The provider is the one the manifest registers, so a change that breaks the
-// registration (the authority, MANAGE_DOCUMENTS, exported) fails here too.
-// The app's own Application is not used: it installs a crash handler, and
-// none of this needs it.
+// The provider is attached the way the platform attaches it: exported, with
+// URI grants, behind MANAGE_DOCUMENTS. The manifest itself is checked by the
+// Dart test (test/android_manifest_provider_test.dart), which keeps this
+// suite free of the merged resources a Robolectric manifest would need.
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [31], application = Application::class)
+@Config(sdk = [31], manifest = Config.NONE, application = Application::class)
 class InternalStorageProviderTest {
     @get:Rule
     val outside = TemporaryFolder()
@@ -65,17 +66,30 @@ class InternalStorageProviderTest {
         sibling = File(testRoot, "workspace-other").apply { check(mkdir()) }
         siblingNote = File(sibling, "note.txt").apply { writeText("private sibling") }
 
-        provider = Robolectric.buildContentProvider(InternalStorageProvider::class.java)
-            .create()
+        provider = InternalStorageProvider()
+        provider.attachInfo(
+            context,
+            ProviderInfo().apply {
+                name = InternalStorageProvider::class.java.name
+                packageName = context.packageName
+                this.authority = this@InternalStorageProviderTest.authority
+                exported = true
+                grantUriPermissions = true
+                readPermission = Manifest.permission.MANAGE_DOCUMENTS
+                writePermission = Manifest.permission.MANAGE_DOCUMENTS
+            },
+        )
     }
 
     @After
     fun tearDown() {
         if (::testRoot.isInitialized && testRoot.exists()) {
-            // Never follow the escape links created by the boundary tests.
-            Files.walk(testRoot.toPath()).use { paths ->
-                paths.sorted(Comparator.reverseOrder()).forEach { Files.delete(it) }
+            // Collect first, then delete: a symlink must be removed as itself
+            // and never followed out of the tree.
+            val paths = Files.walk(testRoot.toPath()).use { stream ->
+                stream.toList().sorted(Comparator.reverseOrder())
             }
+            paths.forEach { Files.delete(it) }
         }
     }
 
