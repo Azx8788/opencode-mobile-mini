@@ -2,7 +2,7 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
-## 0.3.13+20 — 2026-11-13
+## 0.3.13+21 — 2026-11-13
 
 A saved gateway is a sign-in on every screen, and a gateway's own rules about
 its address, its key and its model names are followed instead of one
@@ -32,6 +32,10 @@ gateway's.
     (whether the address was stripped, which variable was written) and
     `sign-in state` (every recomputation, with a warning when the file says
     configured and the screen says signed out). Key values never appear.
+  * **Reports, advisories and release pages name this repository.** The
+    problem-report form opened the upstream project's issues, and the release
+    check trusted the old slug; both point at `Azx8788/opencode-plus` now, and
+    `test/repository_links_test.dart` fails if any of them drifts again.
 
 ## 0.3.13+17 — 2026-11-10
 
