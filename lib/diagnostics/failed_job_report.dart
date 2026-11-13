@@ -39,7 +39,7 @@ class FailedJobReport {
   /// Plain technical attachment; localize the surrounding UI, not this text.
   /// The UI must show this exact text before offering Copy or Share.
   String get preview => [
-    'OpenCode Mini failed job',
+    'OpenCode Plus failed job',
     'Kind: ${kind.name}',
     'Job: $jobId',
     'Title: $title',

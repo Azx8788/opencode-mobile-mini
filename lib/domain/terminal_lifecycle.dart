@@ -12,7 +12,7 @@ abstract interface class TerminalCommandGateway {
 
 /// The title the app gives its one-shot usage check terminal. Terminal lists
 /// leave terminals with this title out: they are not the person's.
-const computerUsageTitle = 'OpenCode Mini usage check';
+const computerUsageTitle = 'OpenCode Plus usage check';
 
 /// Optional gateway facet: runs one command in a NEW PTY on the server and
 /// hands back the terminal so a caller can read its output and remove it.

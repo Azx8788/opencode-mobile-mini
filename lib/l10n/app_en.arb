@@ -41,7 +41,7 @@
   "servicesRefresh": "Refresh status",
   "isolatedTaskScopeChanged": "The server or project changed while this was open. Close it and start again from the project you want.",
   "@@locale": "en",
-  "appTitle": "OpenCode Mini",
+  "appTitle": "OpenCode Plus",
   "@appTitle": {
     "description": "Application title shown in the task switcher / window title"
   },
@@ -69,7 +69,7 @@
   "@librarySettingsTitle": {
     "description": "More hub card: app settings"
   },
-  "aboutBuildVersion": "OpenCode Mini {version}+{buildNumber}",
+  "aboutBuildVersion": "OpenCode Plus {version}+{buildNumber}",
   "@aboutBuildVersion": {
     "description": "Installed app version and build shown in About",
     "placeholders": {
@@ -3066,7 +3066,7 @@
   "@e7SettingsAlphaBody": {
     "description": "About screen AI assistance provenance and experimental desktop limitation"
   },
-  "e7SettingsNonAffiliation": "OpenCode Mini is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.",
+  "e7SettingsNonAffiliation": "OpenCode Plus is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.",
   "@e7SettingsNonAffiliation": {
     "description": "Settings and appearance user interface."
   },
@@ -8190,7 +8190,7 @@
   "@handoffUiPhoneTitle": {
     "description": "Session menu row and sheet title: show a QR code that opens this session in the app on another phone"
   },
-  "handoffUiPhoneIntro": "Scan with OpenCode Mini on the other phone. The code holds only the server and conversation IDs.",
+  "handoffUiPhoneIntro": "Scan with OpenCode Plus on the other phone. The code holds only the server and conversation IDs.",
   "@handoffUiPhoneIntro": {
     "description": "QR sheet lead paragraph"
   },
@@ -14548,7 +14548,7 @@
   "@teamBoardProjectTooltip": {
     "description": "Board: the project switcher under the title"
   },
-  "appExitForceStopped": "OpenCode Mini was closed {time}",
+  "appExitForceStopped": "OpenCode Plus was closed {time}",
   "@appExitForceStopped": {
     "description": "After a force stop (from Settings, a Recents swipe on some phones, or a battery manager: not always Android itself): first half of the one-time notice; time is like 'at 12:06 AM' or 'on Sep 25 at 8:19 PM'",
     "placeholders": {
@@ -14557,7 +14557,7 @@
       }
     }
   },
-  "appExitLowMemory": "Android closed OpenCode Mini {time} to free memory",
+  "appExitLowMemory": "Android closed OpenCode Plus {time} to free memory",
   "@appExitLowMemory": {
     "description": "After a low-memory kill: first half of the notice",
     "placeholders": {
@@ -14566,7 +14566,7 @@
       }
     }
   },
-  "appExitCrashed": "OpenCode Mini stopped unexpectedly {time}",
+  "appExitCrashed": "OpenCode Plus stopped unexpectedly {time}",
   "@appExitCrashed": {
     "description": "After a crash or not-responding: first half of the notice",
     "placeholders": {
@@ -14575,7 +14575,7 @@
       }
     }
   },
-  "appExitKilled": "Android stopped OpenCode Mini {time}",
+  "appExitKilled": "Android stopped OpenCode Plus {time}",
   "@appExitKilled": {
     "description": "After another system kill: first half of the notice",
     "placeholders": {
@@ -14699,15 +14699,15 @@
   "@keepRunningLockTitle": {
     "description": "Step: lock the app in recents"
   },
-  "keepRunningLockNubia": "Open Recent apps and pull OpenCode Mini's card down until the lock shows.",
+  "keepRunningLockNubia": "Open Recent apps and pull OpenCode Plus's card down until the lock shows.",
   "@keepRunningLockNubia": {
     "description": "Lock step on Nubia/RedMagic"
   },
-  "keepRunningLockSamsung": "Open Recent apps, tap OpenCode Mini's icon above its card and choose Keep open.",
+  "keepRunningLockSamsung": "Open Recent apps, tap OpenCode Plus's icon above its card and choose Keep open.",
   "@keepRunningLockSamsung": {
     "description": "Lock step on Samsung"
   },
-  "keepRunningLockOther": "Open Recent apps, long-press OpenCode Mini's card and tap the lock.",
+  "keepRunningLockOther": "Open Recent apps, long-press OpenCode Plus's card and tap the lock.",
   "@keepRunningLockOther": {
     "description": "Lock step on other makers"
   },
@@ -14715,11 +14715,11 @@
   "@keepRunningAutostartTitle": {
     "description": "Step: vendor autostart"
   },
-  "keepRunningAutostartDetail": "Turn it on for OpenCode Mini so the phone doesn't stop it in the background.",
+  "keepRunningAutostartDetail": "Turn it on for OpenCode Plus so the phone doesn't stop it in the background.",
   "@keepRunningAutostartDetail": {
     "description": "Autostart step detail"
   },
-  "keepRunningAutostartHuawei": "Under App launch, set OpenCode Mini to Manage manually and turn on all three switches.",
+  "keepRunningAutostartHuawei": "Under App launch, set OpenCode Plus to Manage manually and turn on all three switches.",
   "@keepRunningAutostartHuawei": {
     "description": "Autostart step on Huawei/Honor"
   },
@@ -14751,7 +14751,7 @@
   "@keepRunningOpen": {
     "description": "Button on a step that opens its settings screen"
   },
-  "keepRunningOpenFailed": "This phone has no such screen. Open Settings › Apps › OpenCode Mini instead.",
+  "keepRunningOpenFailed": "This phone has no such screen. Open Settings › Apps › OpenCode Plus instead.",
   "@keepRunningOpenFailed": {
     "description": "Snackbar when a settings screen could not be opened"
   },
@@ -25244,7 +25244,7 @@
   "@sessionAddressDisclosure": {
     "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): what including the address discloses, under the switch"
   },
-  "sessionAddressIntro": "Scan with OpenCode Mini on the other phone. The code holds this server’s address and the conversation ID.",
+  "sessionAddressIntro": "Scan with OpenCode Plus on the other phone. The code holds this server’s address and the conversation ID.",
   "@sessionAddressIntro": {
     "description": "Session links with the server address (P3.9, contract docs/design/session-address-link-contract.md): sheet lead paragraph while the address is included"
   },
@@ -26966,7 +26966,7 @@
   "@manageSpaceMeasuring": {
     "description": "Manage-space and Export projects pages: loading label while sizes are measured."
   },
-  "manageSpaceIntro": "Clearing deletes everything OpenCode Mini keeps on this phone, and it cannot be undone. Export your projects first if you want to keep them.",
+  "manageSpaceIntro": "Clearing deletes everything OpenCode Plus keeps on this phone, and it cannot be undone. Export your projects first if you want to keep them.",
   "@manageSpaceIntro": {
     "description": "Manage-space page: the warning at the top."
   },
@@ -27020,7 +27020,7 @@
   "@manageSpaceDeleteTitle": {
     "description": "Manage-space page: the delete confirm's title."
   },
-  "manageSpaceDeleteBody": "OpenCode Mini then starts again as if it were new. This cannot be undone.",
+  "manageSpaceDeleteBody": "OpenCode Plus then starts again as if it were new. This cannot be undone.",
   "@manageSpaceDeleteBody": {
     "description": "Manage-space page: the delete confirm's body."
   },
@@ -27340,7 +27340,7 @@
   "@perfDetailModel": {
     "description": "This phone › Details (technical): provider/model id of the last reply."
   },
-  "manageSpaceIntroNothingToExport": "Clearing deletes everything OpenCode Mini keeps on this phone, and it cannot be undone.",
+  "manageSpaceIntroNothingToExport": "Clearing deletes everything OpenCode Plus keeps on this phone, and it cannot be undone.",
   "@manageSpaceIntroNothingToExport": {
     "description": "Manage-space page: the warning at the top when there are no projects to export (so it offers no export)."
   },

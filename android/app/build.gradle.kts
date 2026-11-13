@@ -42,8 +42,13 @@ android {
         // The built-in Linux and AI Team engine use process APIs from Android 8.
         minSdk = maxOf(flutter.minSdkVersion, 26)
         targetSdk = flutter.targetSdkVersion
-        versionCode = flutter.versionCode
-        versionName = flutter.versionName
+        // pubspec.yaml is the version the app reports. CI overrides the code
+        // from the run number so two builds of the same commit still install
+        // as an upgrade over each other; a local build uses the pubspec value,
+        // which `tool/bump_version.dart` moves forward.
+        versionCode =
+            System.getenv("OC_VERSION_CODE")?.toIntOrNull() ?: flutter.versionCode
+        versionName = System.getenv("OC_VERSION_NAME") ?: flutter.versionName
         // Native acceptance checkpoint hooks are inactive in normal releases.
         buildConfigField("boolean", "BUILTIN_RUNTIME_QA", "false")
         // Mini ships one ABI: 64-bit ARM. The in-app Linux runs 64-bit Ubuntu
@@ -62,7 +67,7 @@ android {
         // Projects in Termux are shared by both, since neither owns them.
         if (ocPreview) applicationIdSuffix = ".preview"
         manifestPlaceholders["appLabel"] =
-            if (ocPreview) "OpenCode Mini Preview" else "OpenCode Mini"
+            if (ocPreview) "OpenCode Plus Preview" else "OpenCode Plus"
         manifestPlaceholders["appShortcuts"] =
             if (ocPreview) "@xml/shortcuts_preview" else "@xml/shortcuts"
     }

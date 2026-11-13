@@ -26,14 +26,14 @@ void main() {
       final entry = draft(
         headers: const [
           CustomProviderHeader(name: 'HTTP-Referer', value: 'https://app'),
-          CustomProviderHeader(name: 'X-Title', value: 'OpenCode Mini'),
+          CustomProviderHeader(name: 'X-Title', value: 'OpenCode Plus'),
         ],
       ).toProviderEntry(ProviderConfigFormat.v1);
       expect(entry['options'], isA<Map>());
       final options = entry['options'] as Map;
       expect(options['headers'], {
         'HTTP-Referer': 'https://app',
-        'X-Title': 'OpenCode Mini',
+        'X-Title': 'OpenCode Plus',
       });
     });
 

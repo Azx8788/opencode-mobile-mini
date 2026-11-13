@@ -24,7 +24,7 @@ import '../kit/kit.dart';
 /// and it is shown once near the top of this screen rather than buried in a
 /// document the reader has to scroll.
 const String nonAffiliationDisclaimer =
-    'OpenCode Mini is an independent community project. It is not built, '
+    'OpenCode Plus is an independent community project. It is not built, '
     'maintained, endorsed by, or affiliated with the official OpenCode team.';
 
 /// Build provenance is independent of the Android release channel. Desktop

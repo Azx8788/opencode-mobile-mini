@@ -3,7 +3,7 @@
 const String genUiConnectorSearchJavascript = r'''
 const genUiConnectorSearchTool = {
   name: 'find_connectors',
-  description: 'Search the connector catalogue already loaded in OpenCode Mini. '
+  description: 'Search the connector catalogue already loaded in OpenCode Plus. '
     + 'Use an exact catalogId from these results when suggesting a connector with show. '
     + 'Do not invent catalog IDs. This reads metadata only and never installs, '
     + 'connects, signs in, or grants permission to a connector.',

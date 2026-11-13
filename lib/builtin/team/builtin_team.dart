@@ -271,14 +271,14 @@ class BuiltinTeam {
   static const upkeepOrder =
       '[order]\n'
       'description = "Phone upkeep: the core sweeps one at a time '
-      '(written by OpenCode Mini)"\n'
+      '(written by OpenCode Plus)"\n'
       'trigger = "cooldown"\n'
       'interval = "2m"\n'
       'timeout = "10m"\n'
       'exec = "exec sh $cityDir/assets/phone-upkeep.sh"\n';
 
   static const upkeepScript = r'''#!/bin/sh
-# Phone upkeep (written by OpenCode Mini on every AI Team start).
+# Phone upkeep (written by OpenCode Plus on every AI Team start).
 cd /root/aiteam/city || exit 1
 state=/root/aiteam/city/.gc/runtime/packs/phone
 mkdir -p "$state"
@@ -500,7 +500,7 @@ exit "$rc"
   /// and prints the line.
   static const originHook =
       '#!/bin/sh\n'
-      '# Written by OpenCode Mini (AI Team) on every team start: brings\n'
+      '# Written by OpenCode Plus (AI Team) on every team start: brings\n'
       '# the work merged here into the project folder.\n'
       'log=$pullLog\n'
       r'''project=${OC_PROJECT:-$(git config --get oc-mobile.project 2>/dev/null)}

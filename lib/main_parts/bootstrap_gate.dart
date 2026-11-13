@@ -205,7 +205,7 @@ class _AppBootstrapGateState extends State<AppBootstrapGate> {
       );
     }
     return MaterialApp(
-      title: 'OpenCode Mini',
+      title: 'OpenCode Plus',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),

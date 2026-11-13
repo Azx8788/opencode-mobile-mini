@@ -22,8 +22,8 @@ void main() {
   });
 
   test('both locales carry the Mini product name', () {
-    expect(AppLocalizationsEn().appTitle, 'OpenCode Mini');
-    expect(AppLocalizationsZh().appTitle, 'OpenCode Mini');
+    expect(AppLocalizationsEn().appTitle, 'OpenCode Plus');
+    expect(AppLocalizationsZh().appTitle, 'OpenCode Plus');
   });
 
   testWidgets('localizations wire into a MaterialApp', (tester) async {
@@ -39,7 +39,7 @@ void main() {
           ),
         ),
       );
-      expect(find.text('OpenCode Mini'), findsOneWidget);
+      expect(find.text('OpenCode Plus'), findsOneWidget);
     }
   });
 }

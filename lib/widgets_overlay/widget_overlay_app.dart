@@ -76,7 +76,7 @@ class WidgetOverlayApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final pack = effectiveThemePack(themePack);
     return MaterialApp(
-      title: 'OpenCode Mini',
+      title: 'OpenCode Plus',
       debugShowCheckedModeBanner: false,
       color: Colors.transparent,
       themeMode: switch (appearance) {

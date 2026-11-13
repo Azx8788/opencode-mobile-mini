@@ -468,7 +468,7 @@ abstract final class PerfTrace {
   /// No bodies, headers or query values were ever recorded.
   static String reportText({int slowest = 30, int recentCount = 50}) {
     final out = StringBuffer()
-      ..writeln('OpenCode Mini performance trace')
+      ..writeln('OpenCode Plus performance trace')
       ..writeln(
         'spans: ${_spans.length} · clock: '
         '${formatMs(nowMicros / 1000)} since start',

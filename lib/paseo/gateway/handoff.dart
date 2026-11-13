@@ -1,6 +1,6 @@
 part of '../gateway.dart';
 
-const _handoffIgnore = '# OpenCode Mini conversation handoff\n*\n';
+const _handoffIgnore = '# OpenCode Plus conversation handoff\n*\n';
 
 extension _PaseoHandoff on PaseoGateway {
   Future<String> _writeAgentHandoff({

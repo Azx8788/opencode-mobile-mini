@@ -124,7 +124,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'The server or project changed while this was open. Close it and start again from the project you want.';
 
   @override
-  String get appTitle => 'OpenCode Mini';
+  String get appTitle => 'OpenCode Plus';
 
   @override
   String get libraryModelsAgentsTitle => 'Models & agents';
@@ -146,7 +146,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String aboutBuildVersion(String version, String buildNumber) {
-    return 'OpenCode Mini $version+$buildNumber';
+    return 'OpenCode Plus $version+$buildNumber';
   }
 
   @override
@@ -4164,7 +4164,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get e7SettingsNonAffiliation =>
-      'OpenCode Mini is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.';
+      'OpenCode Plus is an independent community project. It is not built, maintained, endorsed by, or affiliated with the official OpenCode team.';
 
   @override
   String e7SettingsDiagnosticOccurrences(int count) {
@@ -8076,7 +8076,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get handoffUiPhoneIntro =>
-      'Scan with OpenCode Mini on the other phone. The code holds only the server and conversation IDs.';
+      'Scan with OpenCode Plus on the other phone. The code holds only the server and conversation IDs.';
 
   @override
   String get handoffUiPhoneQrLabel =>
@@ -12977,22 +12977,22 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String appExitForceStopped(String time) {
-    return 'OpenCode Mini was closed $time';
+    return 'OpenCode Plus was closed $time';
   }
 
   @override
   String appExitLowMemory(String time) {
-    return 'Android closed OpenCode Mini $time to free memory';
+    return 'Android closed OpenCode Plus $time to free memory';
   }
 
   @override
   String appExitCrashed(String time) {
-    return 'OpenCode Mini stopped unexpectedly $time';
+    return 'OpenCode Plus stopped unexpectedly $time';
   }
 
   @override
   String appExitKilled(String time) {
-    return 'Android stopped OpenCode Mini $time';
+    return 'Android stopped OpenCode Plus $time';
   }
 
   @override
@@ -13071,26 +13071,26 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keepRunningLockNubia =>
-      'Open Recent apps and pull OpenCode Mini\'s card down until the lock shows.';
+      'Open Recent apps and pull OpenCode Plus\'s card down until the lock shows.';
 
   @override
   String get keepRunningLockSamsung =>
-      'Open Recent apps, tap OpenCode Mini\'s icon above its card and choose Keep open.';
+      'Open Recent apps, tap OpenCode Plus\'s icon above its card and choose Keep open.';
 
   @override
   String get keepRunningLockOther =>
-      'Open Recent apps, long-press OpenCode Mini\'s card and tap the lock.';
+      'Open Recent apps, long-press OpenCode Plus\'s card and tap the lock.';
 
   @override
   String get keepRunningAutostartTitle => 'Allow auto-start';
 
   @override
   String get keepRunningAutostartDetail =>
-      'Turn it on for OpenCode Mini so the phone doesn\'t stop it in the background.';
+      'Turn it on for OpenCode Plus so the phone doesn\'t stop it in the background.';
 
   @override
   String get keepRunningAutostartHuawei =>
-      'Under App launch, set OpenCode Mini to Manage manually and turn on all three switches.';
+      'Under App launch, set OpenCode Plus to Manage manually and turn on all three switches.';
 
   @override
   String get keepRunningBackgroundTitle => 'Allow background activity';
@@ -13120,7 +13120,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get keepRunningOpenFailed =>
-      'This phone has no such screen. Open Settings › Apps › OpenCode Mini instead.';
+      'This phone has no such screen. Open Settings › Apps › OpenCode Plus instead.';
 
   @override
   String get keepRunningFootnote =>
@@ -21016,7 +21016,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get sessionAddressIntro =>
-      'Scan with OpenCode Mini on the other phone. The code holds this server’s address and the conversation ID.';
+      'Scan with OpenCode Plus on the other phone. The code holds this server’s address and the conversation ID.';
 
   @override
   String get sessionAddressUnsupportedHost =>
@@ -22366,7 +22366,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get manageSpaceIntro =>
-      'Clearing deletes everything OpenCode Mini keeps on this phone, and it cannot be undone. Export your projects first if you want to keep them.';
+      'Clearing deletes everything OpenCode Plus keeps on this phone, and it cannot be undone. Export your projects first if you want to keep them.';
 
   @override
   String get manageSpaceExportFirst => 'Export projects first';
@@ -22406,7 +22406,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get manageSpaceDeleteBody =>
-      'OpenCode Mini then starts again as if it were new. This cannot be undone.';
+      'OpenCode Plus then starts again as if it were new. This cannot be undone.';
 
   @override
   String get manageSpaceLostServer => 'On this phone and its conversations';
@@ -22663,7 +22663,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get manageSpaceIntroNothingToExport =>
-      'Clearing deletes everything OpenCode Mini keeps on this phone, and it cannot be undone.';
+      'Clearing deletes everything OpenCode Plus keeps on this phone, and it cannot be undone.';
 
   @override
   String integrationsKeyOnlyHelper(String name) {

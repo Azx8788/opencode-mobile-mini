@@ -188,7 +188,7 @@ class McpOAuthLoopbackListener {
       await _respond(
         request,
         HttpStatus.badRequest,
-        'Authorization was not completed. Return to OpenCode Mini.',
+        'Authorization was not completed. Return to OpenCode Plus.',
       );
       _completeError(
         McpOAuthCallbackException('Authorization failed: ${error!.trim()}'),
@@ -209,7 +209,7 @@ class McpOAuthLoopbackListener {
     await _respond(
       request,
       HttpStatus.ok,
-      'Authorization received. You can return to OpenCode Mini.',
+      'Authorization received. You can return to OpenCode Plus.',
     );
     if (!_code.isCompleted) _code.complete(code);
     await _shutdown();
@@ -222,7 +222,7 @@ class McpOAuthLoopbackListener {
       ..write(
         '<!doctype html><html><head><meta name="viewport" '
         'content="width=device-width,initial-scale=1"></head><body>'
-        '<main><h1>OpenCode Mini</h1><p>${htmlEscape.convert(message)}</p>'
+        '<main><h1>OpenCode Plus</h1><p>${htmlEscape.convert(message)}</p>'
         '</main></body></html>',
       );
     await request.response.close();

@@ -58,7 +58,11 @@ String teamWorkerPoolId(String projectId) => '$projectId/$teamWorkerPoolName';
 
 /// First line of every Start-a-run message; how a record is recognised
 /// as a planning request after a restart.
-const teamPlanningMarker = '[OpenCode Mini · Start a run]';
+const teamPlanningMarker = '[OpenCode Plus · Start a run]';
+
+/// What the marker was before the rename. Messages written by 0.3.13 and
+/// earlier still carry it, and a restart must keep recognising them.
+const legacyTeamPlanningMarker = '[OpenCode Mini · Start a run]';
 
 /// Characters of the objective a run title must carry to count as the
 /// run the request produced.
@@ -141,7 +145,8 @@ class TeamPlanningRequest {
     final text = record.request.text;
     if (text == null) return null;
     final lines = text.split('\n');
-    if (lines.isEmpty || lines.first.trim() != teamPlanningMarker) {
+    final first = lines.isEmpty ? '' : lines.first.trim();
+    if (first != teamPlanningMarker && first != legacyTeamPlanningMarker) {
       return null;
     }
     String? objective;

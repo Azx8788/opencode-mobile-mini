@@ -2,7 +2,7 @@
 
 **Effective date: September 6, 2026**
 
-OpenCode for Android is a client for OpenCode servers. It does not provide a
+OpenCode Plus is a client for OpenCode servers. It does not provide a
 developer-operated account, advertising, analytics, or crash-reporting service.
 The app does not sell personal data.
 

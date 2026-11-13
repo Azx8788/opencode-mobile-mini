@@ -41,7 +41,7 @@ class InternalStorageProvider : DocumentsProvider() {
         val row = cursor.newRow()
         row.add(Root.COLUMN_ROOT_ID, ROOT_ID)
         row.add(Root.COLUMN_DOCUMENT_ID, ROOT_ID)
-        row.add(Root.COLUMN_TITLE, "OpenCode Mini")
+        row.add(Root.COLUMN_TITLE, "OpenCode Plus")
         row.add(Root.COLUMN_SUMMARY, "The app's private files")
         row.add(Root.COLUMN_FLAGS, Root.FLAG_LOCAL_ONLY or Root.FLAG_SUPPORTS_CREATE)
         row.add(Root.COLUMN_ICON, R.mipmap.ic_launcher)
@@ -144,7 +144,7 @@ class InternalStorageProvider : DocumentsProvider() {
         row.add(Document.COLUMN_DOCUMENT_ID, documentId)
         row.add(
             Document.COLUMN_DISPLAY_NAME,
-            if (documentId == ROOT_ID) "OpenCode Mini" else file.name,
+            if (documentId == ROOT_ID) "OpenCode Plus" else file.name,
         )
         row.add(Document.COLUMN_SIZE, if (isDir) 0L else file.length())
         row.add(

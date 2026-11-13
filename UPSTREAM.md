@@ -1,6 +1,6 @@
 # Upstream and modifications
 
-OpenCode Mini is a derivative work of **OpenCode Mobile**, distributed under
+OpenCode Plus is a derivative work of **OpenCode Mobile**, distributed under
 the MIT License.
 
 | | |
@@ -48,7 +48,7 @@ Imported from upstream at the commit above:
    no-op that reports updates unavailable, so no third party can deliver code
    to this build. Release checks point at this repository, not upstream.
 5. **Branding.** Application id and namespace `com.azx8788.opencode.mini`,
-   label `OpenCode Mini`, title strings updated in `app_en.arb` / `app_zh.arb`
+   label `OpenCode Plus`, title strings updated in `app_en.arb` / `app_zh.arb`
    and in code paths that print the product name.
 6. **Trimmed test and QA surface.** `test/`, `androidTest/`, `androidTest`
    sources, the QA/capture/demo tooling and their Gradle hooks were removed.

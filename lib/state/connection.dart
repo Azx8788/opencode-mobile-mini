@@ -589,7 +589,7 @@ class ConnectionController extends ChangeNotifier
       store.profiles.any((profile) => profile.id == id);
 
   static const workspaceChoiceNotice =
-      'OpenCode Mini no longer works in the server\'s home folder. '
+      'OpenCode Plus no longer works in the server\'s home folder. '
       'Create a new folder or open a project folder to continue.';
 
   static const managedRuntimeMismatchMessage =

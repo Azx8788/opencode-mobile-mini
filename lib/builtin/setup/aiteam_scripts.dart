@@ -350,12 +350,12 @@ done
   /// pushes to a repository on the phone ("unpack should have generated
   /// …"), and the team pushes every change to one.
   static const _identity = r'''git config --global user.name >/dev/null 2>&1 ||
-  git config --global user.name 'OpenCode Mini'
+  git config --global user.name 'OpenCode Plus'
 git config --global user.email >/dev/null 2>&1 ||
   git config --global user.email 'aiteam@opencode-mobile.local'
 git config --global beads.role maintainer
 git config --global core.createObject rename
-dolt config --global --add user.name 'OpenCode Mini' >/dev/null 2>&1 || true
+dolt config --global --add user.name 'OpenCode Plus' >/dev/null 2>&1 || true
 dolt config --global --add user.email 'aiteam@opencode-mobile.local' >/dev/null 2>&1 || true
 dolt config --global --add versioncheck.disabled true >/dev/null 2>&1 || true
 dolt config --global --add metrics.disabled true >/dev/null 2>&1 || true

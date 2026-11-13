@@ -100,7 +100,7 @@ const inputSchema = {...obj({v: {type: 'integer', const: 1},
   })}, ['v', 'id', 'title', 'body']), not: {required: ['connector', 'ask']}};
 const tool = {
   name: 'show',
-  description: 'Offer a native card in OpenCode Mini. Plain text only. '
+  description: 'Offer a native card in OpenCode Plus. Plain text only. '
     + 'Do not request credentials or secrets. IDs must be unique within a card. '
     + 'Table rows must match column count and chart values must match labels. '
     + 'Maximum compact JSON is 32768 UTF-8 bytes. This returns immediately; '
@@ -204,7 +204,7 @@ async function frame(bytes) {
     try { normalizeGenUiCard(params.arguments); }
     catch (_) { await send(failedCall(id)); return; }
     await send(result(id, {content: [{type: 'text', text:
-      'Card accepted for display in OpenCode Mini. If it asks a question, end your turn '
+      'Card accepted for display in OpenCode Plus. If it asks a question, end your turn '
       + 'and wait for the person\'s next message tagged [oc-ui answer <id>]. '
       + 'This call does not return their answer.'}]}));
   } else {

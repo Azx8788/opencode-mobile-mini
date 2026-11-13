@@ -107,7 +107,7 @@ class _AppLogSectionState extends State<AppLogSection>
     final copy = _copy(context);
     final privatePath = AppLog.directoryPath;
     final publicPath =
-        AppLog.publicDirectoryPath ?? '/storage/emulated/0/OpenCodeMini/logs';
+        AppLog.publicDirectoryPath ?? '/storage/emulated/0/OpenCodePlus/logs';
     return KitRowGroup(
       label: copy.appLogLabel,
       children: [

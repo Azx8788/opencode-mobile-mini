@@ -13,7 +13,7 @@ This product includes software under the Apache License, Version 2.0
   terminal-emulator module, an Apache 2.0 exception in that otherwise GPLv3
   repository). Used unmodified to open the local terminal's pseudoterminal.
 
-OpenCode Mini is a derivative of OpenCode Mobile
+OpenCode Plus is a derivative of OpenCode Mobile
 (https://github.com/Eslamasabry/opencode-mobile-next), Copyright (c) 2026
 Eslam Sabry, used under the MIT License (see LICENSE). Changes made for this
 distribution are listed in UPSTREAM.md and README.md.

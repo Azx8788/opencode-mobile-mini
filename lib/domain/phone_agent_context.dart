@@ -20,18 +20,18 @@ abstract final class PhoneAgentContext {
   ];
 
   static const termuxHost = 'Ubuntu running in Termux (under proot)';
-  static const builtinHost = "the OpenCode Mini app's built-in Ubuntu";
+  static const builtinHost = "the OpenCode Plus app's built-in Ubuntu";
 
   static const _intro =
       '## Where you are running\n'
       '\n'
-      'Written by OpenCode Mini; the text between these markers is '
+      'Written by OpenCode Plus; the text between these markers is '
       'replaced on each server start.\n'
       '\n'
       "- You run on the person's Android phone, inside ";
 
   static const _rest =
-      '. The person talks to you through the OpenCode Mini app on this '
+      '. The person talks to you through the OpenCode Plus app on this '
       'same phone. There is no desktop app, no display, no window you can '
       'open, and no adb connection to this phone from here.\n'
       '- Projects live in /root/projects. The person sees your replies, '

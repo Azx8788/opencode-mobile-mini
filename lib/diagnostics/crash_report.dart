@@ -16,7 +16,7 @@ class CrashReportBuilder {
   static const maxBytes = 16 * 1024;
   static const maxEntries = 20;
   static const _header =
-      'OpenCode Mini crash report\n'
+      'OpenCode Plus crash report\n'
       'Captured error categories and times only.\n'
       'No messages, stacks or conversations are included.\n\n';
 
