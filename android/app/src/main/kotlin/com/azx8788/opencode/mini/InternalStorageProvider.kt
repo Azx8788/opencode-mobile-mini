@@ -13,6 +13,7 @@ import android.system.OsConstants
 import android.webkit.MimeTypeMap
 import java.io.File
 import java.io.FileNotFoundException
+import java.io.IOException
 
 /**
  * The Storage Access Framework root the app offers to the system file picker.
@@ -43,9 +44,28 @@ class InternalStorageProvider : DocumentsProvider() {
         row.add(Root.COLUMN_DOCUMENT_ID, ROOT_ID)
         row.add(Root.COLUMN_TITLE, "OpenCode Mini")
         row.add(Root.COLUMN_SUMMARY, "The app's private files")
-        row.add(Root.COLUMN_FLAGS, Root.FLAG_LOCAL_ONLY or Root.FLAG_SUPPORTS_CREATE)
+        // Directory pickers hide roots without parent/child checks. This flag
+        // must be paired with isChildDocument() for granted tree URIs to work.
+        row.add(
+            Root.COLUMN_FLAGS,
+            Root.FLAG_LOCAL_ONLY or Root.FLAG_SUPPORTS_CREATE or Root.FLAG_SUPPORTS_IS_CHILD,
+        )
         row.add(Root.COLUMN_ICON, R.mipmap.ic_launcher)
         return cursor
+    }
+
+    override fun isChildDocument(parentDocumentId: String, documentId: String): Boolean = try {
+        val parent = resolve(parentDocumentId)
+        val child = resolve(documentId)
+        // Check real paths against the granted directory, not just filesDir:
+        // a nested tree grant must not reach siblings via '..' or symlinks.
+        // The separator also keeps 'project-other' outside a 'project' grant.
+        parent.isDirectory && child.exists() &&
+            child.path.startsWith(parent.path + File.separator)
+    } catch (_: IOException) {
+        false
+    } catch (_: SecurityException) {
+        false
     }
 
     override fun queryDocument(documentId: String, projection: Array<out String>?): Cursor {

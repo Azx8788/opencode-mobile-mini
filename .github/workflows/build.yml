@@ -121,6 +121,12 @@ jobs:
       - name: Build arm64 release APK
         run: flutter build apk --release --target-platform android-arm64
 
+      # Flutter's APK build installs the Gradle wrapper before this step.
+      # Exercise Android 12 tree-URI checks, not only the Dart log mirror.
+      - name: Storage provider regression tests
+        working-directory: android
+        run: ./gradlew --no-daemon --max-workers=2 :app:testReleaseUnitTest --tests com.azx8788.opencode.mini.InternalStorageProviderTest
+
       - name: Verify and package the APK
         run: |
           set -euo pipefail

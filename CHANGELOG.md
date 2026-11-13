@@ -2,6 +2,16 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.14+22 — 2026-11-13
+
+  * **Private storage can be selected by a file manager.** The SAF root now
+    advertises parent/child checks, so Android's directory picker does not hide
+    it from MT's Add local storage flow. Tree URI checks use canonical paths
+    within the granted directory; sibling prefixes, traversal and symlinks
+    cannot escape a subdirectory grant or the app's private files directory.
+    Android 12 regression tests cover the root flags and framework tree-URI
+    queries, reads and writes. The package id and storage permissions are unchanged.
+
 ## 0.3.13+18 — 2026-11-13
 
 Choosing a provider for Claude Code wrote its address and key into the agent's
