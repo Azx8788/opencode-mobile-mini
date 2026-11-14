@@ -265,6 +265,14 @@ class _AgentProviderSheetState extends ConsumerState<AgentProviderSheet> {
           model: _selectedModel,
         ),
       );
+      // The conversation start passes the app's stored pick to the agent, so
+      // keep it on the provider's model: an older CLI pick ("Opus 5.5")
+      // would otherwise ask the relay for a model it does not serve.
+      try {
+        await _agents.selectAgentModel(widget.agentId, _selectedModel);
+      } catch (_) {
+        // The settings file is read at start either way.
+      }
       if (mounted) KitSheet.close(context, true);
     } catch (_) {
       if (mounted) setState(() => _error = l10n.agentsEndpointFailed);
@@ -301,6 +309,13 @@ class _AgentProviderSheetState extends ConsumerState<AgentProviderSheet> {
     });
     try {
       await source.clearAgentEndpoint(widget.agentId);
+      // Without a gateway the stored model is a relay's id the agent's own
+      // CLI may not know: the next start falls back to its default.
+      try {
+        await _agents.selectAgentModel(widget.agentId, null);
+      } catch (_) {
+        // The settings file is read at start either way.
+      }
       if (mounted) KitSheet.close(context, true);
     } catch (_) {
       if (mounted) setState(() => _error = l10n.agentsEndpointFailed);

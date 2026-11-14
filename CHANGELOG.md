@@ -2,6 +2,24 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.16+24 — 2026-11-14
+
+Choosing a relay's model in the new-chat Model row saved the provider, but a
+conversation could still start on the agent's old CLI pick ("Opus 5.5"): the
+start passed the app's remembered model, not the one the settings file names,
+so the relay was asked for a model it does not serve and the turn stalled.
+
+  * **The gateway's model wins at start.** When Claude Code's settings file
+    names a gateway, its `ANTHROPIC_MODEL` is the model the conversation
+    starts on; the agent's own stored pick is used only without a gateway.
+  * **Saving a provider keeps the pick in step.** The provider sheet now
+    stores the chosen model as the agent's model too, and removing the
+    gateway clears it, so later turns and the chat header agree with the
+    relay.
+  * **The Model row shows the relay's model.** It reads the settings file
+    instead of the agent's catalogue: "Choose a provider" before one is
+    saved, the chosen model's name after.
+
 ## 0.3.15+23 — 2026-11-14
 
 Claude Code's Model row in a new conversation listed the agent's own catalogue

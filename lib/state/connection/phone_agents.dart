@@ -1445,6 +1445,18 @@ mixin _ConnectionControllerPhoneAgents on ChangeNotifier
         agentId: descriptor.id,
       ),
     );
+    // The agent's own settings file names the model when a gateway is set:
+    // its relay serves that model, and a stored pick from the agent's own CLI
+    // list ("Opus 5.5") would otherwise start the turn on the wrong one.
+    String? modelId = selectedAgentModel(agentId);
+    if (supportsAgentEndpoint(agentId)) {
+      try {
+        final endpoint = await readAgentEndpoint(agentId);
+        if (endpoint.configured) modelId = endpoint.model;
+      } catch (_) {
+        // An unreadable settings file leaves the stored pick in place.
+      }
+    }
     final String id;
     try {
       id = await PerfTrace.span(
@@ -1453,7 +1465,7 @@ mixin _ConnectionControllerPhoneAgents on ChangeNotifier
           directory,
           agentId: descriptor.providerId,
           firstPrompt: firstPrompt,
-          modelId: selectedAgentModel(agentId),
+          modelId: modelId,
         ),
       );
     } catch (_) {
