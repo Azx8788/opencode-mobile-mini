@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../builtin/git_link_repair.dart' show GitRepairActions;
+import '../../../domain/agent_endpoint.dart';
 import '../../../domain/chat_feed.dart';
+import '../../../domain/model_display_name.dart';
 import '../../../domain/phone_agents_source.dart';
 import '../../../domain/product_failure.dart';
 import '../../../domain/server_gateway.dart' show WorkspaceProject;
@@ -13,12 +15,13 @@ import '../../../domain/agent_persona.dart';
 import '../../../domain/agent_tools/agent_certification.dart';
 import '../../../domain/phone_agents.dart' show AgentRow;
 import '../../../l10n/app_localizations.dart';
+import '../../agents/agent_persona_text.dart';
 import '../../app_iconography.dart';
 import '../../kit/kit.dart';
 import '../../widgets/product_states.dart'
     show productErrorDetails, productErrorText;
 import '../agents/agent_model_sheet.dart';
-import '../../agents/agent_persona_text.dart';
+import '../agents/agent_provider_sheet.dart';
 import '../agents/agent_sheet.dart';
 import '../agents/agents_text.dart' show agentChoosable;
 import 'chats_host.dart';
@@ -112,6 +115,14 @@ class _NewChatScreenState extends ConsumerState<NewChatScreen> {
 
   /// The phone agent whose model list was already asked for.
   String? _warmedAgent;
+
+  /// The agent whose own settings file was already asked for its gateway
+  /// (Claude Code). The gateway, not the agent's CLI catalogue, names the
+  /// model a third-party relay serves.
+  String? _endpointReadFor;
+
+  /// The gateway the selected agent's settings file names now, or absent.
+  AgentEndpointStatus? _endpoint;
 
   /// Where the typed words are kept until they are sent: Back, a swipe or
   /// Close never loses them. Null while there is no project's draft to keep
@@ -347,6 +358,13 @@ class _NewChatScreenState extends ConsumerState<NewChatScreen> {
   Future<void> _selectAgent(PhoneAgentsSource agents, String id) async {
     try {
       await agents.selectChatAgent(id);
+      if (!mounted) return;
+      // The model row is per agent: the gateway read for the old one says
+      // nothing about the new one.
+      setState(() {
+        _endpointReadFor = null;
+        _endpoint = null;
+      });
     } catch (error) {
       if (!mounted) return;
       final l10n = AppLocalizations.of(context);
@@ -356,6 +374,66 @@ class _NewChatScreenState extends ConsumerState<NewChatScreen> {
         _gitRepair = null;
       });
     }
+  }
+
+  /// Present only when the source can reach an agent's own settings file.
+  PhoneAgentEndpointSource? get _endpoints {
+    final agents = ref.read(chatsHostProvider).agents;
+    return agents is PhoneAgentEndpointSource
+        ? agents as PhoneAgentEndpointSource
+        : null;
+  }
+
+  /// Reads the gateway the selected agent's settings file names, once per
+  /// selection: the model row says what the relay serves, not what the agent's
+  /// own catalogue would use.
+  Future<void> _readEndpoint(String agentId) async {
+    final source = _endpoints;
+    if (source == null || !source.supportsAgentEndpoint(agentId)) return;
+    AgentEndpointStatus status;
+    try {
+      status = await source.readAgentEndpoint(agentId);
+    } catch (_) {
+      // A settings file the app cannot read leaves the row as it is.
+      return;
+    }
+    if (!mounted || _endpointReadFor != agentId) return;
+    setState(() => _endpoint = status);
+  }
+
+  /// "Choose a model" for an agent that reads a third-party relay: first the
+  /// provider (one already saved in Settings), then that provider's enabled
+  /// models. Saving writes the provider's address, key and the chosen model
+  /// into the agent's own settings file, which is what makes the conversation
+  /// use the relay.
+  Future<void> _chooseProviderModel(String agentId) async {
+    final agents = ref.read(chatsHostProvider).agents;
+    final changed = await showAgentProviderSheet(context, agentId: agentId);
+    if (!mounted) return;
+    if (changed == true && agents != null) {
+      // A settings file with a gateway and a key is this agent's sign-in:
+      // re-read the rows so the card and Start agree with the new file.
+      try {
+        await agents.refreshAgentRows();
+      } catch (_) {
+        // The row keeps its last facts; the model row is what was asked.
+      }
+      if (!mounted) return;
+    }
+    await _readEndpoint(agentId);
+  }
+
+  /// The model row's value for an agent whose model comes from a provider:
+  /// the chosen model's readable id, "Default model" when the provider leaves
+  /// it to the agent, or the provider chooser before anything is saved.
+  String _endpointModelLabel(AppLocalizations l10n) {
+    final endpoint = _endpoint;
+    if (endpoint == null || !endpoint.configured) {
+      return l10n.agentsEndpointProvidersTitle;
+    }
+    final model = endpoint.model;
+    if (model == null) return l10n.agentsModelDefault;
+    return KitBidi.auto(modelNameFromId(model));
   }
 
   Widget _screen(BuildContext context, ChatsHost host) {
@@ -434,14 +512,24 @@ class _NewChatScreenState extends ConsumerState<NewChatScreen> {
     final agentName = _agentLabel(l10n, agentChoice?.agentId ?? given, given);
     final otherAgent =
         agentChoice != null && agentChoice.agentId != openCodeChatAgentId;
+    // Claude Code takes its model from the provider saved in its own settings
+    // file, not from its own catalogue: its row shows the relay's model, and
+    // choosing one starts with the provider.
+    final endpointAgent =
+        agents is PhoneAgentEndpointSource &&
+        agentChoice != null &&
+        agentChoice.agentId != openCodeChatAgentId &&
+        agentSupportsEndpoint(agentChoice.agentId);
     // A phone agent's helper lists its runtimes slowly the first time (about
     // 10 s): ask while the person types, so Start doesn't wait for it. The
     // list also names the agent's own default, which the Model row then
-    // shows instead of "Default model".
+    // shows instead of "Default model". A provider-backed agent is left out:
+    // its list is the provider's, read from its settings file instead.
     final chosenAgent = agentChoice?.agentId;
     if (agents != null &&
         chosenAgent != null &&
         chosenAgent != openCodeChatAgentId &&
+        !endpointAgent &&
         chosenAgent != _warmedAgent) {
       _warmedAgent = chosenAgent;
       unawaited(
@@ -450,6 +538,12 @@ class _NewChatScreenState extends ConsumerState<NewChatScreen> {
           if (mounted) setState(() {});
         }, onError: (Object _) {}),
       );
+    }
+    // The gateway the agent's settings file names now, read once per
+    // selection. A file with none still lets the row offer the providers.
+    if (endpointAgent && _endpointReadFor != chosenAgent) {
+      _endpointReadFor = chosenAgent;
+      unawaited(_readEndpoint(agentChoice.agentId));
     }
 
     // Why Start cannot run yet, in words; null when it can.
@@ -554,15 +648,20 @@ class _NewChatScreenState extends ConsumerState<NewChatScreen> {
                 leading: KitRow.icon(context, AppIconography.model),
                 title: l10n.chatsNewModelRow,
                 // An agent on this phone has its own models; OpenCode's
-                // picker would list the server's instead.
+                // picker would list the server's instead. Claude Code's are
+                // the chosen provider's, not the agent's own catalogue.
                 trailing: KitRowValue(
-                  otherAgent
+                  endpointAgent
+                      ? _endpointModelLabel(l10n)
+                      : otherAgent
                       ? agentModelLabel(l10n, agents!, agentChoice.agentId)
                       : host.modelValue(context),
                   prominent: true,
                 ),
                 onTap: () => unawaited(
-                  otherAgent
+                  endpointAgent
+                      ? _chooseProviderModel(agentChoice.agentId)
+                      : otherAgent
                       ? showAgentModelSheet(
                           context,
                           agents: agents!,

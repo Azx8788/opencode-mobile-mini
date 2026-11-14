@@ -2,6 +2,25 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.15+23 — 2026-11-14
+
+Claude Code's Model row in a new conversation listed the agent's own catalogue
+("Opus 5.5"), so the conversation never named a third-party relay's model: the
+provider was only reachable from the sign-in page, and the row could not say
+which provider served it.
+
+  * **The Model row asks for the provider first.** With Claude Code chosen,
+    tapping Model lists the providers already saved in Settings, then that
+    provider's enabled models. Choosing one writes its address, key and model
+    into Claude Code's own settings file, which is what routes the
+    conversation through the relay.
+  * **The row shows the relay's model.** After saving, the value is the chosen
+    provider model by its readable name, and "Choose a provider" before one is
+    saved — never the agent's own default.
+  * **Saving re-reads the agent rows.** A settings file with a gateway and a
+    key is Claude Code's sign-in, so the card and Start agree with the file
+    immediately.
+
 ## 0.3.14+22 — 2026-11-13
 
   * **Private storage can be selected by a file manager.** The SAF root now
