@@ -10,7 +10,6 @@ import android.provider.DocumentsContract.Document
 import android.provider.DocumentsContract.Root
 import java.io.File
 import java.nio.file.Files
-import java.util.Comparator
 import java.util.UUID
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -87,7 +86,7 @@ class InternalStorageProviderTest {
             // Collect first, then delete: a symlink must be removed as itself
             // and never followed out of the tree.
             val paths = Files.walk(testRoot.toPath()).use { stream ->
-                stream.toList().sorted(Comparator.reverseOrder())
+                stream.toList().sortedDescending()
             }
             paths.forEach { Files.delete(it) }
         }
@@ -190,7 +189,10 @@ class InternalStorageProviderTest {
     @Test
     fun frameworkCanQueryNestedDirectoryThroughATreeGrant() {
         val uri = DocumentsContract.buildChildDocumentsUriUsingTree(treeUri(workspace), id(nested))
-        provider.query(uri, null, null, null).use { cursor ->
+        // ContentProvider.query() is nullable in the platform API; the
+        // provider under test answers with a cursor, and a null here is a
+        // failure worth naming rather than a crash inside the block.
+        requireNotNull(provider.query(uri, null, null, null)).use { cursor ->
             assertTrue(cursor.moveToFirst())
             assertEquals(
                 id(note),
@@ -228,7 +230,7 @@ class InternalStorageProviderTest {
         val createdId = provider.createDocument(id(workspace), "text/plain", "created.txt")
         assertTrue(provider.isChildDocument(id(workspace), createdId))
         val uri = DocumentsContract.buildDocumentUriUsingTree(treeUri(workspace), createdId)
-        provider.query(uri, null, null, null).use { cursor ->
+        requireNotNull(provider.query(uri, null, null, null)).use { cursor ->
             assertTrue(cursor.moveToFirst())
             assertEquals(
                 "created.txt",
