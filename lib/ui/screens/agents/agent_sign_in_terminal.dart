@@ -69,6 +69,12 @@ class _AgentSignInTerminalScreenState
   bool _stopFailed = false;
   AgentSignInOutput _found = const AgentSignInOutput();
 
+  /// The page the agent asked the system to open (its `BROWSER` hand-off),
+  /// kept in memory only, never logged. Claude gives that page a redirect
+  /// back to a port on this phone, so signing in there finishes without a
+  /// code; the page it prints for people to copy asks for a code instead.
+  String? _handedOver;
+
   AppLocalizations get _l10n =>
       lookupAppLocalizations(Localizations.localeOf(context));
 
@@ -90,6 +96,7 @@ class _AgentSignInTerminalScreenState
       _shell = shell;
       _notYet = false;
       _found = const AgentSignInOutput();
+      _handedOver = null;
     });
   }
 
@@ -140,6 +147,9 @@ class _AgentSignInTerminalScreenState
 
   void _openPage(String url) {
     if (!mounted) return;
+    if (widget.agentId == 'claude' && _handedOver != url) {
+      setState(() => _handedOver = url);
+    }
     final open = widget.openPage;
     unawaited(
       open != null ? open(context, url) : openAgentSignInPage(context, url),
@@ -318,13 +328,15 @@ class _AgentSignInTerminalScreenState
       );
     }
     final found = _found;
-    final page = found.page;
+    final handedOver = _handedOver;
+    final page = handedOver != null ? Uri.tryParse(handedOver) : found.page;
     final code = found.code;
+    final showActions = shell.running && (!found.isEmpty || handedOver != null);
     final tokens = KitTokens.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (shell.running && !found.isEmpty)
+        if (showActions)
           Padding(
             padding: EdgeInsetsDirectional.only(
               start: tokens.gutter,

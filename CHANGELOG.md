@@ -2,6 +2,24 @@
 
 This project is in public alpha. Only the newest preview is supported.
 
+## 0.3.17+25 — 2026-11-14
+
+Selective ports from upstream 2.1.1–2.1.5, keeping this tree's Termux phone
+engine and two-locale/branding cuts.
+
+  * **Claude Code 2.1.319, Codex 0.167.0, Node.js 24.22.2.** Same pins upstream
+    qualified for Paseo 0.11.2; 2.1.319 is needed for the browser redirect
+    below. Earlier Claude pins stay accepted for phones that have not updated.
+  * **A lapsed Claude Code sign-in says so.** A failed-turn reply that arrives
+    in pieces ("Failed to authenticate: OAuth session expired…") is now read
+    while it streams, becomes an error row, and the prompt banner says
+    "{agent} needs you to sign in again" with a Sign in action. The agent's
+    own sentence stays under Details.
+  * **Signing in needs no pasted code.** Claude 2.1.319 hands the browser a
+    redirect back to a port on this phone; the sign-in screen keeps that page
+    in memory so "Open sign-in page" reopens it. Paste remains only for a
+    printed fallback page that shows a code.
+
 ## 0.3.16+24 — 2026-11-14
 
 Choosing a relay's model in the new-chat Model row saved the provider, but a

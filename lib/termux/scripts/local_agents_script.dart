@@ -6,8 +6,8 @@ import 'script_support.dart';
 /// Node.js is the official binary tarball from nodejs.org (Ubuntu's apt
 /// Node is too old for Paseo and Claude Code), verified against the
 /// SHA-256 below before it is unpacked. The two checksums are the
-/// `node-v24.21.0-linux-{arm64,x64}.tar.gz` lines of
-/// https://nodejs.org/dist/v24.21.0/SHASUMS256.txt (read 2026-09-19).
+/// `node-v24.22.2-linux-{arm64,x64}.tar.gz` lines of
+/// https://nodejs.org/dist/v24.22.2/SHASUMS256.txt (read 2026-11-14).
 /// x64 exists so the x86_64 emulator can run the same flow as a phone.
 ///
 /// Paseo is pinned exactly: lib/paseo/ was verified against daemon 0.8.0
@@ -18,12 +18,12 @@ import 'script_support.dart';
 /// Claude Code is not pinned; the installed version is recorded in the
 /// script's state and shown in the app.
 const termuxLocalAgentsPins = <String, String>{
-  'node_version': 'v24.21.0',
+  'node_version': 'v24.22.2',
   'node_base_url': 'https://nodejs.org/dist',
   'node_sha256_arm64':
-      '724282c3b43aec998aa9527380465b45d229e021b58035f5f4f63095eabfe5d5',
+      '95c264150aceb7f3437a29fd6984924f5f8d1511ea3cbd6c508b83f6c555dae2',
   'node_sha256_x64':
-      '6e1db87ef58b8819e5d5402eff1536491b18edd8eb7bee5ef7897876e88dc5ff',
+      '361718c444e49af2ca5a110c83ba6a8901143f23ab285ebbef0341f391f482a9',
   'paseo_version': '0.11.2',
 };
 

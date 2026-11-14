@@ -56102,6 +56102,12 @@ abstract class AppLocalizations {
   /// **'{agent} needs you to sign in'**
   String chatSendFailureSignIn(String agent);
 
+  /// Chat: why a message wasn't sent: the agent's earlier sign-in ran out or could not be renewed (Claude Code: OAuth session expired).
+  ///
+  /// In en, this message translates to:
+  /// **'{agent} needs you to sign in again'**
+  String chatSendFailureSignInAgain(String agent);
+
   /// Chat: why a message wasn't sent: the agent's account has no credit or quota for the chosen model.
   ///
   /// In en, this message translates to:

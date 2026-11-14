@@ -242,6 +242,8 @@ _ChatStatus _promptErrorStatus(
   required VoidCallback onDismiss,
   VoidCallback? onChooseModel,
   VoidCallback? onResend,
+  VoidCallback? onSignIn,
+  AgentRunFailure? agentRun,
   String? suggestion,
   VoidCallback? onUseSuggestion,
   String? previousModel,
@@ -253,7 +255,21 @@ _ChatStatus _promptErrorStatus(
     MessageErrorKind.unknown,
     message,
   );
-  final headline = _plainErrorHeadline(words, kind, l10n);
+  // An agent whose sign-in ran out says so by name, with the way to sign in.
+  final signInRun =
+      agentRun != null && agentRun.kind == AgentRunFailureKind.signIn
+      ? agentRun
+      : null;
+  final headline = signInRun != null
+      ? agentRunFailureWords(signInRun, l10n)
+      : _plainErrorHeadline(words, kind, l10n);
+  final signIn = signInRun != null && onSignIn != null
+      ? KitAction(
+          key: const ValueKey('prompt-error-sign-in'),
+          label: l10n.chatSendFailureSignInAction,
+          onPressed: onSignIn,
+        )
+      : null;
   final details = message.trim().isNotEmpty
       ? KitAction(
           key: const ValueKey('prompt-error-details'),
@@ -315,11 +331,15 @@ _ChatStatus _promptErrorStatus(
     messageKey: const ValueKey('prompt-error-headline'),
     supporting: words.hint,
     supportingKey: const ValueKey('prompt-error-hint'),
-    action: switchBack ?? use ?? choose ?? resend ?? details,
+    action: signIn ?? switchBack ?? use ?? choose ?? resend ?? details,
     more: [
       if (switchBack != null) ?choose,
       if (switchBack == null && use != null) ?choose,
-      if (switchBack != null || use != null || choose != null || resend != null)
+      if (signIn != null ||
+          switchBack != null ||
+          use != null ||
+          choose != null ||
+          resend != null)
         ?details,
     ],
     onDismiss: onDismiss,

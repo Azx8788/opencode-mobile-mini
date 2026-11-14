@@ -24334,7 +24334,7 @@ class AppLocalizationsZh extends AppLocalizations {
 
   @override
   String agentsSignInTerminalIntro(String agent) {
-    return '$agent 会打开其登录页面。请在那里用你的 Claude 账号登录，然后返回。如果 $agent 要求输入代码，请在页面上复制，然后选择“粘贴”。';
+    return '$agent 会打开其登录页面。请在那里用你的 Claude 账号登录后返回：$agent 会自行完成。只有页面显示代码时，才需要复制代码并选择“粘贴”。';
   }
 
   @override
@@ -33601,6 +33601,11 @@ class AppLocalizationsZh extends AppLocalizations {
   @override
   String chatSendFailureSignIn(String agent) {
     return '$agent 需要你登录';
+  }
+
+  @override
+  String chatSendFailureSignInAgain(String agent) {
+    return '$agent 需要你重新登录';
   }
 
   @override
